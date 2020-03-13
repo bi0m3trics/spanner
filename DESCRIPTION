@@ -3,8 +3,6 @@ Type: Package
 Title: Utilities to support landscape-, forest-, and tree-related data analysis 
 Version: 1.0
 Date: 2020-03-11
-Authors@R: c(person("Andrew", "Sanchez Meador", email = "andrew.sanchezmeador", role = c("aut","cre","ctb"), comment = "Earl of Number Crunching"),
-	     person("David", "Auty", email = "", role = c("aut", "ctb"), comment = "Lord of Lignin"))
 Author: Andrew Sanchez Meador
 Maintainer: Andrew Sanchez Meador <andrew.sanchezmeador@nau.edu>
 Depends: R (>= 3.1.0), spatstat, lidR, velox 
