@@ -9,3 +9,5 @@ Depends: R (>= 3.1.0), spatstat, lidR, velox
 Description: Utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization.
 URL: https://github.com/bi0m3trcis/spanner
 License: GPL-2
+RoxygenNote: 7.1.0
+Encoding: UTF-8
