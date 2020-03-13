@@ -5,7 +5,7 @@ Version: 1.0
 Date: 2020-03-11
 Author: Andrew Sanchez Meador
 Maintainer: Andrew Sanchez Meador <andrew.sanchezmeador@nau.edu>
-Depends: R (>= 3.1.0), spatstat, lidR, velox 
+Depends: R (>= 3.1.0), spatstat, lidR 
 Description: Utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization.
 URL: https://github.com/bi0m3trcis/spanner
 License: GPL-2
