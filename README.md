@@ -4,3 +4,12 @@ Definition of spanner
 <br/>1 (chiefly British): WRENCH
 <br/>2: a wrench that has a hole, projection, or hook at one or both ends of the head for engaging with a corresponding device on the object that is to be turned
 <br/>3: utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization. 
+
+
+# Install `spanner`
+
+* Get the latest released version from github
+
+```r
+devtools::install_github("bi0m3trics/spanner")
+```
