@@ -4,7 +4,7 @@ Title: Utilities to support landscape-, forest-, and tree-related data analysis
 Version: 1.0
 Date: 2021-01-17
 Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre")),
-             person("Jonathon", "Donager", email = "Jonathon.Donager@nau.edu", role = c("aut", "ctb")))
+             person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb")))
 Description: Utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization.
 URL: https://github.com/bi0m3trcis/spanner
 Depends: R (>= 3.1.0), lidR (>= 3.1.0), terra, spatstat
