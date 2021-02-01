@@ -15,17 +15,17 @@
 #' the fit of a cylinder to individual bole points. Cylinder centers and radius were used as inputs
 #' to an individual tree segmentation
 #'
-#' @param las LAS Description to go here.
-#' @param res numeric Description to go here. 
-#' @param pt_spacing numeric Description to go here. 
-#' @param dens_threshold numeric Description to go here. 
+#' @param las LAS normalized las object.
+#' @param res numeric pixel width of rasterized point cloud metrics. 
+#' @param pt_spacing numeric subsample spacing for graph connections. 
+#' @param dens_threshold numeric minimum point density in raster cell to be considered as potential tree bole. 
 #' @param neigh_size numeric vector for verticality and relative density (small and large neighborhoods) calculations
-#' @param eigen_threshold numeric Description to go here. 
-#' @param grid_slice_min numeric Description to go here. 
-#' @param grid_slice_max numeric Description to go here. 
-#' @param minimum_polygon_area numeric Description to go here. 
-#' @param cylinder_fit_type  character "ransac" or "irls"
-#' @param output_location character Description to go here. 
+#' @param eigen_threshold numeric minimum average verticality in raster cell to be considered as potential tree bole. 
+#' @param grid_slice_min numeric lower bound of point cloud slice in normalized point cloud. 
+#' @param grid_slice_max numeric upper bound of point cloud slice in normalized point cloud. 
+#' @param minimum_polygon_area numeric smallest allowable polygon area of potential tree boles. 
+#' @param cylinder_fit_type  character "ransac" or "irls".
+#' @param output_location character where to write intermediary and output data layers. 
 #' 
 #' @return data.frame A data.frame contained the following seed information: `TreeID`,
 #' `X`, `Y`, `Z`, and `Radius` in the same units as the .las
