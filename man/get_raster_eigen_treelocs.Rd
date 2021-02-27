@@ -10,42 +10,46 @@ get_raster_eigen_treelocs(
   res = 0.05,
   pt_spacing = 0.0254,
   dens_threshold = 0.2,
+  neigh_sizes = c(0.333, 0.166, 0.5),
   eigen_threshold = 0.6666,
   grid_slice_min = 0.6666,
   grid_slice_max = 2,
-  grid_slice_buffer = 0.5,
   minimum_polygon_area = 0.025,
   cylinder_fit_type = "ransac",
-  output_location = getwd()
+  output_location = getwd(),
+  max_dia = 0.5,
+  SDvert = 0.25
 )
 }
 \arguments{
-\item{las}{LAS Description to go here.}
+\item{las}{LAS normalized las object.}
 
-\item{res}{numeric Description to go here.}
+\item{res}{numeric pixel width of rasterized point cloud metrics.}
 
-\item{pt_spacing}{numeric Description to go here.}
+\item{pt_spacing}{numeric subsample spacing for graph connections.}
 
-\item{dens_threshold}{numeric Description to go here.}
+\item{dens_threshold}{numeric minimum point density in raster cell to be considered as potential tree bole.}
 
-\item{eigen_threshold}{numeric Description to go here.}
+\item{eigen_threshold}{numeric minimum average verticality in raster cell to be considered as potential tree bole.}
 
-\item{grid_slice_min}{numeric Description to go here.}
+\item{grid_slice_min}{numeric lower bound of point cloud slice in normalized point cloud.}
 
-\item{grid_slice_max}{numeric Description to go here.}
+\item{grid_slice_max}{numeric upper bound of point cloud slice in normalized point cloud.}
 
-\item{grid_slice_buffer}{numeric Description to go here.}
+\item{minimum_polygon_area}{numeric smallest allowable polygon area of potential tree boles.}
 
-\item{minimum_polygon_area}{numeric Description to go here.}
+\item{cylinder_fit_type}{character "ransac" or "irls".}
 
-\item{cylinder_fit_type}{character "ransac" or "irls"}
+\item{output_location}{character where to write intermediary and output data layers.}
 
-\item{output_location}{character Description to go here.}
+\item{SDvert}{numeric the standard deviation threshold below whihc polygons will be considered as tree boles}
 
-\item{plot_radius}{numeric Description to go here.}
+\item{neigh_size}{numeric vector for verticality and relative density (small and large neighborhoods) calculations}
+
+\item{max_dai}{numeric the max diameter (in m) of a resulting tree (use to eliminate commission errors).}
 }
 \value{
-data.frame A data.frame contained the following seed information: `TreeID`,
+data.frame A data.frame containing the following seed information: `TreeID`,
 `X`, `Y`, `Z`, and `Radius` in the same units as the .las
 }
 \description{
@@ -65,15 +69,30 @@ the fit of a cylinder to individual bole points. Cylinder centers and radius wer
 to an individual tree segmentation
 }
 \examples{
-sum(1:10)
-sum(1:5, 6:10)
-sum(F, F, F, T, T)
 
-sum(.Machine$integer.max, 1L)
-sum(.Machine$integer.max, 1)
 
 \dontrun{
-sum("a")
+# set the number of threads to use in lidR
+set_lidr_threads(8)
+
+# read the las
+LASfile <- system.file("extdata", "Pine_Example.laz", package="spanner")
+las = readLAS(LASfile, select = "xyz")
+
+# plot(las, color="Z", backend="lidRviewer", trim=30)
+
+# find tree locations and attribute data
+myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02, 
+                                       dens_threshold = 0.25, 
+                                       neigh_sizes = c(0.1, 0.1, 0.25), 
+                                       eigen_threshold = 0.25, 
+                                       grid_slice_min = 0.666, 
+                                       grid_slice_max = 2,
+                                       minimum_polygon_area = 0.01, 
+                                       cylinder_fit_type = "ransac", 
+                                       output_location = getwd(), 
+                                       max_dia = 1, 
+                                       SDvert = 0.25)
 }
 
 }

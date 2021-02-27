@@ -26,27 +26,46 @@
 #' @param minimum_polygon_area numeric smallest allowable polygon area of potential tree boles. 
 #' @param cylinder_fit_type  character "ransac" or "irls".
 #' @param output_location character where to write intermediary and output data layers. 
+#' @param max_dai numeric the max diameter (in m) of a resulting tree (use to eliminate commission errors).
+#' @param SDvert numeric the standard deviation threshold below whihc polygons will be considered as tree boles  
 #' 
-#' @return data.frame A data.frame contained the following seed information: `TreeID`,
+#' @return data.frame A data.frame containing the following seed information: `TreeID`,
 #' `X`, `Y`, `Z`, and `Radius` in the same units as the .las
 #' 
 #' @examples
-#' sum(1:10)
-#' sum(1:5, 6:10)
-#' sum(F, F, F, T, T)
-#'
-#' sum(.Machine$integer.max, 1L)
-#' sum(.Machine$integer.max, 1)
-#'
+#' 
+#' 
 #' \dontrun{
-#' sum("a")
+#' # set the number of threads to use in lidR
+#' set_lidr_threads(8)
+#'
+#' # read the las
+#' LASfile <- system.file("extdata", "Pine_Example.laz", package="spanner")
+#' las = readLAS(LASfile, select = "xyz")
+#' 
+#' # plot(las, color="Z", backend="lidRviewer", trim=30)
+#' 
+#' # find tree locations and attribute data
+#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02, 
+#'                                        dens_threshold = 0.25, 
+#'                                        neigh_sizes = c(0.1, 0.1, 0.25), 
+#'                                        eigen_threshold = 0.25, 
+#'                                        grid_slice_min = 0.666, 
+#'                                        grid_slice_max = 2,
+#'                                        minimum_polygon_area = 0.01, 
+#'                                        cylinder_fit_type = "ransac", 
+#'                                        output_location = getwd(), 
+#'                                        max_dia = 1, 
+#'                                        SDvert = 0.25)
+# plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+# points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch=16, cex = myTreeLocs$Radius^2*10)
 #' }
 #' 
 #' @export
 get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254, dens_threshold = 0.2, neigh_sizes=c(0.333, 0.166, 0.5),
                                       eigen_threshold = 0.6666, grid_slice_min = 0.6666, grid_slice_max = 2.0,
                                       minimum_polygon_area = 0.025, cylinder_fit_type = "ransac", 
-                                      output_location = getwd())
+                                      output_location = getwd(), max_dia=0.5, SDvert = 0.25)
 {
 
   ##---------------------- Preprocesssing -------------------------------------
@@ -115,39 +134,38 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   message("Filtering merged polygon... (9/14)\n")
   ## sd verticality
   verticalitySD_grid <- rast(grid_metrics(slice_extra, ~sd(verticality), res = res))
-  merged$SDvert <- round(terra::extract(verticalitySD_grid, vect(merged), fun = function(x){median(x, na.rm = T)})[,2],2)
+  merged$SDvert <- round(terra::extract(verticalitySD_grid, terra::vect(as_Spatial(merged)), fun = function(x){median(x, na.rm = T)})[,2],2)
   ## some simple filtering: lower canopy
   Z01 <- rast(grid_metrics(slice_extra, res = res, ~quantile(Z, 0.01)))
-  merged$lowHGT <- round(terra::extract(Z01, vect(merged), fun = function(x){quantile(x, 0.05, na.rm = T)})[,2],2)
+  merged$lowHGT <- round(terra::extract(Z01, terra::vect(as_Spatial(merged)), fun = function(x){quantile(x, 0.05, na.rm = T)})[,2],2)
   Z99 <- rast( grid_metrics(slice_extra, res = res, ~quantile(Z, 0.99)) )
-  merged$highHGT <- round(terra::extract(Z99, vect(merged), fun = function(x){quantile(x, 0.99, na.rm = T)})[,2],2)
+  merged$highHGT <- round(terra::extract(Z99, terra::vect(as_Spatial(merged)), fun = function(x){quantile(x, 0.99, na.rm = T)})[,2],2)
   Z50 <- rast(grid_metrics(slice_extra, res = res, ~quantile(Z, 0.5)))
-  merged$medHGT <- round(terra::extract(Z50, vect(merged), fun = function(x){median(x, na.rm = T)})[,2],2)
+  merged$medHGT <- round(terra::extract(Z50, terra::vect(as_Spatial(merged)), fun = function(x){median(x, na.rm = T)})[,2],2)
   merged$diffHGT <- round(merged$highHGT - merged$lowHGT,2)
   # merged <- merged[merged$diffHGT > ((grid_slice_max - grid_slice_min) / 2), ]
-  merged$maxHGT <- round(terra::extract(rast(cancov), vect(merged), fun = max)[,2], 2)
+  merged$maxHGT <- round(terra::extract(rast(cancov), terra::vect(as_Spatial(merged)), fun = max)[,2], 2)
   
-  merged <- merged[merged$SDvert < 0.1, ]
-  merged <- merged[merged$diffHGT > (0.8), ]
+  merged <- merged[merged$SDvert < SDvert, ]
+  merged <- merged[merged$diffHGT > grid_slice_max*0.5, ]
   # ## low and high within the slice
-  merged <- merged[merged$lowHGT < (grid_slice_min+0.1), ]
-  # merged <- merged[merged$highHGT > (grid_slice_max-0.1), ]
-  # merged <- merged[merged$highHGT >= (1.6), ]
-  merged <- merged[merged$medHGT <= 1.7, ]
-  merged <- merged[(merged$maxHGT >= 1.4), ]
+  merged <- merged[merged$lowHGT < (grid_slice_min*1.25), ]
+  merged <- merged[merged$medHGT <= grid_slice_max*0.75, ]
+  merged <- merged[merged$maxHGT >= grid_slice_max, ]
   
   message("Obtaining polygon attributes...(10/14)\n")
   merged$TreeID = sample(1:nrow(merged), nrow(merged), replace=F)
+  
   # try(merged$dbh_area <- (sqrt(merged$area)/pi) * 2)
 
   message("Processing the resulting clipped slice...(11/14)\n")
-  coords <- data.frame(st_coordinates(merged))
+  coords <- data.frame(st_coordinates(na.omit(merged)))
   circles <- list()
   for(id in unique(coords$L2)){
     circles[[id]] <- data.frame(conicfit::CircleFitByLandau(coords[coords$L2 == id, c("X","Y")]))
     names(circles[[id]]) <- c("X","Y","R")
   }
-  circles <- bind_rows((circles))
+  circles <- dplyr::bind_rows((circles))
   circles_sf <- st_sf(st_buffer(st_cast(st_sfc(st_multipoint(as.matrix(circles)[,1:2])), to = "POINT"), circles$R))
   circles_sf$R <- circles$R
   circles_sf$TreeID <- sample(1:nrow(circles_sf), nrow(circles_sf), replace=F)
@@ -219,10 +237,10 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     
     cyl_fit[[t + ((length(unique(slice_clip$TreeID))) * 2)]] <- fit
   }
-  (cyl_fit <- bind_rows(cyl_fit))
-  cyl_fit <- cyl_fit[cyl_fit$radius <= 0.35, ]
+  (cyl_fit <- dplyr::bind_rows(cyl_fit))
+  cyl_fit <- cyl_fit[cyl_fit$radius <= max_dia, ]
   cyl_fit <- cyl_fit[complete.cases(cyl_fit),]
-  summary_cyl_fit <- cyl_fit %>% group_by(TreeID) %>% summarize_all(mean)
+  summary_cyl_fit <- cyl_fit %>% dplyr::group_by(TreeID) %>% dplyr::summarize_all(mean)
   
   ##---------------------- Cleaning up the Output -------------------------------------
   message("Successfully obtained the cylinder summaries... (13/14)\n")
