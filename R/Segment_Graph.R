@@ -5,23 +5,28 @@
 #' Preforms Individual tree segmentation following ecological principles for “growing” trees 
 #' based on these input locations in a graph-theory approach inspired by work of Tao and 
 #' others (2015). Point coordinates are linked together based on proximity and turned into 
-#' a graph object, using the estimated tree bole locations as origin points, connecting individual
-#' points back to those origins based on shortest paths within the graph network, and finally
+#' a connected graph object, using the estimated tree bole locations as origin points, connecting individual
+#' points back to those tree bole origins based on shortest paths within the graph network, and finally
 #' assigning those points a unique tree identification based on the bole coordinate for which 
-#' they are connected.
+#' they are connected. Input point cloud is subsampled to a lower resolution before processing to 
+#' increase processing efficiency. 
 #'
-#' @param las LAS Description to go here. 
+#' @param las LAS normalized las object.
 #' @param tree.locations data.frame A data.frame contained the following seed information: `TreeID`,
-#' `X`, `Y`, `Z`, and `Radius` in the same units as the .las
-#' @param k integer Number of nearest neighbors to be used in processing ...
-#' @param distance.threshold numeric Minimum distance (in the same units as the .las) under which 
-#' two trees are consider one 
+#' `X`, `Y`, `Z`, and `Radius` in the same units as the .las, output from the raster_eigen function.
+#' @param k integer Number of nearest neighbors to be used in processing (k >= 50 suggested)
+#' @param distance.threshold numeric Maximum distance (in the same units as the .las) under which 
+#' two points are connected in the graph object (greater than point spacing). Two points with a greater
+#' distance than this threshold are not connected in the graph for processing. 
 #' @param plot_radius numeric Radius (in the same units as the .las) used to define a region of 
 #' interest for processing
-#' @param use.metabolic.scale bool Description to go here. 
-#' @param subsample.graph numeric Description to go here. 
-#' @param return.dense bool Description to go here. 
-#' @param output_location character Description to go here. 
+#' @param use.metabolic.scale bool Use of weights in the assignment of points to a given treeID. Useful
+#' when interlocking crowns are present and trees are of different sizes. 
+#' @param subsample.graph numeric The subsampled point spacing to use during processing. Note: processing 
+#' time increases quickly with smaller point spacing with negligible returns in accuracy. 
+#' @param return.dense bool Decision to return the subsampled point cloud or assign treeIDs back to 
+#' points in the input dense point cloud. 
+#' @param output_location character Where to save processing outputs (rasters). 
 #' 
 #' @return a .las with the column treeID added.
 #' 
@@ -73,7 +78,7 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   }
   ## get rid of ground points
   message("Filtering out ground points... (step 1 of 7)\n")
-  segmented <- filter_poi(segmented, Classification != 2, Z > (1/3))
+  segmented <- lidR::filter_poi(segmented, Classification != 2, Z > (1/3))
   
   ## how many tree objects
   ntree <- nrow(tree.locations)
@@ -114,7 +119,7 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   # k = ((sqrt(point_density))/(1/3))
   
   ## in meters, the distance within which points will be connected into a network
-  k_tree <- get.knn(rbind(segmented@data[ ,c("X","Y","Z")], tree.locations[ ,c("X","Y","Z")]), k = k,  algorithm="cover_tree")
+  k_tree <- FNN::get.knn(rbind(segmented@data[ ,c("X","Y","Z")], tree.locations[ ,c("X","Y","Z")]), k = k,  algorithm="cover_tree")
   
   ##---------------------- Build the Graph OBJ  -------------------------------------
   ## matrix of from, to, weight (dist)
@@ -170,7 +175,7 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   
   ## -------------------------- add the treeID data to the las object -----------------------------------
   message("Assigning treeIDs to the las object... (6/7)\n")
-  segmented <- add_lasattribute(segmented, (treeID), name = "treeID", desc = "tree id")
+  segmented <- lidR::add_lasattribute(segmented, (treeID), name = "treeID", desc = "tree id")
   # segmented <- add_lasattribute(segmented, (as.numeric(names(treeID))), name = "name", desc = "tree name")
   
   ## based on whether the user wants the dense point cloud returned
@@ -195,7 +200,7 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
     # plot(las, color="treeID", backend="pcv")
     
     ## add the treeID values as attribute the dense point cloud
-    las <- add_lasattribute(las, (las@data$treeID), name = "treeID", desc = "tree id")
+    las <- lidR::add_lasattribute(las, (las@data$treeID), name = "treeID", desc = "tree id")
     
     return(las)
   }

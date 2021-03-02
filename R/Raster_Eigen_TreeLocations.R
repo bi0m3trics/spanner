@@ -15,19 +15,19 @@
 #' the fit of a cylinder to individual bole points. Cylinder centers and radius were used as inputs
 #' to an individual tree segmentation
 #'
-#' @param las LAS normalized las object.
-#' @param res numeric pixel width of rasterized point cloud metrics. 
-#' @param pt_spacing numeric subsample spacing for graph connections. 
-#' @param dens_threshold numeric minimum point density in raster cell to be considered as potential tree bole. 
-#' @param neigh_size numeric vector for verticality and relative density (small and large neighborhoods) calculations
-#' @param eigen_threshold numeric minimum average verticality in raster cell to be considered as potential tree bole. 
-#' @param grid_slice_min numeric lower bound of point cloud slice in normalized point cloud. 
-#' @param grid_slice_max numeric upper bound of point cloud slice in normalized point cloud. 
-#' @param minimum_polygon_area numeric smallest allowable polygon area of potential tree boles. 
-#' @param cylinder_fit_type  character "ransac" or "irls".
-#' @param output_location character where to write intermediary and output data layers. 
-#' @param max_dai numeric the max diameter (in m) of a resulting tree (use to eliminate commission errors).
-#' @param SDvert numeric the standard deviation threshold below whihc polygons will be considered as tree boles  
+#' @param las LAS Normalized las object.
+#' @param res numeric Pixel width of rasterized point cloud metrics. 
+#' @param pt_spacing numeric Subsample spacing for graph connections. 
+#' @param dens_threshold numeric Minimum point density in raster cell to be considered as potential tree bole. 
+#' @param neigh_size numeric Vector for verticality and relative density (small and large neighborhoods) calculations
+#' @param eigen_threshold numeric Minimum average verticality in raster cell to be considered as potential tree bole. 
+#' @param grid_slice_min numeric Lower bound of point cloud slice in normalized point cloud. 
+#' @param grid_slice_max numeric Upper bound of point cloud slice in normalized point cloud. 
+#' @param minimum_polygon_area numeric Smallest allowable polygon area of potential tree boles. 
+#' @param cylinder_fit_type  character Choose "ransac" or "irls" cylinder fitting.
+#' @param output_location character Where to write intermediary and output data layers. 
+#' @param max_dai numeric The max diameter (in m) of a resulting tree (use to eliminate commission errors).
+#' @param SDvert numeric The standard deviation threshold below whihc polygons will be considered as tree boles  
 #' 
 #' @return data.frame A data.frame containing the following seed information: `TreeID`,
 #' `X`, `Y`, `Z`, and `Radius` in the same units as the .las
