@@ -22,6 +22,9 @@
 #' interest for processing
 #' @param use.metabolic.scale bool Use of weights in the assignment of points to a given treeID. Useful
 #' when interlocking crowns are present and trees are of different sizes. 
+#' @param metabolic.scale.function function Supply your own function for defining segmentation weights 
+#' based on a function of estimated tree diameter (e.g. metabolic.scale.function = x/2). use.metabolic.scale
+#' must be set to TRUE. If not supplied, defaults to metabolic scale function from Tao et al., 2015.
 #' @param subsample.graph numeric The subsampled point spacing to use during processing. Note: processing 
 #' time increases quickly with smaller point spacing with negligible returns in accuracy. 
 #' @param return.dense bool Decision to return the subsampled point cloud or assign treeIDs back to 
@@ -29,6 +32,12 @@
 #' @param output_location character Where to save processing outputs (rasters). 
 #' 
 #' @return a .las with the column treeID added.
+#' 
+#' @references Tao, S., Wu, F., Guo, Q., Wang, Y., Li, W., Xue, B., ... & Fang, J. (2015). Segmenting tree 
+#' crowns from terrestrial and mobile LiDAR data by exploring ecological theories. ISPRS Journal of 
+#' Photogrammetry and Remote Sensing, 110, 66-76.
+#' 
+#'
 #' 
 #' @examples
 #' \dontrun{
@@ -66,8 +75,9 @@
 #' 
 #' @export
 segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.threshold = 0.38,
-                          use.metabolic.scale = FALSE, subsample.graph = 0.1,
-                          return.dense = FALSE, output_location = getwd()){
+                          use.metabolic.scale = FALSE, metabolic.scale.function = NULL,
+                          subsample.graph = 0.1, return.dense = FALSE, 
+                          output_location = getwd()){
 
   ## pcd
   segmented <- las
@@ -101,8 +111,14 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   ## This is the metabolic scaling factor which will get multiplied by the weights so that smaller trees
   ## don't "suck up" points from nearby larger trees met_scale <- 1 / ( tree.locations$Radius^(2/3) )
   ## it seems like the equation in the original manuscript doesn't work that well for me... this can be modified
-  met_scale <- (1 / ( tree.locations$Radius))^(3/2) ## it seems like the equation in the original manuscript doesn't
-                                                    ## work that well for me... this can be modified
+   ## it seems like the equation in the original manuscript doesn't
+  ## work that well for me... this can be modified
+  if(!null(metabolic.scale.function)){
+    f <- function(x){metabolic.scale.function}
+    met_scale <- f(tree.locations$Radius)
+  } else {
+    met_scale <- (1 / ( tree.locations$Radius))^(3/2)
+  }
   
   ##---------------------- Identify neighbors  -------------------------------------
   ## create the network by connecting lidar points within X meters
