@@ -7,9 +7,23 @@ Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@na
              person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb")))
 Description: Utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization.
 URL: https://github.com/bi0m3trcis/spanner
-Depends: R (>= 3.1.0), lidR (>= 3.1.0), terra, spatstat
-Imports: Rcpp (>= 1.0.5), lidR (>= 3.1.0), TreeLS (>= 2.0.2), sf, terra, dbscan, stringr, dplyr, conicfit, FNN, RANN, cppRouting, igraph
+Depends: R (>= 3.1.0), lidR (>= 3.1.0), TreeLS (>= 2.0.2)
+Imports: 
+    Rcpp (>= 1.0.5),
+    lidR (>= 3.1.0),
+    TreeLS (>= 2.0.2),
+    dplyr,
+    dbscan,
+    stringr,
+    conicfit,
+    FNN,
+    RANN,
+    cppRouting,
+    igraph,
+    sf,
+    terra
 LinkingTo: Rcpp, RcppArmadillo, lidR
 License: GPL-3
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Encoding: UTF-8

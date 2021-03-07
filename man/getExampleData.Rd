@@ -2,10 +2,13 @@
 % Please edit documentation in R/getExampleData.R
 \name{getExampleData}
 \alias{getExampleData}
-\title{A simple function to download some example MLS data in a ponderosa pine forest north of Flagstaff AZ}
+\title{A simple function to download some example MLS/TLS data in a ponderosa pine forest north of Flagstaff AZ}
 \usage{
-getExampleData()
+getExampleData(
+  lazName = c("PineExampleA", "DensePatchA", "DensePatchB", "SparsePatchA",
+    "SparsePatchB", "ZebcamExample")
+)
 }
 \description{
-A simple function to download some example MLS data in a ponderosa pine forest north of Flagstaff AZ
+A simple function to download some example MLS/TLS data in a ponderosa pine forest north of Flagstaff AZ
 }
