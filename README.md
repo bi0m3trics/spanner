@@ -63,12 +63,14 @@ myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05,
 
 # plot the tree information over a CHM
 plot(lidR::grid_canopy(las, res = 0.2, p2r()))
-points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch=16, cex = myTreeLocs$Radius^2*10, asp=1)
+points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch=16, 
+       cex = myTreeLocs$Radius^2*10, asp=1)
 
 # segment the point cloud 
 myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50, 
                              distance.threshold = 0.5,
-                             use.metabolic.scale = FALSE, subsample.graph = 0.1, 
+                             use.metabolic.scale = FALSE, 
+                             subsample.graph = 0.1, 
                              return.dense = FALSE,
                              output_location = getwd())
 
