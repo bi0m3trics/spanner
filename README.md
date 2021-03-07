@@ -18,7 +18,7 @@ devtools::install_github("bi0m3trics/spanner")
 
 # Example usage
 
-<img align="right" src="https://github.com/bi0m3trics/spanner/tree/master/img/graph.gif">
+<img align="right" src="https://github.com/bi0m3trics/spanner/blob/master/img/graph.gif">
 
 Example of full processing pipeline from downloading an example dataset, preprocesing it using lidR's functionality, identifying tree attributes, and visualizing a fully-segmented point cloud.
 
