@@ -17,7 +17,10 @@ devtools::install_github("bi0m3trics/spanner")
 
 # Example usage
 
-Example of full processing pipeline from downloading an example dataset, preprocesing it using lidR's functionality, identifying tree attributes, and visualizing a fully-segmented point cloud.
+<img align="right" src="./img/graph.gif">
+
+The following is a full processing pipeline example from downloading an example dataset, preprocesing it using lidR's functionality, estimating tree locations and DBH by rasterizing individual point cloud values of relative neighborhood density (at 0.3 and 1 m radius) and verticality within a slice of the normalized point cloud around breast height to 
+(1.34 m), to individual tree segmentation following ecological principles for “growing” trees based on input locations in a graph-theory approach inspired by work of Tao and others (2015).<br/><br/>
 
 ```r
 library(spanner)
@@ -30,11 +33,13 @@ getExampleData("PineExampleA")
 LASfile = system.file("extdata", "PineExampleA.laz", package="spanner")
 las = readLAS(LASfile, select = "xyzc", "-filter_with_voxel 0.01")
 
-# pre-process the example lidar dataset by classifying the ground points using lidR::csf(), normalizing 
-# it, and removing outlier points using lidR::ivf()
-las <- classify_ground(las, csf(sloop_smooth = FALSE, class_threshold = 0.5,
-                            cloth_resolution = 0.5, rigidness = 1L, 
-                            iterations = 500L, time_step = 0.65))
+# pre-process the example lidar dataset by classifying the ground points
+# using lidR::csf(), normalizing it, and removing outlier points 
+# using lidR::ivf()
+las <- classify_ground(las, csf(sloop_smooth = FALSE, 
+                                class_threshold = 0.5,
+                                cloth_resolution = 0.5, rigidness = 1L, 
+                                iterations = 500L, time_step = 0.65))
 las <- normalize_height(las, tin())
 las <- classify_noise(las, ivf(0.25, 3))
 las <- filter_poi(las, Classification != LASNOISE)
@@ -70,4 +75,3 @@ myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
 # plot it in 3d colored by treeID
 plot(myTreeGraph, color="treeID")
 ```
-<img align="center" src="https://github.com/bi0m3trics/spanner/blob/master/img/graph.gif">
