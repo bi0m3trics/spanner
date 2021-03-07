@@ -17,8 +17,6 @@ devtools::install_github("bi0m3trics/spanner")
 
 # Example usage
 
-<img align="right" src="https://github.com/bi0m3trics/spanner/blob/master/img/graph.gif">
-
 Example of full processing pipeline from downloading an example dataset, preprocesing it using lidR's functionality, identifying tree attributes, and visualizing a fully-segmented point cloud.
 
 ```r
@@ -72,3 +70,4 @@ myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
 # plot it in 3d colored by treeID
 plot(myTreeGraph, color="treeID")
 ```
+<img align="center" src="https://github.com/bi0m3trics/spanner/blob/master/img/graph.gif">
