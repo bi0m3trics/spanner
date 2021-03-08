@@ -9,7 +9,8 @@
 #' points back to those tree bole origins based on shortest paths within the graph network, and finally
 #' assigning those points a unique tree identification based on the bole coordinate for which 
 #' they are connected. Input point cloud is subsampled to a lower resolution before processing to 
-#' increase processing efficiency. 
+#' increase processing efficiency. However, graph objects can still get large quite rapidly. Take
+#' this into consideration when choosing the extent of the input las object.
 #'
 #' @param las LAS normalized las object.
 #' @param tree.locations data.frame A data.frame contained the following seed information: `TreeID`,

@@ -74,7 +74,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   {
     stop("Output directory does not exist!")
   }
-  if (!file.access(output_location)) 
+  if (!(file.access(output_location, mode = 0) == 0)) 
   {
     stop("Output directory not writeable!")
   }
