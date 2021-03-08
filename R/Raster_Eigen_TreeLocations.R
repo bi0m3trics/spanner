@@ -74,6 +74,10 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   {
     stop("Output directory does not exist!")
   }
+  if (!file.access(output_location)) 
+  {
+    stop("Output directory not writeable!")
+  }
   ##---------------------- Preprocesssing -------------------------------------
   ## Subsample using systematic voxel grid to 1in 
   message("Downsampling the scan... (step 1 of 14)\n")
