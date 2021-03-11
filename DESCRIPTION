@@ -7,11 +7,11 @@ Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@na
              person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb")))
 Description: Utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization.
 URL: https://github.com/bi0m3trcis/spanner
-Depends: R (>= 3.1.0), lidR (>= 3.1.0), TreeLS (>= 2.0.2)
+Depends: R (>= 3.1.0), lidR (>= 3.1.0), TreeLS (>= 2.0.4)
 Imports: 
     Rcpp (>= 1.0.5),
     lidR (>= 3.1.0),
-    TreeLS (>= 2.0.2),
+    TreeLS (>= 2.0.4),
     dplyr,
     dbscan,
     stringr,
