@@ -167,7 +167,7 @@ get_stars_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254,
   
   Z99 <- grid_metrics(slice_extra, res = res, ~quantile(Z, 0.99))
   merged$highHGT <- raster::extract(Z99, merged, 
-                                    median, na.rm = T ))
+                                    median, na.rm = T )
   
   Z50 <- grid_metrics(slice_extra, res = res, ~quantile(Z, 0.5))
   merged$medHGT <- raster::extract(Z50, merged, 
