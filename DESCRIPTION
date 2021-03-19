@@ -22,7 +22,8 @@ Imports:
     igraph,
     sf,
     terra,
-    sfheaders
+    sfheaders,
+    Rfast
 LinkingTo: Rcpp, RcppArmadillo, lidR
 License: GPL-3
 Roxygen: list(markdown = TRUE)
