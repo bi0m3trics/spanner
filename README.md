@@ -33,6 +33,8 @@ set_lidr_threads(8)
 getExampleData("DensePatchA")
 LASfile = system.file("extdata", "DensePatchA.laz", package="spanner")
 las = readTLSLAS(LASfile, select = "xyzc", "-filter_with_voxel 0.01")
+# Don't forget to make sure the las object has a projection
+# projection(las) <- sp::CRS("+init=epsg:26912")
 
 # pre-process the example lidar dataset by classifying the ground points
 # using lidR::csf(), normalizing it, and removing outlier points 
