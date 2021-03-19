@@ -32,7 +32,7 @@ set_lidr_threads(8)
 # download and read an example laz
 getExampleData("DensePatchA")
 LASfile = system.file("extdata", "DensePatchA.laz", package="spanner")
-las = readLAS(LASfile, select = "xyzc", "-filter_with_voxel 0.01")
+las = readTLSLAS(LASfile, select = "xyzc", "-filter_with_voxel 0.01")
 
 # pre-process the example lidar dataset by classifying the ground points
 # using lidR::csf(), normalizing it, and removing outlier points 
