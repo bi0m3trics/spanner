@@ -9,9 +9,10 @@ Definition of spanner
 
 # Install `spanner`
 
-* Get the latest released version from github
+* Get the latest released version od spanner from github. Also, spanner requires TreeLS, which isn't currently on CRAN, so you'll need to get that first...
 
 ```r
+remotes::install_github('tiagodc/TreeLS')
 remotes::install_github('bi0m3trics/spanner')
 ```
 
