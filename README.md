@@ -12,7 +12,7 @@ Definition of spanner
 * Get the latest released version from github
 
 ```r
-devtools::install_github("bi0m3trics/spanner")
+remotes::install_github('bi0m3trics/spanner')
 ```
 
 # Example usage
