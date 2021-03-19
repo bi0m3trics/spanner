@@ -29,8 +29,8 @@ library(spanner)
 set_lidr_threads(8)
 
 # download and read an example laz
-getExampleData("PineExampleA")
-LASfile = system.file("extdata", "PineExampleA.laz", package="spanner")
+getExampleData("DensePatchA")
+LASfile = system.file("extdata", "DensePatchA.laz", package="spanner")
 las = readLAS(LASfile, select = "xyzc", "-filter_with_voxel 0.01")
 
 # pre-process the example lidar dataset by classifying the ground points
