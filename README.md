@@ -44,7 +44,7 @@ las <- normalize_height(las, tin())
 las <- classify_noise(las, ivf(0.25, 3))
 las <- filter_poi(las, Classification != LASNOISE)
 
-# plot the non-gorund points, colored by height
+# plot the non-ground points, colored by height
 plot(filter_poi(las, Classification!=2), color="Z", trim=30)
 
 # find individual tree locations and attribute data

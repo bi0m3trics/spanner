@@ -55,7 +55,7 @@
 #' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02, 
 #'                                        dens_threshold = 0.25, 
 #'                                        neigh_sizes=c(0.333, 0.166, 0.5), 
-#'                                        eigen_threshold = 0.25, 
+#'                                        eigen_threshold = 0.5, 
 #'                                        grid_slice_min = 0.666, 
 #'                                        grid_slice_max = 2,
 #'                                        minimum_polygon_area = 0.01, 
@@ -79,19 +79,14 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
                           use.metabolic.scale = FALSE, metabolic.scale.function = NULL,
                           subsample.graph = 0.1, return.dense = FALSE, 
                           output_location = getwd()){
-
-  ## Validate output directory
-  if (!dir.exists(output_location)) 
-  {
-    stop("Output directory does not exist!")
-  }
+  
   ## if subsampling, do that now
   if(!is.null(subsample.graph)){
-    las <- TreeLS::tlsSample(las, TreeLS::smp.voxelize(spacing = subsample.graph))
-  }
+    working_las <- TreeLS::tlsSample(las, TreeLS::smp.voxelize(spacing = subsample.graph))
+  } 
   ## get rid of ground points
   message("Filtering out ground points... (step 1 of 7)\n")
-  las <- lidR::filter_poi(las, Classification != 2, Z > (1/3))
+  working_las <- lidR::filter_poi(working_las, Classification != 2, Z > (1/3))
   
   ## how many tree objects
   ntree <- nrow(tree.locations)
@@ -114,12 +109,12 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   ## This is the metabolic scaling factor which will get multiplied by the weights so that smaller trees
   ## don't "suck up" points from nearby larger trees met_scale <- 1 / ( tree.locations$Radius^(2/3) )
   ## it seems like the equation in the original manuscript doesn't work that well for me... this can be modified
-   ## it seems like the equation in the original manuscript doesn't
+  ## it seems like the equation in the original manuscript doesn't
   ## work that well for me... this can be modified
   if(use.metabolic.scale == TRUE) {
     if(!null(metabolic.scale.function)){
-    eval(parse(text = paste('f <- function(x) { return(' , metabolic.scale.function , ')}', sep='')))
-    met_scale <- f(tree.locations$Radius)
+      eval(parse(text = paste('f <- function(x) { return(' , metabolic.scale.function , ')}', sep='')))
+      met_scale <- f(tree.locations$Radius)
     } else {
       met_scale <- (1 / ( tree.locations$Radius))^(3/2)
     }
@@ -128,10 +123,10 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   ## create the network by connecting lidar points within X meters
   ## and add in the points for the tree centers to make connections
   message("Identifing neighbors... (2/7)\n")
-  point_density <- density(las)
+  point_density <- density(working_las)
   
   # point_dist_threshold <- round((1/sqrt(point_density))*k, 1) ## in meters, the distance within which points
-                                                                ## will be connected into a network
+  ## will be connected into a network
   # point_dist_threshold <- (1/3)
   # point_dist_threshold <- 0.42
   
@@ -139,7 +134,7 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   # k = ((sqrt(point_density))/(1/3))
   
   ## in meters, the distance within which points will be connected into a network
-  k_tree <- FNN::get.knn(rbind(las@data[ ,c("X","Y","Z")], tree.locations[ ,c("X","Y","Z")]), k = k,  algorithm="cover_tree")
+  k_tree <- FNN::get.knn(rbind(working_las@data[ ,c("X","Y","Z")], tree.locations[ ,c("X","Y","Z")]), k = k,  algorithm="cover_tree")
   
   ##---------------------- Build the Graph OBJ  -------------------------------------
   ## matrix of from, to, weight (dist)
@@ -158,14 +153,14 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
                                      directed = FALSE) ## a new package
   
   ## ---- IDs for the origin tree locations ----
-  treeloc_ids <- (nrow(las@data)+1):(nrow(k_tree$nn.index))
+  treeloc_ids <- (nrow(working_las@data)+1):(nrow(k_tree$nn.index))
   treeloc_ids <- treeloc_ids[treeloc_ids %in% c(weight_matrix[,1],weight_matrix[,2])]
   
   ## ---- IDs for the origin tree locations ----
   remaining_ids <- unique(c(weight_matrix[,1],weight_matrix[,2])[!(c(weight_matrix[,1],weight_matrix[,2]) %in% treeloc_ids)])
   
   ## ---- IDs not used in graph ----
-  unused_ids <- (1:(nrow(las@data)))[!(1:(nrow(las@data)) %in% c(weight_matrix[,1],weight_matrix[,2]))]
+  unused_ids <- (1:(nrow(working_las@data)))[!(1:(nrow(working_las@data)) %in% c(weight_matrix[,1],weight_matrix[,2]))]
   
   ##-------------- Calculate the shortest paths from all tree origins  -----------------------------
   message("Calculating the shortest path from tree... (4/7)\n")
@@ -195,21 +190,21 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   
   ## -------------------------- add the treeID data to the las object -----------------------------------
   message("Assigning treeIDs to the las object... (6/7)\n")
-  las <- lidR::add_lasattribute(las, (treeID), name = "treeID", desc = "tree id")
+  working_las <- lidR::add_lasattribute(working_las, (treeID), name = "treeID", desc = "tree id")
   
   ## based on whether the user wants the dense point cloud returned
   if(return.dense == FALSE){
     
-    return(las)
+    return(working_las)
     
   } else {
     ## get the indices of nearest sparse points
     message("Processing dense cloud... (6b/7)\n")
-    s2d_lookup <- RANN::nn2(data=data.frame(X=las@data$X,Y=las@data$Y,Z=las@data$Z),
+    s2d_lookup <- RANN::nn2(data=data.frame(X=working_las@data$X,Y=working_las@data$Y,Z=working_las@data$Z),
                             query=data.frame(X=las@data$X,Y=las@data$Y,Z=las@data$Z),
                             k=1)
     ## grab the treeID of the sparse point
-    las@data$treeID<-las@data$treeID[s2d_lookup[[1]]]
+    las@data$treeID<-working_las@data$treeID[s2d_lookup[[1]]]
     las@data$nnd<-s2d_lookup[[2]]
     
     ## assign the point if within subsampled sparse point density, otherwise 0

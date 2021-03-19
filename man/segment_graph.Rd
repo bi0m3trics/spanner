@@ -60,14 +60,15 @@ a connected graph object, using the estimated tree bole locations as origin poin
 points back to those tree bole origins based on shortest paths within the graph network, and finally
 assigning those points a unique tree identification based on the bole coordinate for which
 they are connected. Input point cloud is subsampled to a lower resolution before processing to
-increase processing efficiency.
+increase processing efficiency. However, graph objects can still get large quite rapidly. Take
+this into consideration when choosing the extent of the input las object.
 }
 \examples{
 \dontrun{
 # set the number of threads to use in lidR
 set_lidr_threads(8)
 
-# read the laz
+# read the las (which must be downloaded with getExampleData())
 LASfile <- system.file("extdata", "Pine_Example.laz", package="spanner")
 las = readLAS(LASfile, select = "xyzc")
 
@@ -77,12 +78,12 @@ las = readLAS(LASfile, select = "xyzc")
 myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02, 
                                        dens_threshold = 0.25, 
                                        neigh_sizes=c(0.333, 0.166, 0.5), 
-                                       eigen_threshold = 0.25, 
+                                       eigen_threshold = 0.5, 
                                        grid_slice_min = 0.666, 
                                        grid_slice_max = 2,
                                        minimum_polygon_area = 0.01, 
                                       cylinder_fit_type = "ransac", 
-                                       output_location = "E:/GithubRepos/", 
+                                       output_location = getwd(), 
                                        max_dia = 0.5, 
                                        SDvert = 0.25)
 

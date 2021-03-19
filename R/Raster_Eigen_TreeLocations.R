@@ -49,7 +49,7 @@
 #' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.0254, 
 #'                                        dens_threshold = 0.25, 
 #'                                        neigh_sizes = c(0.333, 0.166, 0.5), 
-#'                                        eigen_threshold = 0.25, 
+#'                                        eigen_threshold = 0.5, 
 #'                                        grid_slice_min = 0.666, 
 #'                                        grid_slice_max = 2,
 #'                                        minimum_polygon_area = 0.01, 
@@ -111,7 +111,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   filename = paste0(output_location, paste0("temp_RelDens_",grid_slice_min,"-",grid_slice_max,"_",
                                                                  dens_threshold,"threshold_res-",res,".shp"))
   
-  density_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~median(relative_density, na.rm = T), res = res))
+  density_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~median(relative_density, na.rm = T), res = res, 
+                                                 start = c(min(slice_extra@data$X), min(slice_extra@data$Y))))
   density_polygon <- terra::as.polygons(terra::classify(density_grid, rbind(c(0,dens_threshold,0),
                                                               c(dens_threshold,1,1))), dissolve = T)
   terra::writeVector(terra::disaggregate(density_polygon[density_polygon$V1 > 0,]), filename = filename)

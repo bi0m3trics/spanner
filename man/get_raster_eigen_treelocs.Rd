@@ -75,7 +75,7 @@ to an individual tree segmentation
 # set the number of threads to use in lidR
 set_lidr_threads(8)
 
-# read the las
+# read the las (which must be downloaded with getExampleData())
 LASfile <- system.file("extdata", "Pine_Example.laz", package="spanner")
 las = readLAS(LASfile, select = "xyzc")
 
@@ -85,7 +85,7 @@ las = readLAS(LASfile, select = "xyzc")
 myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.0254, 
                                        dens_threshold = 0.25, 
                                        neigh_sizes = c(0.333, 0.166, 0.5), 
-                                       eigen_threshold = 0.25, 
+                                       eigen_threshold = 0.5, 
                                        grid_slice_min = 0.666, 
                                        grid_slice_max = 2,
                                        minimum_polygon_area = 0.01, 
