@@ -23,7 +23,8 @@ Imports:
     sf,
     terra,
     sfheaders,
-    Rfast
+    Rfast,
+    lwgeom 
 LinkingTo: Rcpp, RcppArmadillo, lidR
 License: GPL-3
 Roxygen: list(markdown = TRUE)
