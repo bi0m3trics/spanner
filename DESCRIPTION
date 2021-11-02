@@ -24,9 +24,11 @@ Imports:
     terra,
     sfheaders,
     Rfast,
-    lwgeom 
+    lwgeom,
+    mathjaxr
 LinkingTo: Rcpp, RcppArmadillo, lidR
 License: GPL-3
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
+RdMacros: mathjaxr
 Encoding: UTF-8

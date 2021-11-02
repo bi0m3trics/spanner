@@ -88,8 +88,9 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   slice_extra <- lidR::filter_poi(las, Z >= grid_slice_min, Z <= grid_slice_max)
   
   message("Calculating verticality... (3/14)\n")
-  vert_temp <- spanner::C_vert_in_sphere(slice_extra, radius = neigh_sizes[1], ncpu = lidR::get_lidr_threads())
-  slice_extra <- lidR::add_lasattribute(slice_extra, as.numeric(vert_temp), 
+  vert_temp <- spanner::eigen_metrics(slice_extra, radius=neigh_sizes[1], ncpu=lidR::get_lidr_threads())
+  # vert_temp <- spanner::C_vert_in_sphere(slice_extra, radius = neigh_sizes[1], ncpu = lidR::get_lidr_threads())
+  slice_extra <- lidR::add_lasattribute(slice_extra, as.numeric(vert_temp$Verticality), 
                                         name = "verticality", desc = "verticality")
   slice_extra@data$verticality[is.na(slice_extra@data$verticality)] <- 0.5
   
@@ -115,7 +116,9 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                                  start = c(min(slice_extra@data$X), min(slice_extra@data$Y))))
   density_polygon <- terra::as.polygons(terra::classify(density_grid, rbind(c(0,dens_threshold,0),
                                                               c(dens_threshold,1,1))), dissolve = T)
-  terra::writeVector(terra::disaggregate(density_polygon[density_polygon$V1 > 0,]), filename = filename)
+  terra::writeVector(terra::disagg(density_polygon[density_polygon$V1 > 0,]), filename = filename, overwrite=TRUE)
+  
+  sf::sf_use_s2(FALSE) ## Turn off the s2 processing
   
   density_polygon <- sf::read_sf(filename)
   density_polygon$area = as.numeric(sf::st_area(density_polygon))
@@ -130,7 +133,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   verticality_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~quantile(verticality, 0.5, na.rm = T), res = res))
   verticality_polygon <- terra::as.polygons(terra::classify(verticality_grid, rbind(c(0,eigen_threshold,0),
                                                                       c(eigen_threshold,1,1))), dissolve = T)
-  terra::writeVector(terra::disaggregate(verticality_polygon[verticality_polygon$V1 > 0,]), filename = filename)
+  terra::writeVector(terra::disagg(verticality_polygon[verticality_polygon$V1 > 0,]), filename = filename, overwrite=TRUE)
   
   verticality_polygon <- sf::read_sf(filename)
   verticality_polygon$area = as.numeric(sf::st_area(verticality_polygon))

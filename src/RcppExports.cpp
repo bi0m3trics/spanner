@@ -6,16 +6,21 @@
 
 using namespace Rcpp;
 
-// C_vert_in_sphere
-NumericVector C_vert_in_sphere(S4 las, double radius, int ncpu);
-RcppExport SEXP _spanner_C_vert_in_sphere(SEXP lasSEXP, SEXP radiusSEXP, SEXP ncpuSEXP) {
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
+// C_eigen_in_sphere
+List C_eigen_in_sphere(S4 las, double radius, int ncpu);
+RcppExport SEXP _spanner_C_eigen_in_sphere(SEXP lasSEXP, SEXP radiusSEXP, SEXP ncpuSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< S4 >::type las(lasSEXP);
     Rcpp::traits::input_parameter< double >::type radius(radiusSEXP);
     Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
-    rcpp_result_gen = Rcpp::wrap(C_vert_in_sphere(las, radius, ncpu));
+    rcpp_result_gen = Rcpp::wrap(C_eigen_in_sphere(las, radius, ncpu));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -50,7 +55,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_spanner_C_vert_in_sphere", (DL_FUNC) &_spanner_C_vert_in_sphere, 3},
+    {"_spanner_C_eigen_in_sphere", (DL_FUNC) &_spanner_C_eigen_in_sphere, 3},
     {"_spanner_C_count_in_disc", (DL_FUNC) &_spanner_C_count_in_disc, 6},
     {"_spanner_C_count_in_sphere", (DL_FUNC) &_spanner_C_count_in_sphere, 3},
     {NULL, NULL, 0}
