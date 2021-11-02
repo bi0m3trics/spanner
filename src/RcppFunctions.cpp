@@ -81,7 +81,7 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
       double eigen_medium   = latent[1];
       double eigen_smallest = latent[2];
       double eigensum       = latent[0] + latent[1] + latent[2];
-      double curvature      = latent[3]/(latent[0] + latent[1] + latent[2]);
+      double curvature      = eigen_smallest/eigensum;
       double omnivariance   = pow((latent[0] * latent[1] * latent[2]), (1.0/3.0));
       double anisotropy     = (latent[0] - latent[2]) / latent[0];
       double eigentropy     = -((latent[0] * log(latent[0])) + (latent[1] * log(latent[1])) + (latent[2] * log(latent[2])));
