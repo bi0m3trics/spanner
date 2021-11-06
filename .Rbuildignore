@@ -1,2 +1,3 @@
-^.*\.Rproj$
+^spanner\.Rproj$
 ^\.Rproj\.user$
+^LICENSE\.md$

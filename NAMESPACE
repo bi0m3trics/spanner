@@ -1,5 +1,7 @@
 useDynLib(spanner, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
-exportPattern("^[[:alpha:]]+")
-import(Rcpp)
-import(lidR)
+
+export(eigen_metrics)
+export(getExampleData)
+export(get_raster_eigen_treelocs)
+export(segment_graph)
