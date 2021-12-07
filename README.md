@@ -33,7 +33,7 @@ set_lidr_threads(8)
 # download and read an example laz
 getExampleData("DensePatchA")
 LASfile = system.file("extdata", "DensePatchA.laz", package="spanner")
-las = readTLSLAS(LASfile, select = "xyzc", "-filter_with_voxel 0.01")
+las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 # Don't forget to make sure the las object has a projection
 # projection(las) = sp::CRS("+init=epsg:26912")
 
