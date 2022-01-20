@@ -168,10 +168,10 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                         fun = max)[,2], 2)
 
   merged <- merged[merged$SDvert < SDvert, ]
-  merged <- merged[merged$diffHGT > grid_slice_max*0.5, ]
+  merged <- merged[merged$diffHGT > (grid_slice_max-grid_slice_min)*0.5, ]
   # ## low and high within the slice
   merged <- merged[merged$lowHGT < (grid_slice_min*1.25), ]
-  merged <- merged[merged$medHGT <= grid_slice_max*0.75, ]
+  #merged <- merged[merged$medHGT <= grid_slice_max*0.75, ]
   merged <- merged[merged$maxHGT >= grid_slice_max, ]
 
   message("Obtaining polygon attributes...(10/14)\n")
