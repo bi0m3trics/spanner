@@ -81,7 +81,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   ##---------------------- Preprocesssing -------------------------------------
   ## Subsample using systematic voxel grid to 1in
   message("Downsampling the scan... (step 1 of 14)\n")
-  las <- TreeLS::tlsSample(las, TreeLS::smp.voxelize(pt_spacing))
+  las <- lidR::decimate_points(las, random_per_voxel(res = pt_spacing, n = 1))
 
   ## Create the processing slice based on user's grid slice min/max
   message("Creating processing slice... (2/14)\n")
@@ -213,7 +213,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       print("You will need to choose either 'ransac' or 'irls' cylinder fitting method...")
       stop()
     }
-    fit <- TreeLS:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t]),
+    fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t]),
                                 method = cylinder_fit_type, n = n_pts, inliers = 0.9,
                                 conf = 0.99, max_angle = 20, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
@@ -234,7 +234,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       print("You will need to choose either 'ransac' or 'irls' cylinder fitting method...")
       stop()
     }
-    fit <- TreeLS:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
+    fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
                                            Z >= min, Z <= max),
                                 method = cylinder_fit_type, n = n_pts, inliers = 0.9,
                                 conf = 0.99, max_angle = 20, n_best = n_best)
@@ -256,7 +256,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       print("You will need to choose either 'ransac' or 'irls' cylinder fitting method...")
       stop()
     }
-    fit <- TreeLS:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
+    fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
                                            Z >= min, Z <= max),
                                 method = cylinder_fit_type, n = n_pts, inliers = 0.9,
                                 conf = 0.99, max_angle = 20, n_best = n_best)
