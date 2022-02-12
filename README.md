@@ -21,7 +21,7 @@ remotes::install_github('bi0m3trics/spanner')
 <img align="right" height="175" src="./img/graph.gif">
 
 The following is the full processing pipeline described in <a href="https://doi.org/10.3390/rs13122297">Donager et al. (2021)</a>, and provides an example from downloading an example dataset, preprocesing it using lidR's functionality, estimating tree locations and DBH by rasterizing individual point cloud values of relative neighborhood density (at 0.3 and 1 m radius) and verticality within a slice of the normalized point cloud around breast height to 
-(1.37 m), to individual tree segmentation following ecological principles for “growing” trees based on input locations in a graph-theory approach inspired by work of Tao and others (2015).<br/><br/>
+(1.37 m), to individual tree segmentation following ecological principles for “growing” trees based on input locations in a graph-theory approach. Relies heavily on work of <a href = "https://www.sciencedirect.com/science/article/pii/S0034425720304314">Roussel et al (2020)</a>, <a href="https://www.sciencedirect.com/science/article/abs/pii/S0924271615002373?via%3Dihub">Tao and others (2015)</a>, and <a href="https://www.sciencedirect.com/science/article/abs/pii/S0168169917301114?via%3Dihub">de Conto et al. (2017)</a>.<br/><br/>
 
 Citation: Donager, Jonathon J., Andrew J. Sánchez Meador, and Ryan C. Blackburn 2021. Adjudicating Perspectives on Forest Structure: How Do Airborne, Terrestrial, and Mobile Lidar-Derived Estimates Compare? Remote Sensing 13, no. 12: 2297. https://doi.org/10.3390/rs13122297
 
