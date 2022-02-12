@@ -389,7 +389,7 @@ vector<vector<vector<double> > > treeEigenHough(vector<vector<double> >& cppEige
     if(!getSpace){
       vals.push_back( treeCloud.ids2double(id) );
     };
-    
+
     vals.push_back({ (double)id });
     results.push_back(vals);
   }
@@ -473,7 +473,7 @@ vector<vector<double> > ransacStemCylinder(vector<vector<double> >& cloud, vecto
     double rdiff = abs(temp[4] - hrad);
     if(rdiff > tolerance){
       temp[0] = 0;
-      temp[1] = PI/2;
+      temp[1] = M_PI/2;
       temp[2] = 0;
       temp[3] = 0;
       temp[4] = hrad;
@@ -504,7 +504,7 @@ vector<vector<double> > irlsStemCylinder(vector<vector<double> >& cloud, vector<
   }
 
   vector< vector<double> > estimates;
-  vector<double> initPars = {0, PI/2, 0, 0, 0};
+  vector<double> initPars = {0, M_PI/2, 0, 0, 0};
 
   for(unsigned int i = 0; i < stemSlices.size(); ++i){
 
@@ -525,7 +525,7 @@ vector<vector<double> > irlsStemCylinder(vector<vector<double> >& cloud, vector<
     double rdiff = abs(temp[4] - hrad);
     if(rdiff > tolerance){
       temp[0] = 0;
-      temp[1] = PI/2;
+      temp[1] = M_PI/2;
       temp[2] = 0;
       temp[3] = 0;
       temp[4] = hrad;
@@ -817,7 +817,7 @@ vector<vector<vector<double> > > plotEigenHough(vector<vector<double> >& cppEige
   IndexedCloudParts plotCloud(cppEigenCloud, pointId, treeId, segId);
   cppEigenCloud.clear();
   cppEigenCloud.shrink_to_fit();
-  
+
   vector<vector<vector<double> > > plotResults;
 
   for(auto& tree : plotCloud.parts){
