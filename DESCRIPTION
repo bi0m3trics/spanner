@@ -15,10 +15,12 @@ RdMacros: mathjaxr
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-LinkingTo: 
+LinkingTo:
+    lidR,
     RcppArmadillo,
     Rcpp,
-    lidR
+    RcppEigen,
+    BH
 Imports: 
     lidR,
     Rcpp,
@@ -39,4 +41,5 @@ Imports:
     mathjaxr
 Depends: 
     magrittr,
-    lidR
+    lidR,
+    data.table
