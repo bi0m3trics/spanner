@@ -184,7 +184,8 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   ## give the values the proper point ID name
   names(treeID) <- c(colnames(shortpath), unused_ids)
   ## now get the treeID values back in order to attach to the las object
-  treeID <- treeID[order(as.numeric(names(treeID)))]
+  #treeID <- treeID[order(as.numeric(names(treeID)))]
+  treeID <- treeID[as.numeric(names(treeID))] # assign treeIDs in same order as tree.locations
   ## change the "extra" treeID to 0
   treeID[treeID > ntree] <- 0
 
