@@ -1,9 +1,10 @@
 # spanner 1.0.1
 
-* Dependencies for rasternow replaced by terra and sp replaced with sf.
-* Consumed the ransac cylinderfitting code fomr TreeLS and removed it as a depends/import. This code had to be modified slight to bring it in line with updtaed in R for 4.1.2.
-* Updated Raster_Eigen_TreeLocations to better handle tree cover when smaller slices are needed.
+* Dependencies for raster now replaced by terra and calls to sp replaced with sf (in spanner only).
+* Consumed the ransac cylinder fitting code from TreeLS and removed it as a depends/import. This code had to be modified slightly to bring it in line with R for 4.1.2.
+* Updated get_raster_eigen_treelocs to better handle tree cover when smaller slices are needed.
 * Updated the readme file to include all relevant literature.
+* Fixed a bug resulting in treeID's from segment_graph not matching those created in get_raster_eigen_treelocs
 
 # spanner 1.0.0
 
