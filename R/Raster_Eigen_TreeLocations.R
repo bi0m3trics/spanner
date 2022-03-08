@@ -112,13 +112,13 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   filename = paste0(output_location, paste0("temp_RelDens_",grid_slice_min,"-",grid_slice_max,"_",
                                                                  dens_threshold,"threshold_res-",res,".shp"))
 
-  density_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~median(relative_density, na.rm = T), res = res,
+  density_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~stats::median(relative_density, na.rm = T), res = res,
                                                  start = c(min(slice_extra@data$X), min(slice_extra@data$Y))))
   density_polygon <- terra::as.polygons(terra::classify(density_grid, rbind(c(0,dens_threshold,0),
                                                               c(dens_threshold,1,1))), dissolve = T)
   terra::writeVector(terra::disagg(density_polygon[density_polygon$V1 > 0,]), filename = filename, overwrite=TRUE)
 
-  sf::sf_use_s2(FALSE) ## Turn off the s2 processing
+  suppressMessages(sf::sf_use_s2(FALSE)) ## Turn off the s2 processing
 
   density_polygon <- sf::read_sf(filename)
   density_polygon$area = as.numeric(sf::st_area(density_polygon))
@@ -130,7 +130,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   filename = paste0(output_location, paste0("temp_vertical_",grid_slice_min,"-",grid_slice_max,"_",
                                                                  eigen_threshold,"threshold_res-",res,".shp"))
 
-  verticality_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~quantile(verticality, 0.5, na.rm = T), res = res))
+  verticality_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~stats::quantile(verticality, 0.5, na.rm = T), res = res))
   verticality_polygon <- terra::as.polygons(terra::classify(verticality_grid, rbind(c(0,eigen_threshold,0),
                                                                       c(eigen_threshold,1,1))), dissolve = T)
   terra::writeVector(terra::disagg(verticality_polygon[verticality_polygon$V1 > 0,]), filename = filename, overwrite=TRUE)
@@ -145,23 +145,24 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   merged <- sf::st_intersection(verticality_polygon,
                             density_polygon)
   merged$area <- as.numeric(sf::st_area(merged))
+  sf::st_crs(merged) = lidR::crs(las)
   merged <- merged[merged$area > minimum_polygon_area,]
 
   message("Filtering merged polygon... (9/14)\n")
   ## sd verticality
-  verticalitySD_grid <- terra::rast(grid_metrics(slice_extra, ~sd(verticality), res = res))
+  verticalitySD_grid <- terra::rast(grid_metrics(slice_extra, ~stats::sd(verticality), res = res))
   merged$SDvert <- round(terra::extract(verticalitySD_grid, terra::vect(sf::as_Spatial(merged)),
-                                        fun = function(x){median(x, na.rm = T)})[,2],2)
+                                        fun = function(x){stats::median(x, na.rm = T)})[,2],2)
   ## some simple filtering: lower canopy
-  Z01 <- terra::rast(grid_metrics(slice_extra, res = res, ~quantile(Z, 0.01)))
+  Z01 <- terra::rast(grid_metrics(slice_extra, res = res, ~stats::quantile(Z, 0.01)))
   merged$lowHGT <- round(terra::extract(Z01, terra::vect(sf::as_Spatial(merged)),
-                                        fun = function(x){quantile(x, 0.05, na.rm = T)})[,2],2)
-  Z99 <- terra::rast( grid_metrics(slice_extra, res = res, ~quantile(Z, 0.99)) )
+                                        fun = function(x){stats::quantile(x, 0.05, na.rm = T)})[,2],2)
+  Z99 <- terra::rast( grid_metrics(slice_extra, res = res, ~stats::quantile(Z, 0.99)) )
   merged$highHGT <- round(terra::extract(Z99, terra::vect(sf::as_Spatial(merged)),
-                                         fun = function(x){quantile(x, 0.99, na.rm = T)})[,2],2)
-  Z50 <- terra::rast(grid_metrics(slice_extra, res = res, ~quantile(Z, 0.5)))
+                                         fun = function(x){stats::quantile(x, 0.99, na.rm = T)})[,2],2)
+  Z50 <- terra::rast(grid_metrics(slice_extra, res = res, ~stats::quantile(Z, 0.5)))
   merged$medHGT <- round(terra::extract(Z50, terra::vect(sf::as_Spatial(merged)),
-                                        fun = function(x){median(x, na.rm = T)})[,2],2)
+                                        fun = function(x){stats::median(x, na.rm = T)})[,2],2)
   merged$diffHGT <- round(merged$highHGT - merged$lowHGT,2)
   # merged <- merged[merged$diffHGT > ((grid_slice_max - grid_slice_min) / 2), ]
   merged$maxHGT <- round(terra::extract(terra::rast(cancov), terra::vect(sf::as_Spatial(merged)),
@@ -190,6 +191,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   circles_sf$R <- circles$R
   circles_sf$TreeID <- sample(1:nrow(circles_sf), nrow(circles_sf), replace=F)
   circles_sf <- sf::st_buffer(circles_sf, 0.075)
+  sf::st_crs(circles_sf) = sf::st_crs(slice_extra)
   slice_clip <- lidR::merge_spatial(las = lidR::clip_roi(slice_extra, sf::st_sf(sf::st_union(circles_sf))),
                               source = circles_sf, attribute = "TreeID")
 
