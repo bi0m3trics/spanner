@@ -152,7 +152,11 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   graph_obj <- cppRouting::makegraph(weight_matrix,
                                      directed = FALSE) ## a new package
 
+
+
+
   ## ---- IDs for the origin tree locations ----
+  # treeloc_ids <- (nrow(working_las@data)+1):(nrow(k_tree$nn.index))
   treeloc_ids <- (nrow(working_las@data)+1):(nrow(k_tree$nn.index))
   treeloc_ids <- treeloc_ids[treeloc_ids %in% c(weight_matrix[,1],weight_matrix[,2])]
 
@@ -182,16 +186,25 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   ## Classify the vector of treeIDs (we need all of the point ids back together)
   treeID <- c( Rfast::colMins(shortpath), rep(0, length(unused_ids)) )
   ## give the values the proper point ID name
+
   names(treeID) <- c(colnames(shortpath), unused_ids)
   ## now get the treeID values back in order to attach to the las object
-  # treeID <- treeID[order(as.numeric(names(treeID)))]
-  treeID <- treeID[as.numeric(names(treeID))]
+  treeID <- treeID[order(as.numeric(names(treeID)))]
+  # treeID <- treeID[as.numeric(names(treeID))]
   ## change the "extra" treeID to 0
   treeID[treeID > ntree] <- 0
 
   ## -------------------------- add the treeID data to the las object -----------------------------------
   message("Assigning treeIDs to the las object... (6/7)\n")
+
   working_las <- lidR::add_lasattribute(working_las, (treeID), name = "treeID", desc = "tree id")
+  las_ids_slice <- filter_poi(working_las, Z>=1.27, Z<=1.57)
+  lookup<-data.frame(segmented=las_ids_slice@data[RANN::nn2(data=data.frame(X=las_ids_slice@data$X,Y=las_ids_slice@data$Y,Z=las_ids_slice@data$Z),
+                                                            query=data.frame(X=tree.locations$X,Y=tree.locations$Y,Z=tree.locations$Z),
+                                                            k=1)$nn.idx,]$treeID, original=tree.locations$TreeID)
+
+  working_las@data$treeID <- lookup$original[match(working_las@data$treeID, lookup$segmented)]
+
 
   ## based on whether the user wants the dense point cloud returned
   if(return.dense == FALSE){

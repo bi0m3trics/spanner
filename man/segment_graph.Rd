@@ -75,22 +75,22 @@ las = readLAS(LASfile, select = "xyzc")
 # plot(las, color="Z", backend="lidRviewer", trim=30)
 
 # find tree locations and attribute data
-myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02, 
-                                       dens_threshold = 0.25, 
-                                       neigh_sizes=c(0.333, 0.166, 0.5), 
-                                       eigen_threshold = 0.5, 
-                                       grid_slice_min = 0.666, 
+myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02,
+                                       dens_threshold = 0.25,
+                                       neigh_sizes=c(0.333, 0.166, 0.5),
+                                       eigen_threshold = 0.5,
+                                       grid_slice_min = 0.666,
                                        grid_slice_max = 2,
-                                       minimum_polygon_area = 0.01, 
-                                      cylinder_fit_type = "ransac", 
-                                       output_location = getwd(), 
-                                       max_dia = 0.5, 
+                                       minimum_polygon_area = 0.01,
+                                      cylinder_fit_type = "ransac",
+                                       output_location = getwd(),
+                                       max_dia = 0.5,
                                        SDvert = 0.25)
 
-# segment the point cloud 
-myTreeGraph <- segment_graph(las = las, tree.locations = myTreeLocs, k = 50, 
+# segment the point cloud
+myTreeGraph <- segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
                              distance.threshold = 0.5,
-                             use.metabolic.scale = FALSE, subsample.graph = 0.1, 
+                             use.metabolic.scale = FALSE, subsample.graph = 0.1,
                              return.dense = FALSE,
                              output_location = getwd())
 
