@@ -79,6 +79,8 @@ points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch=16,
 myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50, 
                              distance.threshold = 0.5,
                              use.metabolic.scale = FALSE, 
+                             ptcloud_slice_min = 0.6666,
+                             ptcloud_slice_max = 2.0,
                              subsample.graph = 0.1, 
                              return.dense = FALSE,
                              output_location = getwd())

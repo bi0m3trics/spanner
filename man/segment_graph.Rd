@@ -10,6 +10,8 @@ segment_graph(
   k = NULL,
   distance.threshold = 0.38,
   use.metabolic.scale = FALSE,
+  ptcloud_slice_min = 0.5,
+  ptcloud_slice_max = 2,
   metabolic.scale.function = NULL,
   subsample.graph = 0.1,
   return.dense = FALSE,
@@ -30,6 +32,10 @@ distance than this threshold are not connected in the graph for processing.}
 
 \item{use.metabolic.scale}{bool Use of weights in the assignment of points to a given treeID. Useful
 when interlocking crowns are present and trees are of different sizes.}
+
+\item{ptcloud_slice_min}{numeric Lower bound of point cloud slice in normalized point cloud used for treeID matching.}
+
+\item{ptcloud_slice_max}{numeric Upper bound of point cloud slice in normalized point cloud used for treeID matching.}
 
 \item{metabolic.scale.function}{string Supply your own function for defining segmentation weights
 based on a function of estimated tree diameter (e.g. metabolic.scale.function = 'x/2'). use.metabolic.scale
@@ -82,7 +88,7 @@ myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02,
                                        grid_slice_min = 0.666,
                                        grid_slice_max = 2,
                                        minimum_polygon_area = 0.01,
-                                      cylinder_fit_type = "ransac",
+                                       cylinder_fit_type = "ransac",
                                        output_location = getwd(),
                                        max_dia = 0.5,
                                        SDvert = 0.25)
@@ -90,7 +96,8 @@ myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02,
 # segment the point cloud
 myTreeGraph <- segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
                              distance.threshold = 0.5,
-                             use.metabolic.scale = FALSE, subsample.graph = 0.1,
+                             use.metabolic.scale = FALSE, ptcloud_slice_min = 0.6666,
+                             ptcloud_slice_max = 2.0, subsample.graph = 0.1,
                              return.dense = FALSE,
                              output_location = getwd())
 
