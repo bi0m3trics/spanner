@@ -56,7 +56,9 @@
 #'                                        cylinder_fit_type = "ransac",
 #'                                        output_location = getwd(),
 #'                                        max_dia = 1,
-#'                                        SDvert = 0.25)
+#'                                        SDvert = 0.25,
+#'                                        n_pts = 20,
+#'                                        n_best = 25)
 # plot(lidR::grid_canopy(las, res = 0.2, p2r()))
 # points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch=16, cex = myTreeLocs$Radius^2*10)
 #' }
@@ -66,7 +68,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                       neigh_sizes=c(0.333, 0.166, 0.5), eigen_threshold = 0.6666,
                                       grid_slice_min = 0.6666, grid_slice_max = 2.0,
                                       minimum_polygon_area = 0.025, cylinder_fit_type = "ransac",
-                                      output_location = getwd(), max_dia=0.5, SDvert = 0.25)
+                                      output_location = getwd(), max_dia=0.5, SDvert = 0.25, n_best=25, n_pts=20)
 {
 
   ## Validate output directory
@@ -204,8 +206,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     {
     min = grid_slice_min; max = grid_slice_max
     if(cylinder_fit_type == "ransac"){
-      n_pts = 20
-      n_best = 25
+      n_pts = n_pts
+      n_best = n_best
     } else if(cylinder_fit_type == "irls"){
       n_pts = min(data.frame(lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data %>%
                                dplyr::group_by(TreeID) %>%
@@ -225,8 +227,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
 
     min = 1.1 - ((1.1 - grid_slice_min)/2); max =  1.6 + ((grid_slice_max - 1.6)/2)
     if(cylinder_fit_type == "ransac"){
-      n_pts = 20
-      n_best = 25
+      n_pts = n_pts
+      n_best = n_best
     } else if(cylinder_fit_type == "irls"){
       n_pts = min(data.frame(lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data %>%
                                dplyr::group_by(TreeID) %>%
@@ -247,8 +249,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
 
     min = 1.1; max = 1.6
     if(cylinder_fit_type == "ransac"){
-      n_pts = 20
-      n_best = 25
+      n_pts = n_pts
+      n_best = n_best
     } else if(cylinder_fit_type == "irls"){
       n_pts = min(data.frame(lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data %>%
                                dplyr::group_by(TreeID) %>%
