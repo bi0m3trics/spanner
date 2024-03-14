@@ -84,6 +84,12 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
                           subsample.graph = 0.1, return.dense = FALSE,
                           output_location = getwd()){
 
+  ## Calculate the transformation vaklues and move to origin
+  center_x <- mean(range(las@data$X))
+  center_y <- mean(range(las@data$Y))
+  las@data$X <- las@data$X - center_x
+  las@data$Y <- las@data$Y - center_y
+
   ## if subsampling, do that now
   if(!is.null(subsample.graph)){
     working_las <- lidR::decimate_points(las, random_per_voxel(res = subsample.graph, n = 1))
@@ -95,8 +101,11 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   ## how many tree objects
   ntree <- nrow(tree.locations)
 
-  ## Give tree locations a uniform Z coordinate
+  ## Give tree locations a uniform Z coordinate and move them to origin too
   tree.locations$Z <- 1.3
+  tree.locations$X <- tree.locations$X - center_x
+  tree.locations$Y <- tree.locations$Y - center_y
+
   tree.locations$Radius[is.na(tree.locations$Radius)] = 0.01
   ## Make sure tree location is close to bole points (if in center, distance threshold could cut it off)
   ## Eventually, this should be a value tied to the actual DBH of the tree
@@ -213,6 +222,8 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
   ## based on whether the user wants the dense point cloud returned
   if(return.dense == FALSE){
 
+    working_las@data$X <- working_las@data$X + center_x
+    working_las@data$Y <- working_las@data$Y + center_y
     return(working_las)
 
   } else {
@@ -233,6 +244,8 @@ segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.t
 
     ## add the treeID values as attribute the dense point cloud
     las <- lidR::add_lasattribute(las, (las@data$treeID), name = "treeID", desc = "tree id")
+    las@data$X <- las@data$X + center_x
+    las@data$Y <- las@data$Y + center_y
 
     return(las)
   }
