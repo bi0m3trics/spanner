@@ -34,7 +34,7 @@
 #' points in the input dense point cloud.
 #' @param output_location character Where to save processing outputs (rasters).
 #'
-#' @return a .las with the column treeID added.
+#' @return a sparse/dense normalized .las with the column treeID added.
 #'
 #' @references Tao, S., Wu, F., Guo, Q., Wang, Y., Li, W., Xue, B., ... & Fang, J. (2015). Segmenting tree
 #' crowns from terrestrial and mobile LiDAR data by exploring ecological theories. ISPRS Journal of

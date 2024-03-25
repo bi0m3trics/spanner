@@ -27,7 +27,9 @@
 #' @param cylinder_fit_type  character Choose "ransac" or "irls" cylinder fitting.
 #' @param output_location character Where to write intermediary and output data layers.
 #' @param max_dai numeric The max diameter (in m) of a resulting tree (use to eliminate commission errors).
-#' @param SDvert numeric The standard deviation threshold below whihc polygons will be considered as tree boles
+#' @param SDvert numeric The standard deviation threshold below whihc polygons will be considered as tree boles.
+#' #' @param n_best integeter number of "best" ransac fits to keep when evaluating the best fit.
+#' @param n_pts integer number of point to be selected per ransac iteraiton for fitting.
 #'
 #' @return data.frame A data.frame containing the following seed information: `TreeID`,
 #' `X`, `Y`, `Z`, and `Radius` in the same units as the .las
@@ -72,25 +74,23 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
 {
 
   ## Validate output directory
-  if (!dir.exists(output_location))
-  {
-    stop("Output directory does not exist!")
-  }
-  if (!(file.access(output_location, mode = 0) == 0))
-  {
-    stop("Output directory not writeable!")
-  }
+  if (!dir.exists(output_location)) stop("Output directory does not exist!", call. = FALSE)
+  if (!(file.access(output_location, mode = 0) == 0)) stop("Output directory not writeable!", call. = FALSE)
   ##---------------------- Preprocesssing -------------------------------------
   ## Subsample using systematic voxel grid to 1in
   message("Downsampling the scan... (step 1 of 14)\n")
   las <- lidR::decimate_points(las, random_per_voxel(res = pt_spacing, n = 1))
+  if(is.null(las)) stop("No points in the las object after downsampling! Try increasing the point spacing.", call. = FALSE)
 
   ## Create the processing slice based on user's grid slice min/max
   message("Creating processing slice... (2/14)\n")
   slice_extra <- lidR::filter_poi(las, Z >= grid_slice_min, Z <= grid_slice_max)
+  if(is.null(slice_extra)) stop("No points in the las object after processing slice! Try increasing the grid slice min/max.", call. = FALSE)
 
   message("Calculating verticality... (3/14)\n")
   vert_temp <- spanner::eigen_metrics(slice_extra, radius=neigh_sizes[1], ncpu=lidR::get_lidr_threads())
+  if(nrow(vert_temp) == 0) stop("Problemn calculating verticality...!", call. = FALSE)
+
   # vert_temp <- spanner::C_vert_in_sphere(slice_extra, radius = neigh_sizes[1], ncpu = lidR::get_lidr_threads())
   slice_extra <- lidR::add_lasattribute(slice_extra, as.numeric(vert_temp$Verticality),
                                         name = "verticality", desc = "verticality")
@@ -127,6 +127,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   density_polygon <- density_polygon[density_polygon$area > minimum_polygon_area,]
   density_polygon <- sfheaders::sf_remove_holes(density_polygon)
   density_polygon <- sf::st_buffer(sf::st_buffer(density_polygon, 1.5), -1.475) ## smoothing out the resulting polygons
+  if(nrow(density_polygon) == 0 | is.null(density_polygon)) stop("No density polygons were created from the rasterized point cloud metrics! Try adjusting the threshold values.", call. = FALSE)
 
   message("Gridding verticality... (7/14)\n")
   filename = paste0(output_location, paste0("temp_vertical_",grid_slice_min,"-",grid_slice_max,"_",
@@ -142,13 +143,14 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   verticality_polygon <- verticality_polygon[verticality_polygon$area > minimum_polygon_area,]
   verticality_polygon <- sfheaders::sf_remove_holes(verticality_polygon)
   verticality_polygon <- sf::st_buffer(sf::st_buffer(verticality_polygon, 1.5), -1.475) ## smoothing out the resulting polygons
+  if(nrow(verticality_polygon) == 0 | is.null(verticality_polygon)) stop("No verticality polygons were created from the rasterized point cloud metrics! Try adjusting the threshold values.", call. = FALSE)
 
   message("Merging relative density and verticality... (8/14)\n")
-  merged <- sf::st_intersection(verticality_polygon,
-                            density_polygon)
+  merged <- sf::st_intersection(verticality_polygon, density_polygon)
   merged$area <- as.numeric(sf::st_area(merged))
   sf::st_crs(merged) = lidR::crs(las)
   merged <- merged[merged$area > minimum_polygon_area,]
+  if(nrow(merged) == 0 | is.null(merged)) stop("No merged polygons were created from the rasterized point cloud metrics! Try adjusting the threshold values.", call. = FALSE)
 
   message("Filtering merged polygon... (9/14)\n")
   ## sd verticality
@@ -198,8 +200,9 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                               source = circles_sf, attribute = "TreeID")
 
   slice_clip <- lidR::filter_poi(slice_clip, verticality >= 0.5)
+  if(is.null(slice_clip)) stop("No points in the las object after processing the resulting clipped slice! Try adjusting the threshold values.", call. = FALSE)
 
-  ##---------------------- Identify Trees -------------------------------------
+   ##---------------------- Identify Trees -------------------------------------
   message("Fitting nested height (length) cylinders...(12/14)\n")
   cyl_fit <- list()
   for(t in 1:length(sort(unique(slice_clip$TreeID))))
@@ -214,8 +217,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                dplyr::summarize(count = length(X)))$count)/2
       n_best = 100
     } else {
-      print("You will need to choose either 'ransac' or 'irls' cylinder fitting method...")
-      stop()
+      stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
     fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t]),
                                 method = cylinder_fit_type, n = n_pts, inliers = 0.9,
@@ -235,8 +237,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                dplyr::summarize(count = length(X)))$count)/2
       n_best = 100
     } else {
-      print("You will need to choose either 'ransac' or 'irls' cylinder fitting method...")
-      stop()
+      stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
     fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
                                            Z >= min, Z <= max),
@@ -257,8 +258,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                dplyr::summarize(count = length(X)))$count)/2
       n_best = 100
     } else {
-      print("You will need to choose either 'ransac' or 'irls' cylinder fitting method...")
-      stop()
+      stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
     fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
                                            Z >= min, Z <= max),
@@ -272,13 +272,15 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   (cyl_fit <- dplyr::bind_rows(cyl_fit))
   cyl_fit <- cyl_fit[cyl_fit$radius <= max_dia, ]
   cyl_fit <- cyl_fit[complete.cases(cyl_fit),]
+  if(nrow(cyl_fit) == 0 | is.null(cyl_fit)) stop("No cylinders were fit to the point cloud! Try adjusting the threshold values.", call. = FALSE)
   summary_cyl_fit <- cyl_fit %>% dplyr::group_by(TreeID) %>% dplyr::summarize_all(mean)
+  if(nrow(summary_cyl_fit) == 0 | is.null(summary_cyl_fit)) stop("No summary data was created from the fitted cylinders! Try adjusting the threshold values.", call. = FALSE)
 
   ##---------------------- Cleaning up the Output -------------------------------------
   message("Successfully obtained the cylinder summaries... (13/14)\n")
   output<-summary_cyl_fit[,c("TreeID","px","py","pz","radius","err")]
   colnames(output)<-c("TreeID","X","Y","Z","Radius","Error")
-
+  if(nrow(output) == 0 | is.null(output)) stop("No output data was created from the fitted cylinders! Try adjusting the threshold values.", call. = FALSE)
   return(output)
   message("Done! (14/14)\n")
 }

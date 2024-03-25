@@ -50,7 +50,7 @@ las = classify_noise(las, ivf(0.25, 3))
 las = filter_poi(las, Classification != LASNOISE)
 
 # plot the non-ground points, colored by height
-plot(filter_poi(las, Classification!=2), color="Z", trim=30)
+plot(filter_poi(las, Classification!=2), color="Z")
 
 # perform a deep inspection of the las object. If you see any 
 # red text, you may have issues!
@@ -60,15 +60,17 @@ las_check(las)
 myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, 
                                        pt_spacing = 0.0254, 
                                        dens_threshold = 0.2, 
-                                       neigh_sizes=c(0.333, 0.166, 0.5), 
+                                       neigh_sizes = c(0.333, 0.166, 0.5), 
                                        eigen_threshold = 0.5, 
                                        grid_slice_min = 0.6666, 
                                        grid_slice_max = 2.0,
                                        minimum_polygon_area = 0.025, 
                                        cylinder_fit_type = "ransac", 
                                        output_location = getwd(), 
-                                       max_dia=0.5, 
-                                       SDvert = 0.25)
+                                       max_dia = 0.5, 
+                                       SDvert = 0.25,
+                                       n_pts = 20,
+                                       n_best = 25)
 
 # plot the tree information over a CHM
 plot(lidR::grid_canopy(las, res = 0.2, p2r()))
