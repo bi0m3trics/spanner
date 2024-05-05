@@ -8,7 +8,7 @@ Definition of spanner
 <br/>2: a wrench that has a hole, projection, or hook at one or both ends of the head for engaging with a corresponding device on the object that is to be turned
 <br/>3: utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization. 
 
-<img src="https://github.com/bi0m3trics/spanner/blob/master/img/tshirt.png" width="100%"  height="auto" align="center"/>
+<img src="https://github.com/bi0m3trics/spanner/blob/master/img/tshirt3.png" width="100%"  height="auto" align="center"/>
 
 # Install `spanner`
 
