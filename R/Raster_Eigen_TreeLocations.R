@@ -26,12 +26,14 @@
 #' @param minimum_polygon_area numeric Smallest allowable polygon area of potential tree boles.
 #' @param cylinder_fit_type  character Choose "ransac" or "irls" cylinder fitting.
 #' @param output_location character Where to write intermediary and output data layers.
-#' @param max_dai numeric The max diameter (in m) of a resulting tree (use to eliminate commission errors).
+#' @param max_dia numeric The max diameter (in m) of a resulting tree (use to eliminate commission errors).
 #' @param SDvert numeric The standard deviation threshold below whihc polygons will be considered as tree boles.
-#' #' @param n_best integeter number of "best" ransac fits to keep when evaluating the best fit.
+#' @param n_best integer number of "best" ransac fits to keep when evaluating the best fit.
 #' @param n_pts integer number of point to be selected per ransac iteraiton for fitting.
-#'
-#' @return data.frame A data.frame containing the following seed information: `TreeID`,
+#' @param inliers integer expected proportion of inliers among cylinder points
+#' @param conf numeric confidence level
+#' @param max_angle numeric maximum tolerated deviation, in degrees, from vertical.
+#' #' @return data.frame A data.frame containing the following seed information: `TreeID`,
 #' `X`, `Y`, `Z`, and `Radius` in the same units as the .las
 #'
 #' @examples
@@ -60,7 +62,10 @@
 #'                                        max_dia = 1,
 #'                                        SDvert = 0.25,
 #'                                        n_pts = 20,
-#'                                        n_best = 25)
+#'                                        n_best = 25,
+#'                                        inliers = 0.9,
+#'                                        conf = 0.99,
+#'                                        max_angle = 20)
 # plot(lidR::grid_canopy(las, res = 0.2, p2r()))
 # points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch=16, cex = myTreeLocs$Radius^2*10)
 #' }
@@ -70,7 +75,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                       neigh_sizes=c(0.333, 0.166, 0.5), eigen_threshold = 0.6666,
                                       grid_slice_min = 0.6666, grid_slice_max = 2.0,
                                       minimum_polygon_area = 0.025, cylinder_fit_type = "ransac",
-                                      output_location = getwd(), max_dia=0.5, SDvert = 0.25, n_best=25, n_pts=20)
+                                      output_location = getwd(), max_dia=0.5, SDvert = 0.25, n_best=25, n_pts=20,
+                                      inliers = 0.9, conf = 0.99, max_angle = 20)
 {
 
   ## Validate output directory
@@ -199,7 +205,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   slice_clip <- lidR::merge_spatial(las = lidR::clip_roi(slice_extra, sf::st_sf(sf::st_union(circles_sf))),
                               source = circles_sf, attribute = "TreeID")
 
-  slice_clip <- lidR::filter_poi(slice_clip, verticality >= 0.5)
+  slice_clip <- lidR::filter_poi(slice_clip, verticality >= eigen_threshold)
   if(is.null(slice_clip)) stop("No points in the las object after processing the resulting clipped slice! Try adjusting the threshold values.", call. = FALSE)
 
    ##---------------------- Identify Trees -------------------------------------
@@ -220,8 +226,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
     fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t]),
-                                method = cylinder_fit_type, n = n_pts, inliers = 0.9,
-                                conf = 0.99, max_angle = 20, n_best = n_best)
+                                method = cylinder_fit_type, n = n_pts, inliers = inliers,
+                                conf = conf, max_angle = max_angle, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
     fit$dbh_width <- max-min
 
@@ -241,8 +247,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     }
     fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
                                            Z >= min, Z <= max),
-                                method = cylinder_fit_type, n = n_pts, inliers = 0.9,
-                                conf = 0.99, max_angle = 20, n_best = n_best)
+                                method = cylinder_fit_type, n = n_pts, inliers = inliers,
+                                conf = conf, max_angle = max_angle, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
     fit$dbh_width <- max-min
 
@@ -262,8 +268,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     }
     fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
                                            Z >= min, Z <= max),
-                                method = cylinder_fit_type, n = n_pts, inliers = 0.9,
-                                conf = 0.99, max_angle = 20, n_best = n_best)
+                                method = cylinder_fit_type, n = n_pts, inliers = inliers,
+                                conf = conf, max_angle = max_angle, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
     fit$dbh_width <- max-min
 
