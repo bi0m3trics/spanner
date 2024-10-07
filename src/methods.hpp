@@ -50,10 +50,6 @@ vector<vector<double> > ransacStemCylinder(vector<vector<double> >& cloud, vecto
 
 vector<HoughCenters> treeHough(vector<vector<double> >& cppCloud, double h1 = 1, double h2 = 3, double hstep=0.5, double radius=0.25, double pixel=0.025, double density=0.1, unsigned int votes=3);
 
-vector<vector<double> > pointMetrics(vector<vector<double> >& cloud, vector<vector<unsigned int> >& idx, vector<bool> which_metrics);
-
-vector<vector<double> > voxelMetrics(vector<vector<double> >& cloud, vector<vector<unsigned int> >& idx, vector<bool> which_metrics);
-
 vector<unsigned long long int> voxelIndex(vector<vector<double> >& cloud, double voxel_spacing=0.05);
 
 vector<vector<vector<double> > > treeEigenHough(vector<vector<double> >& cppEigenCloud, vector<unsigned int>& pointId, vector<unsigned int>& segId, double voxel_size, double max_rad, bool is2d = true, bool getSpace = false);

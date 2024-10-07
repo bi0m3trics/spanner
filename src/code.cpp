@@ -18,7 +18,7 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   NumericVector Y = data["Y"];
   NumericVector Z = data["Z"];
   int n = X.size();
-  int n_metrics = 12;
+  int n_metrics = 15;
 
   //https://ethz.ch/content/dam/ethz/special-interest/baug/igp/photogrammetry-remote-sensing-dam/documents/pdf/timo-jan-cvpr2016.pdf
   NumericVector eigenlar_sph(n);
@@ -33,6 +33,9 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   NumericVector verticality_sph(n);
   NumericVector planarity_sph(n);
   NumericVector sphericity_sph(n);
+  NumericVector nx_sph(n);
+  NumericVector ny_sph(n);
+  NumericVector nz_sph(n);
 
   List out(n_metrics);
 
@@ -89,6 +92,9 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   double verticality    = 1-abs(coeff(2,2));
   double planarity      = (latent[1] - latent[2])/latent[0];
   double sphericity     = latent[2]/latent[0];
+  double nx = coeff(0,0);
+  double ny = coeff(0,1);
+  double nz = coeff(0,2);
 
   eigenlar_sph[i]   = eigen_largest;
   eigenmed_sph[i]   = eigen_medium;
@@ -102,6 +108,10 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   verticality_sph[i] = verticality;
   planarity_sph[i]  = planarity;
   sphericity_sph[i] = sphericity;
+  nx_sph[i] = nx;
+  ny_sph[i] = ny;
+  nz_sph[i] = nz;
+
 }
   }
   if (abort) throw Rcpp::internal::InterruptedException();
@@ -119,6 +129,9 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   out[9] = verticality_sph;
   out[10] = planarity_sph;
   out[11] = sphericity_sph;
+  out[12] = nx_sph;
+  out[13] = ny_sph;
+  out[14] = nz_sph;
 
   return out;
 }

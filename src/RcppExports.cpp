@@ -313,19 +313,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// pointMetricsCpp
-SEXP pointMetricsCpp(NumericMatrix& las, NumericMatrix& kIds, LogicalVector& whichMetrics);
-RcppExport SEXP _spanner_pointMetricsCpp(SEXP lasSEXP, SEXP kIdsSEXP, SEXP whichMetricsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix& >::type las(lasSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix& >::type kIds(kIdsSEXP);
-    Rcpp::traits::input_parameter< LogicalVector& >::type whichMetrics(whichMetricsSEXP);
-    rcpp_result_gen = Rcpp::wrap(pointMetricsCpp(las, kIds, whichMetrics));
-    return rcpp_result_gen;
-END_RCPP
-}
 // voxelIndex
 SEXP voxelIndex(NumericMatrix& las, double d);
 RcppExport SEXP _spanner_voxelIndex(SEXP lasSEXP, SEXP dSEXP) {
@@ -335,19 +322,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix& >::type las(lasSEXP);
     Rcpp::traits::input_parameter< double >::type d(dSEXP);
     rcpp_result_gen = Rcpp::wrap(voxelIndex(las, d));
-    return rcpp_result_gen;
-END_RCPP
-}
-// voxelMetrics
-List voxelMetrics(NumericMatrix& las, List& voxelIds, LogicalVector& whichMetrics);
-RcppExport SEXP _spanner_voxelMetrics(SEXP lasSEXP, SEXP voxelIdsSEXP, SEXP whichMetricsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix& >::type las(lasSEXP);
-    Rcpp::traits::input_parameter< List& >::type voxelIds(voxelIdsSEXP);
-    Rcpp::traits::input_parameter< LogicalVector& >::type whichMetrics(whichMetricsSEXP);
-    rcpp_result_gen = Rcpp::wrap(voxelMetrics(las, voxelIds, whichMetrics));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -520,9 +494,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_spanner_ransacPlotCylinders", (DL_FUNC) &_spanner_ransacPlotCylinders, 8},
     {"_spanner_irlsPlotCylinders", (DL_FUNC) &_spanner_irlsPlotCylinders, 6},
     {"_spanner_irlsPlotCircles", (DL_FUNC) &_spanner_irlsPlotCircles, 6},
-    {"_spanner_pointMetricsCpp", (DL_FUNC) &_spanner_pointMetricsCpp, 3},
     {"_spanner_voxelIndex", (DL_FUNC) &_spanner_voxelIndex, 2},
-    {"_spanner_voxelMetrics", (DL_FUNC) &_spanner_voxelMetrics, 3},
     {"_spanner_treeEigenHough", (DL_FUNC) &_spanner_treeEigenHough, 7},
     {"_spanner_plotEigenHough", (DL_FUNC) &_spanner_plotEigenHough, 8},
     {"_spanner_cppFastApply", (DL_FUNC) &_spanner_cppFastApply, 2},

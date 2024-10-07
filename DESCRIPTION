@@ -1,8 +1,8 @@
 Package: spanner
 Type: Package
 Title: Utilities to support landscape-, forest-, and tree-related data analysis
-Version: 1.0
-Date: 2021-01-17
+Version: 1.0.2
+Date: 2024-10-06
 Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre")),
              person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb")))
 Description: Utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization.
@@ -10,7 +10,7 @@ URL: https://github.com/bi0m3trcis/spanner
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 RdMacros: mathjaxr
 Suggests: 
     testthat (>= 3.0.0)
@@ -20,7 +20,7 @@ LinkingTo:
     RcppArmadillo,
     Rcpp,
     RcppEigen,
-    BH
+    BH,
 Imports: 
     lidR,
     Rcpp,
@@ -42,4 +42,6 @@ Imports:
 Depends: 
     magrittr,
     lidR,
-    data.table
+    data.table,
+    sf,
+    terra

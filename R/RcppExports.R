@@ -77,16 +77,8 @@ irlsPlotCircles <- function(las, tId, segs, rads, nPoints, tolerance) {
     .Call(`_spanner_irlsPlotCircles`, las, tId, segs, rads, nPoints, tolerance)
 }
 
-pointMetricsCpp <- function(las, kIds, whichMetrics) {
-    .Call(`_spanner_pointMetricsCpp`, las, kIds, whichMetrics)
-}
-
 voxelIndex <- function(las, d) {
     .Call(`_spanner_voxelIndex`, las, d)
-}
-
-voxelMetrics <- function(las, voxelIds, whichMetrics) {
-    .Call(`_spanner_voxelMetrics`, las, voxelIds, whichMetrics)
 }
 
 treeEigenHough <- function(las, ids, split_by, voxel = 0.05, rad = 0.25, is2d = FALSE, getSpace = FALSE) {

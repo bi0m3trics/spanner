@@ -13,8 +13,8 @@
 #' this into consideration when choosing the extent of the input las object.
 #'
 #' @param las LAS normalized las object.
-#' @param tree.locations data.frame A data.frame contained the following seed information: `TreeID`,
-#' `X`, `Y`, `Z`, and `Radius` in the same units as the .las, output from the raster_eigen function.
+#' @param tree.locations sf object `sf` object containing the following tree information: `TreeID`,
+#' `X`, `Y`, `Z`, `Radius`, and `Error`, output from the get_raster_eigen_treelocs function.
 #' @param k integer Number of nearest neighbors to be used in processing (k >= 50 suggested)
 #' @param distance.threshold numeric Maximum distance (in the same units as the .las) under which
 #' two points are connected in the graph object (greater than point spacing). Two points with a greater
@@ -32,7 +32,6 @@
 #' time increases quickly with smaller point spacing with negligible returns in accuracy.
 #' @param return.dense bool Decision to return the subsampled point cloud or assign treeIDs back to
 #' points in the input dense point cloud.
-#' @param output_location character Where to save processing outputs (rasters).
 #'
 #' @return a sparse/dense normalized .las with the column treeID added.
 #'
@@ -44,210 +43,190 @@
 #'
 #' @examples
 #' \dontrun{
-#' # set the number of threads to use in lidR
+#' \dontrun{
+#' # Set the number of threads to use in lidR
 #' set_lidr_threads(8)
 #'
-#' # read the las (which must be downloaded with getExampleData())
-#' LASfile <- system.file("extdata", "Pine_Example.laz", package="spanner")
-#' las = readLAS(LASfile, select = "xyzc")
+#' # Download and read an example laz
+#' getExampleData("DensePatchA")
+#' LASfile = system.file("extdata", "DensePatchA.laz", package="spanner")
+#' las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
+#' # Don't forget to make sure the las object has a projection
+#' projection(las) = sp::CRS("+init=epsg:26912")
 #'
-#' # plot(las, color="Z", backend="lidRviewer", trim=30)
+#' # Pre-process the example lidar dataset by classifying the ground points
+#' # using lidR::csf(), normalizing it, and removing outlier points
+#' # using lidR::ivf()
+#' las = classify_ground(las, csf(sloop_smooth = FALSE,
+#'                                 class_threshold = 0.5,
+#'                                 cloth_resolution = 0.5, rigidness = 1L,
+#'                                 iterations = 500L, time_step = 0.65))
+#' las = normalize_height(las, tin())
+#' las = classify_noise(las, ivf(0.25, 3))
+#' las = filter_poi(las, Classification != LASNOISE)
 #'
-#' # find tree locations and attribute data
-#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02,
-#'                                        dens_threshold = 0.25,
-#'                                        neigh_sizes=c(0.333, 0.166, 0.5),
+#' # Plot the non-ground points, colored by height
+#' plot(filter_poi(las, Classification != 2), color = "Z")
+#'
+#' # Perform a deep inspection of the las object. If you see any
+#' # red text, you may have issues!
+#' las_check(las)
+#'
+#' # Find individual tree locations and attribute data
+#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05,
+#'                                        pt_spacing = 0.0254,
+#'                                        dens_threshold = 0.2,
+#'                                        neigh_sizes = c(0.333, 0.166, 0.5),
 #'                                        eigen_threshold = 0.5,
-#'                                        grid_slice_min = 0.666,
-#'                                        grid_slice_max = 2,
-#'                                        minimum_polygon_area = 0.01,
+#'                                        grid_slice_min = 0.6666,
+#'                                        grid_slice_max = 2.0,
+#'                                        minimum_polygon_area = 0.025,
 #'                                        cylinder_fit_type = "ransac",
-#'                                        output_location = getwd(),
 #'                                        max_dia = 0.5,
-#'                                        SDvert = 0.25)
+#'                                        SDvert = 0.25,
+#'                                        n_pts = 20,
+#'                                        n_best = 25)
 #'
-#' # segment the point cloud
-#' myTreeGraph <- segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
+#' # Plot the tree information over a CHM
+#' plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+#' points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch = 16,
+#'        cex = myTreeLocs$Radius^2 * 10, asp = 1)
+#'
+#' # Segment the point cloud
+#' myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
 #'                              distance.threshold = 0.5,
-#'                              use.metabolic.scale = FALSE, ptcloud_slice_min = 0.6666,
-#'                              ptcloud_slice_max = 2.0, subsample.graph = 0.1,
-#'                              return.dense = FALSE,
-#'                              output_location = getwd())
+#'                              use.metabolic.scale = FALSE,
+#'                              ptcloud_slice_min = 0.6666,
+#'                              ptcloud_slice_max = 2.0,
+#'                              subsample.graph = 0.1,
+#'                              return.dense = FALSE)
 #'
-#' plot(myTreeGraph, color="treeID",  backend="lidRviewer")
+#' # Plot it in 3D colored by treeID
+#' plot(myTreeGraph, color = "treeID", pal=spanner_pal())
+#'
+#' }
 #' }
 #'
 #' @export
-segment_graph <- function(las = las, tree.locations = NULL, k = NULL, distance.threshold = 0.38,
+segment_graph <- function(las, tree.locations, k = 50, distance.threshold = 0.38,
                           use.metabolic.scale = FALSE, ptcloud_slice_min = 0.5,
                           ptcloud_slice_max = 2.0, metabolic.scale.function = NULL,
-                          subsample.graph = 0.1, return.dense = FALSE,
-                          output_location = getwd()){
+                          subsample.graph = 0.1, return.dense = FALSE) {
 
-  ## Calculate the transformation vaklues and move to origin
+  # Check if tree.locations is an sf object
+  if (inherits(tree.locations, "sf")) {
+    coords <- st_coordinates(tree.locations)
+    tree.locations <- as.data.frame(tree.locations)
+    tree.locations$X <- coords[, "X"]
+    tree.locations$Y <- coords[, "Y"]
+    tree.locations$Z <- 1.3  # Assuming Z is constant as in the original function
+  }
+
+  # Calculate the transformation values and move to origin
   center_x <- mean(range(las@data$X))
   center_y <- mean(range(las@data$Y))
   las@data$X <- las@data$X - center_x
   las@data$Y <- las@data$Y - center_y
 
-  ## if subsampling, do that now
-  if(!is.null(subsample.graph)){
+  # Subsampling
+  if (!is.null(subsample.graph)) {
     working_las <- lidR::decimate_points(las, random_per_voxel(res = subsample.graph, n = 1))
+  } else {
+    working_las <- las
   }
-  ## get rid of ground points
+
+  # Filter out ground points
   message("Filtering out ground points... (step 1 of 7)\n")
   working_las <- lidR::filter_poi(working_las, Classification != 2, Z > (1/3))
 
-  ## how many tree objects
+  # Number of tree objects
   ntree <- nrow(tree.locations)
 
-  ## Give tree locations a uniform Z coordinate and move them to origin too
+  # Adjust tree locations
   tree.locations$Z <- 1.3
   tree.locations$X <- tree.locations$X - center_x
   tree.locations$Y <- tree.locations$Y - center_y
+  tree.locations$Radius[is.na(tree.locations$Radius)] <- 0.01
 
-  tree.locations$Radius[is.na(tree.locations$Radius)] = 0.01
-  ## Make sure tree location is close to bole points (if in center, distance threshold could cut it off)
-  ## Eventually, this should be a value tied to the actual DBH of the tree
-  for(d in 1:nrow(tree.locations)){
-    if(tree.locations$Radius[d] > distance.threshold){
-      if(tree.locations$Y[d] > mean(tree.locations$Y)){
-        tree.locations$Y <- tree.locations$Y - ((tree.locations$Radius)/2)
+  for (d in 1:nrow(tree.locations)) {
+    if (tree.locations$Radius[d] > distance.threshold) {
+      if (tree.locations$Y[d] > mean(tree.locations$Y)) {
+        tree.locations$Y[d] <- tree.locations$Y[d] - (tree.locations$Radius[d] / 2)
       } else {
-        tree.locations$Y <- tree.locations$Y + ((tree.locations$Radius)/2)
+        tree.locations$Y[d] <- tree.locations$Y[d] + (tree.locations$Radius[d] / 2)
       }
-    }}
-
-  ## ---- Determining metabolic scaling factors for individual trees ----
-  ## This is the metabolic scaling factor which will get multiplied by the weights so that smaller trees
-  ## don't "suck up" points from nearby larger trees met_scale <- 1 / ( tree.locations$Radius^(2/3) )
-  ## it seems like the equation in the original manuscript doesn't work that well for me... this can be modified
-  ## it seems like the equation in the original manuscript doesn't
-  ## work that well for me... this can be modified
-  if(use.metabolic.scale == TRUE) {
-    if(!null(metabolic.scale.function)){
-      eval(parse(text = paste('f <- function(x) { return(' , metabolic.scale.function , ')}', sep='')))
-      met_scale <- f(tree.locations$Radius)
-    } else {
-      met_scale <- (1 / ( tree.locations$Radius))^(3/2)
     }
   }
-  ##---------------------- Identify neighbors  -------------------------------------
-  ## create the network by connecting lidar points within X meters
-  ## and add in the points for the tree centers to make connections
-  message("Identifing neighbors... (2/7)\n")
-  point_density <- density(working_las)
 
-  # point_dist_threshold <- round((1/sqrt(point_density))*k, 1) ## in meters, the distance within which points
-  ## will be connected into a network
-  # point_dist_threshold <- (1/3)
-  # point_dist_threshold <- 0.42
+  # Metabolic scaling factors
+  if (use.metabolic.scale) {
+    if (!is.null(metabolic.scale.function)) {
+      eval(parse(text = paste('f <- function(x) { return(', metabolic.scale.function, ')}', sep = '')))
+      met_scale <- f(tree.locations$Radius)
+    } else {
+      met_scale <- (1 / (tree.locations$Radius))^(3/2)
+    }
+  }
 
-  ## k is arbitrary... not sure if this should be based on a calculation, e.g. ...
-  # k = ((sqrt(point_density))/(1/3))
+  # Identify neighbors
+  message("Identifying neighbors... (2/7)\n")
+  k_tree <- FNN::get.knn(rbind(working_las@data[, c("X", "Y", "Z")], tree.locations[, c("X", "Y", "Z")]), k = k, algorithm = "cover_tree")
 
-  ## in meters, the distance within which points will be connected into a network
-  k_tree <- FNN::get.knn(rbind(working_las@data[ ,c("X","Y","Z")], tree.locations[ ,c("X","Y","Z")]), k = k,  algorithm="cover_tree")
-
-  ##---------------------- Build the Graph OBJ  -------------------------------------
-  ## matrix of from, to, weight (dist)
+  # Build the graph object
   message("Building the graph object... (3/7)\n")
-  weight_matrix = cbind(rep(1:dim(k_tree$nn.index)[1],each=k),
-                        as.vector(t(k_tree$nn.index)),
-                        as.vector(t(k_tree$nn.dist)))
-  # which(weight_matrix[,3] > point_dist_threshold)
-  # hist(weight_matrix[which(weight_matrix[,3] > point_dist_threshold),3])
+  weight_matrix <- cbind(rep(1:dim(k_tree$nn.index)[1], each = k), as.vector(t(k_tree$nn.index)), as.vector(t(k_tree$nn.dist)))
+  weight_matrix <- weight_matrix[weight_matrix[, 3] <= distance.threshold, ]
+  graph_obj <- cppRouting::makegraph(weight_matrix, directed = FALSE)
 
-  ## get rid of rows in the matrix that have a distance greater than the point_dist_threshold
-  weight_matrix <- weight_matrix[-(which(weight_matrix[,3] > distance.threshold)), ]
+  # IDs for the origin tree locations
+  treeloc_ids <- (nrow(working_las@data) + 1):(nrow(k_tree$nn.index))
+  treeloc_ids <- treeloc_ids[treeloc_ids %in% c(weight_matrix[, 1], weight_matrix[, 2])]
+  remaining_ids <- unique(c(weight_matrix[, 1], weight_matrix[, 2])[!(c(weight_matrix[, 1], weight_matrix[, 2]) %in% treeloc_ids)])
+  unused_ids <- (1:nrow(working_las@data))[!(1:nrow(working_las@data) %in% c(weight_matrix[, 1], weight_matrix[, 2]))]
 
-  ## actually make the graph using this matrix
-  graph_obj <- cppRouting::makegraph(weight_matrix,
-                                     directed = FALSE) ## a new package
-
-
-
-
-  ## ---- IDs for the origin tree locations ----
-  # treeloc_ids <- (nrow(working_las@data)+1):(nrow(k_tree$nn.index))
-  treeloc_ids <- (nrow(working_las@data)+1):(nrow(k_tree$nn.index))
-  treeloc_ids <- treeloc_ids[treeloc_ids %in% c(weight_matrix[,1],weight_matrix[,2])]
-
-  ## ---- IDs for the origin tree locations ----
-  remaining_ids <- unique(c(weight_matrix[,1],weight_matrix[,2])[!(c(weight_matrix[,1],weight_matrix[,2]) %in% treeloc_ids)])
-
-  ## ---- IDs not used in graph ----
-  unused_ids <- (1:(nrow(working_las@data)))[!(1:(nrow(working_las@data)) %in% c(weight_matrix[,1],weight_matrix[,2]))]
-
-  ##-------------- Calculate the shortest paths from all tree origins  -----------------------------
+  # Calculate the shortest paths from all tree origins
   message("Calculating the shortest path from tree... (4/7)\n")
   shortpath <- cppRouting::get_distance_matrix(graph_obj, from = treeloc_ids, to = remaining_ids, allcores = FALSE)
-  # shortpath[ ,1:100] ## testing
 
-  # shortpath <- cppRouting::get_multi_paths(graph_obj, from = treeloc_ids, to = remaining_ids, long = TRUE)
-
-  ##-------------- Determine which tree ID is linked to the shortest path  -----------------------------
+  # Determine which tree ID is linked to the shortest path
   message("Linking tree IDs... (5/7)\n")
-  ## Use the metabolic scaling factors to modify the distances for each treeID
-  if(use.metabolic.scale == TRUE){
+  if (use.metabolic.scale) {
     shortpath <- shortpath * met_scale
   }
-
-  ## add this so you don't drop columns in the colMins function
   shortpath <- rbind(shortpath, 999)
-
-  ## Classify the vector of treeIDs (we need all of the point ids back together)
-  treeID <- c( Rfast::colMins(shortpath), rep(0, length(unused_ids)) )
-  ## give the values the proper point ID name
-
+  treeID <- c(Rfast::colMins(shortpath), rep(0, length(unused_ids)))
   names(treeID) <- c(colnames(shortpath), unused_ids)
-  ## now get the treeID values back in order to attach to the las object
   treeID <- treeID[order(as.numeric(names(treeID)))]
-  # treeID <- treeID[as.numeric(names(treeID))]
-  ## change the "extra" treeID to 0
   treeID[treeID > ntree] <- 0
 
-  ## -------------------------- add the treeID data to the las object -----------------------------------
+  # Assign treeIDs to the las object
   message("Assigning treeIDs to the las object... (6/7)\n")
-
-  working_las <- lidR::add_lasattribute(working_las, (treeID), name = "treeID", desc = "tree id")
-  las_ids_slice <- filter_poi(working_las, Z>=ptcloud_slice_min, Z<=ptcloud_slice_max)
-  lookup<-data.frame(segmented=las_ids_slice@data[RANN::nn2(data=data.frame(X=las_ids_slice@data$X,Y=las_ids_slice@data$Y,Z=las_ids_slice@data$Z),
-                                                            query=data.frame(X=tree.locations$X,Y=tree.locations$Y,Z=tree.locations$Z),
-                                                            k=1)$nn.idx,]$treeID, original=tree.locations$TreeID)
-
+  working_las <- lidR::add_lasattribute(working_las, treeID, name = "treeID", desc = "tree id")
+  las_ids_slice <- lidR::filter_poi(working_las, Z >= ptcloud_slice_min, Z <= ptcloud_slice_max)
+  lookup <- data.frame(segmented = las_ids_slice@data[RANN::nn2(data = data.frame(X = las_ids_slice@data$X, Y = las_ids_slice@data$Y, Z = las_ids_slice@data$Z),
+                                                                query = data.frame(X = tree.locations$X, Y = tree.locations$Y, Z = tree.locations$Z),
+                                                                k = 1)$nn.idx, ]$treeID, original = tree.locations$TreeID)
   working_las@data$treeID <- lookup$original[match(working_las@data$treeID, lookup$segmented)]
 
-
-  ## based on whether the user wants the dense point cloud returned
-  if(return.dense == FALSE){
-
-    working_las@data$X <- working_las@data$X + center_x
-    working_las@data$Y <- working_las@data$Y + center_y
-    return(working_las)
-
-  } else {
-    ## get the indices of nearest sparse points
+  # Return the dense point cloud if required
+  if (return.dense) {
     message("Processing dense cloud... (6b/7)\n")
-    s2d_lookup <- RANN::nn2(data=data.frame(X=working_las@data$X,Y=working_las@data$Y,Z=working_las@data$Z),
-                            query=data.frame(X=las@data$X,Y=las@data$Y,Z=las@data$Z),
-                            k=1)
-    ## grab the treeID of the sparse point
-    las@data$treeID<-working_las@data$treeID[s2d_lookup[[1]]]
-    las@data$nnd<-s2d_lookup[[2]]
-
-    ## assign the point if within subsampled sparse point density, otherwise 0
-    las@data$treeID[las@data$nnd>(subsample.graph * 1.25)]<-0
-    las@data$treeID[las@data$Classification==2]<-0
-
-    # plot(las, color="treeID", backend="pcv")
-
-    ## add the treeID values as attribute the dense point cloud
-    las <- lidR::add_lasattribute(las, (las@data$treeID), name = "treeID", desc = "tree id")
+    s2d_lookup <- RANN::nn2(data = data.frame(X = working_las@data$X, Y = working_las@data$Y, Z = working_las@data$Z),
+                            query = data.frame(X = las@data$X, Y = las@data$Y, Z = las@data$Z), k = 1)
+    las@data$treeID <- working_las@data$treeID[s2d_lookup[[1]]]
+    las@data$nnd <- s2d_lookup[[2]]
+    las@data$treeID[las@data$nnd > (subsample.graph * 1.25)] <- 0
+    las@data$treeID[las@data$Classification == 2] <- 0
+    las <- lidR::add_lasattribute(las, las@data$treeID, name = "treeID", desc = "tree id")
     las@data$X <- las@data$X + center_x
     las@data$Y <- las@data$Y + center_y
-
+    message("Done! (7/7)\n")
     return(las)
+  } else {
+    working_las@data$X <- working_las@data$X + center_x
+    working_las@data$Y <- working_las@data$Y + center_y
+    message("Done! (7/7)\n")
+    return(working_las)
   }
-  message("Done! (7/7)\n")
+
 }

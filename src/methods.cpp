@@ -732,65 +732,6 @@ vector<vector<vector<double> > > irlsPlotCircles(vector<vector<double> >& cloud,
 
 }
 
-vector<vector<double> > pointMetrics(vector<vector<double> >& cloud, vector<vector<unsigned int> >& idx, vector<bool> which_metrics){
-
-  unsigned int ncol = idx.size();
-  unsigned int nrow = idx[0].size();
-
-  vector<vector<double> > out;
-  for(unsigned int i = 0; i < nrow; ++i){
-
-    vector<vector<double> > xyz(3);
-
-    for(unsigned int j = 0; j < ncol; ++j){
-
-      int cell = idx[j][i];
-      if(cell-- == 0) break;
-
-      xyz[0].push_back( cloud[0][cell] );
-      xyz[1].push_back( cloud[1][cell] );
-      xyz[2].push_back( cloud[2][cell] );
-    }
-
-    if(xyz[0].size() < 3){
-      out.push_back({0});
-    }else{
-      vector<double> metrics = nnMetrics(xyz, which_metrics);
-      out.push_back(metrics);
-    }
-  }
-
-  return out;
-}
-
-vector<vector<double> > voxelMetrics(vector<vector<double> >& cloud, vector<vector<unsigned int> >& idx, vector<bool> which_metrics){
-
-  unsigned int nvoxels = idx.size();
-  vector<vector<double> > out;
-
-  int i = 1;
-  for(auto& vx : idx){
-
-    if(vx.size() < 3){
-      out.push_back({0});
-      continue;
-    }
-
-    vector<vector<double> > xyz(3);
-
-    for(auto& pt : vx){
-      xyz[0].push_back( cloud[0][pt] );
-      xyz[1].push_back( cloud[1][pt] );
-      xyz[2].push_back( cloud[2][pt] );
-    }
-
-    vector<double> metrics = nnMetrics(xyz, which_metrics);
-    out.push_back(metrics);
-  }
-
-  return out;
-}
-
 vector<unsigned long long int> voxelIndex(vector<vector<double> >& cloud, double voxel_spacing){
 
   typedef unsigned long long int llint;

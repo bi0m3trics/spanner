@@ -26,7 +26,7 @@
 #'  \item \code{Linearity}: linear saliency, \mjeqn{(\lambda_{1} + \lambda_{2}) / \lambda_{1}}{ASCII representation}
 #'  \item \code{Verticality}: vertical saliency, \mjeqn{1-abs(\langle (0,0,1),e_3\rangle)}{ASCII representation}
 #'  \item \code{Planarity}: planar saliency, \mjeqn{(\lambda_{2} + \lambda_{3}) / \lambda_{1}}{ASCII representation}
-#'  \item \code{Sphericity}: spherical saliency, \mjeqn{\lambda_{3} / \lambda_{1}}{ASCII representation}
+#'  \item \code{Nx,Ny,Nz}: 3 components of the normal vector, {ASCII representation}
 #' }
 #' @return A labeled data.table of point metrics for each point in the LAS object
 #'
@@ -41,7 +41,7 @@ eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
   data.table::setDT(temp)
   cols<-c("eLargest","eMedium","eSmallest","eSum","Curvature","Omnivariance",
           "Anisotropy","Eigentropy","Linearity","Verticality","Planarity",
-          "Sphericity")
+          "Sphericity", "Nx", "Ny", "Nz")
   data.table::setnames(temp, cols)
   pca_basic = princomp(temp[,c("eLargest","eMedium","eSmallest")])
   temp$PCA1 = pca_basic$scores[,1]
@@ -103,4 +103,20 @@ las2xyz = function(las){
 
   las = as.matrix(las@data[,c('X','Y','Z')])
   return(las)
+}
+
+#' @export
+spanner_pal <- function() {
+  c(
+    Red_CMYK = "#F52220",
+    Tangerine = "#E8801A",
+    Flax = "#E1DA8A",
+    Kelly_green = "#5EA530",
+    Brunswick_green = "#114232",
+    Keppel = "#2BB4A2",
+    Dark_slate_gray = "#115A5D",
+    Magenta_dye = "#B20F66",
+    Chocolate_cosmos = "#560F11",
+    Cornell_red = "#C0181A"
+  )
 }

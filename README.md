@@ -52,7 +52,7 @@ las = classify_noise(las, ivf(0.25, 3))
 las = filter_poi(las, Classification != LASNOISE)
 
 # plot the non-ground points, colored by height
-plot(filter_poi(las, Classification!=2), color="Z")
+plot(filter_poi(las, Classification!=2), color="Z", pal=spanner_pal())
 
 # perform a deep inspection of the las object. If you see any 
 # red text, you may have issues!
@@ -68,7 +68,6 @@ myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05,
                                        grid_slice_max = 2.0,
                                        minimum_polygon_area = 0.025, 
                                        cylinder_fit_type = "ransac", 
-                                       output_location = getwd(), 
                                        max_dia = 0.5, 
                                        SDvert = 0.25,
                                        n_pts = 20,
@@ -90,5 +89,15 @@ myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
                              output_location = getwd())
 
 # plot it in 3d colored by treeID
-plot(myTreeGraph, color = "treeID")
+plot(myTreeGraph, color = "treeID", pal=spanner_pal())
+
+# Process the data
+processed_data <- process_tree_data(myTreeLocs, myTreeGraph, return_sf = TRUE)
+
+# Print the processed data
+print(processed_data$data)
+# Print the sf object if return_sf is TRUE
+if (!is.null(processed_data$sf)) {
+  print(processed_data$sf)
+}
 ```

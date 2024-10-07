@@ -5,24 +5,23 @@
 \title{Segment a terrestrial point cloud using graph theory.}
 \usage{
 segment_graph(
-  las = las,
-  tree.locations = NULL,
-  k = NULL,
+  las,
+  tree.locations,
+  k = 50,
   distance.threshold = 0.38,
   use.metabolic.scale = FALSE,
   ptcloud_slice_min = 0.5,
   ptcloud_slice_max = 2,
   metabolic.scale.function = NULL,
   subsample.graph = 0.1,
-  return.dense = FALSE,
-  output_location = getwd()
+  return.dense = FALSE
 )
 }
 \arguments{
 \item{las}{LAS normalized las object.}
 
-\item{tree.locations}{data.frame A data.frame contained the following seed information: \code{TreeID},
-\code{X}, \code{Y}, \code{Z}, and \code{Radius} in the same units as the .las, output from the raster_eigen function.}
+\item{tree.locations}{sf object \code{sf} object containing the following tree information: \code{TreeID},
+\code{X}, \code{Y}, \code{Z}, \code{Radius}, and \code{Error}, output from the get_raster_eigen_treelocs function.}
 
 \item{k}{integer Number of nearest neighbors to be used in processing (k >= 50 suggested)}
 
@@ -47,13 +46,11 @@ time increases quickly with smaller point spacing with negligible returns in acc
 \item{return.dense}{bool Decision to return the subsampled point cloud or assign treeIDs back to
 points in the input dense point cloud.}
 
-\item{output_location}{character Where to save processing outputs (rasters).}
-
 \item{plot_radius}{numeric Radius (in the same units as the .las) used to define a region of
 interest for processing}
 }
 \value{
-a .las with the column treeID added.
+a sparse/dense normalized .las with the column treeID added.
 }
 \description{
 \code{segment_graph} returns a .las object with a new column "treeID".
@@ -71,37 +68,68 @@ this into consideration when choosing the extent of the input las object.
 }
 \examples{
 \dontrun{
-# set the number of threads to use in lidR
+\dontrun{
+# Set the number of threads to use in lidR
 set_lidr_threads(8)
 
-# read the las (which must be downloaded with getExampleData())
-LASfile <- system.file("extdata", "Pine_Example.laz", package="spanner")
-las = readLAS(LASfile, select = "xyzc")
+# Download and read an example laz
+getExampleData("DensePatchA")
+LASfile = system.file("extdata", "DensePatchA.laz", package="spanner")
+las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
+# Don't forget to make sure the las object has a projection
+projection(las) = sp::CRS("+init=epsg:26912")
 
-# plot(las, color="Z", backend="lidRviewer", trim=30)
+# Pre-process the example lidar dataset by classifying the ground points
+# using lidR::csf(), normalizing it, and removing outlier points
+# using lidR::ivf()
+las = classify_ground(las, csf(sloop_smooth = FALSE,
+                                class_threshold = 0.5,
+                                cloth_resolution = 0.5, rigidness = 1L,
+                                iterations = 500L, time_step = 0.65))
+las = normalize_height(las, tin())
+las = classify_noise(las, ivf(0.25, 3))
+las = filter_poi(las, Classification != LASNOISE)
 
-# find tree locations and attribute data
-myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.02,
-                                       dens_threshold = 0.25,
-                                       neigh_sizes=c(0.333, 0.166, 0.5),
+# Plot the non-ground points, colored by height
+plot(filter_poi(las, Classification != 2), color = "Z")
+
+# Perform a deep inspection of the las object. If you see any
+# red text, you may have issues!
+las_check(las)
+
+# Find individual tree locations and attribute data
+myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05,
+                                       pt_spacing = 0.0254,
+                                       dens_threshold = 0.2,
+                                       neigh_sizes = c(0.333, 0.166, 0.5),
                                        eigen_threshold = 0.5,
-                                       grid_slice_min = 0.666,
-                                       grid_slice_max = 2,
-                                       minimum_polygon_area = 0.01,
+                                       grid_slice_min = 0.6666,
+                                       grid_slice_max = 2.0,
+                                       minimum_polygon_area = 0.025,
                                        cylinder_fit_type = "ransac",
-                                       output_location = getwd(),
                                        max_dia = 0.5,
-                                       SDvert = 0.25)
+                                       SDvert = 0.25,
+                                       n_pts = 20,
+                                       n_best = 25)
 
-# segment the point cloud
-myTreeGraph <- segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
+# Plot the tree information over a CHM
+plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch = 16,
+       cex = myTreeLocs$Radius^2 * 10, asp = 1)
+
+# Segment the point cloud
+myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
                              distance.threshold = 0.5,
-                             use.metabolic.scale = FALSE, ptcloud_slice_min = 0.6666,
-                             ptcloud_slice_max = 2.0, subsample.graph = 0.1,
-                             return.dense = FALSE,
-                             output_location = getwd())
+                             use.metabolic.scale = FALSE,
+                             ptcloud_slice_min = 0.6666,
+                             ptcloud_slice_max = 2.0,
+                             subsample.graph = 0.1,
+                             return.dense = FALSE)
 
-plot(myTreeGraph, color="treeID",  backend="lidRviewer")
+# Plot it in 3D colored by treeID
+plot(myTreeGraph, color = "treeID", pal=spanner_pal())
+
+}
 }
 
 }

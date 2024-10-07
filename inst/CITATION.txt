@@ -1,0 +1,21 @@
+## R package reference generated from DESCRIPTION metadata
+citation(auto = meta)
+
+citHeader("To cite package spanner in publications use:")
+
+## "Adjudicating Perspectives" paper...
+bibentry(bibtype="Article",
+         author = "Donager, Jonathon J. and Sánchez Meador, Andrew J. and Blackburn, Ryan C.",
+         title = "Adjudicating Perspectives on Forest Structure: How Do Airborne, Terrestrial, and Mobile Lidar-Derived Estimates Compare?",
+         journal = "Remote Sensing",
+         volume = "13",
+         number = "12",
+         year = "2021",
+         issn = "2072-4292",
+         doi = "10.3390/rs13122297",
+         url = "https://www.mdpi.com/2072-4292/13/12/2297",
+         textVersion =
+           paste("Donager, Jonathon J., Andrew J. Sánchez Meador, and Ryan C. Blackburn. 2021. "Adjudicating Perspectives on Forest ",
+		 "Structure: How Do Airborne, Terrestrial, and Mobile Lidar-Derived Estimates Compare?" Remote Sensing 13, no. 12: 2297.",
+                 "<https://doi.org/10.3390/rs13122297>.")
+)

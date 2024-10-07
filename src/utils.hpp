@@ -65,11 +65,7 @@ vector<bool> voxelFilter(vector<vector<double> >& cloud, double voxel_spacing = 
 
 vector<double> xprod(vector<double>& a, vector<double>& b);
 
-void eigenDecomposition(vector<vector<double> >& cloud, vector<double>* eiVals, vector<vector<double> >* eiVecs);
-
 vector<double> pointDistances(vector<vector<double> >& cloud);
-
-vector<double> nnMetrics(vector<vector<double> >& xyz, vector<bool> which);
 
 vector<vector<unsigned int> > intmatrix2cpp(NumericMatrix& idxMatrix);
 
