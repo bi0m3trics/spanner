@@ -1,3 +1,21 @@
+# spanner 1.0.2
+* Added the citation for the package
+* Added a couple default datasets and fixed the call for getExampleData()
+* Added the xyz normals as returns for eigen_metrics()
+* Added PatchMorph functions:
+** process_rasters_patchmorph: Processes an input raster by reclassifying it based on suitability levels and applying gap and spur distance transformations to generate a list of processed rasters.
+** plot_raster_by_name: Plots a raster from a list of rasters based on the provided raster name.
+** sum_rasters_by_suitability: Sums rasters from a list based on their suitability levels and returns a list of summed rasters for each suitability level.
+* Added dependencies fopr sf and terra
+* Modified get_raster_eigen_treelocs and segment_graph
+** to use sf and not write any intermediate files to optput locations
+** wit parallel processing to make sure that all possible operations use the available CPU cores.
+** efficient data structures; used lapply for list operations and dplyr::bind_rows for combining data frames.
+** reduce redundant ralculations; stored intermediate results and reused them where possible.
+** removed unnecessary objects and used more efficient data structures.
+* Added spanner_pal() which is a custom color palette
+
+
 # spanner 1.0.1
 
 * Dependencies for raster now replaced by terra and calls to sp replaced with sf (in spanner only).
