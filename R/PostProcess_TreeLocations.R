@@ -103,6 +103,13 @@
 #'
 #' @export
 process_tree_data <- function(treeData, segmentedLAS, return_sf = FALSE) {
+  # Extract unique tree IDs from segmentedLAS
+  segmented_tree_ids <- unique(segmentedLAS$treeID)
+  
+  # Check if the same value and number of treeIDs exist in both treeData and segmentedLAS
+  if (!all(treeData$TreeID %in% segmented_tree_ids) || length(unique(treeData$TreeID)) != length(segmented_tree_ids)) {
+    stop("TreeIDs do not match between treeData and segmentedLAS.")
+  }
   unique_tree_ids <- unique(treeData$TreeID)
 
   highest_points <- data.frame(TreeID = integer(), X = numeric(), Y = numeric(), Z = numeric(), Radius = numeric(), Error = numeric())
