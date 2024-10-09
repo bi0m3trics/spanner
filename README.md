@@ -18,7 +18,7 @@ Get the latest released version of spanner from github.
 remotes::install_github('bi0m3trics/spanner')
 ```
 
-# Example usage
+# Workflows
 ## Terrestial Lidar Tree Attributes and Segmentation
 
 <img align="right" height="240" src="./img/output.png">
