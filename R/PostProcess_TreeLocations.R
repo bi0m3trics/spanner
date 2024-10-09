@@ -108,7 +108,7 @@ process_tree_data <- function(treeData, segmentedLAS, return_sf = FALSE) {
   
   # Check if the same value and number of treeIDs exist in both treeData and segmentedLAS
   if (!all(treeData$TreeID %in% segmented_tree_ids) || length(unique(treeData$TreeID)) != length(segmented_tree_ids)) {
-    stop("TreeIDs do not match between treeData and segmentedLAS.")
+    warning("TreeIDs do not match between treeData and segmentedLAS.")
   }
 
   unique_tree_ids <- unique(treeData$TreeID)
