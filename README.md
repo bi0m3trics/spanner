@@ -29,6 +29,9 @@ The following is the full processing pipeline described in <a href="https://doi.
 Citation: Donager, Jonathon J., Andrew J. Sánchez Meador, and Ryan C. Blackburn 2021. Adjudicating Perspectives on Forest Structure: How Do Airborne, Terrestrial, and Mobile Lidar-Derived Estimates Compare? Remote Sensing 13, no. 12: 2297. https://doi.org/10.3390/rs13122297
 
 ## PatchMorph: Patch Delineation Algorithm
+
+<img align="right" height="240" src="./img/pm_output.png">
+
 The patchwoRk function implements a patch delineation algorithm [at present it only implements <a href="https://link.springer.com/article/10.1007/s10980-007-9104-8">'PatchMorph' (Girvetz & Greco 2007)</a>, which can delineate patches across a range of spatial scales based on three organism-specific thresholds - (1) land cover density threshold, (2) habitat gap maximum thickness (gap threshold), and (3) habitat patch minimum thickness (spur threshold)].
 
 Citation: Girvetz EH, and Greco SE. 2007. How to define a patch: a spatial model for hierarchically delineating organism-specific habitat patches. Landscape Ecology 22: 1131-1142. http://dx.doi.org/10.1007/s10980-007-9104-8
