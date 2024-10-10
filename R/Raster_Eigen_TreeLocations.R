@@ -65,7 +65,7 @@
 #'                                        max_angle = 20)
 #' plot(lidR::grid_canopy(las, res = 0.2, p2r()))
 #' symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
-#' circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black') # Add tree locations to the plot
+#' circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
 #' }
 #'
 #' @export
