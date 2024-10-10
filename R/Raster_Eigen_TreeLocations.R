@@ -25,7 +25,6 @@
 #' @param grid_slice_max numeric Upper bound of point cloud slice in normalized point cloud.
 #' @param minimum_polygon_area numeric Smallest allowable polygon area of potential tree boles.
 #' @param cylinder_fit_type  character Choose "ransac" or "irls" cylinder fitting.
-#' @param output_location character Where to write intermediary and output data layers.
 #' @param max_dia numeric The max diameter (in m) of a resulting tree (use to eliminate commission errors).
 #' @param SDvert numeric The standard deviation threshold below whihc polygons will be considered as tree boles.
 #' @param n_best integer number of "best" ransac fits to keep when evaluating the best fit.
@@ -33,18 +32,17 @@
 #' @param inliers integer expected proportion of inliers among cylinder points
 #' @param conf numeric confidence level
 #' @param max_angle numeric maximum tolerated deviation, in degrees, from vertical.
-#' #' @return sf A sf containing the following seed information: `TreeID`,
-#' `X`, `Y`, `Z`, and `Radius` in the same units as the .las
+#' #' @return sf A sf object containing the following tree seed information: `TreeID`,
+#' `Radius`, and `Error` in the same units as the .las, as well as the point geometry
 #'
 #' @examples
-#'
 #'
 #' \dontrun{
 #' # set the number of threads to use in lidR
 #' set_lidr_threads(8)
 #'
 #' # read the las (which must be downloaded with getExampleData())
-#' LASfile <- system.file("extdata", "Pine_Example.laz", package="spanner")
+#' LASfile <- system.file("extdata", "DensePatchA.laz", package="spanner")
 #' las = readLAS(LASfile, select = "xyzc")
 #'
 #' # plot(las, color="Z", backend="lidRviewer", trim=30)
@@ -58,7 +56,6 @@
 #'                                        grid_slice_max = 2,
 #'                                        minimum_polygon_area = 0.01,
 #'                                        cylinder_fit_type = "ransac",
-#'                                        output_location = getwd(),
 #'                                        max_dia = 1,
 #'                                        SDvert = 0.25,
 #'                                        n_pts = 20,
@@ -66,8 +63,9 @@
 #'                                        inliers = 0.9,
 #'                                        conf = 0.99,
 #'                                        max_angle = 20)
-# plot(lidR::grid_canopy(las, res = 0.2, p2r()))
-# points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch=16, cex = myTreeLocs$Radius^2*10)
+#' plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+#' symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
+#' circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black') # Add tree locations to the plot
 #' }
 #'
 #' @export
@@ -79,9 +77,6 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                       inliers = 0.9, conf = 0.99, max_angle = 20)
 {
 
-  ## Validate output directory
-  if (!dir.exists(output_location)) stop("Output directory does not exist!", call. = FALSE)
-  if (!(file.access(output_location, mode = 0) == 0)) stop("Output directory not writeable!", call. = FALSE)
   ##---------------------- Preprocesssing -------------------------------------
   ## Subsample using systematic voxel grid to 1in
   message("Downsampling the scan... (step 1 of 14)\n")
@@ -107,28 +102,23 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
 
   message("Calculating relative density... (5/14)\n")
   cnt_local <- spanner:::C_count_in_disc(X = slice_extra@data$X, Y = slice_extra@data$Y,
-                                      x = slice_extra@data$X, y = slice_extra@data$Y,
-                                      radius = neigh_sizes[2], ncpu = lidR::get_lidr_threads())
+                                         x = slice_extra@data$X, y = slice_extra@data$Y,
+                                         radius = neigh_sizes[2], ncpu = lidR::get_lidr_threads())
   cnt_large <- spanner:::C_count_in_disc(X = slice_extra@data$X, Y = slice_extra@data$Y,
-                                      x = slice_extra@data$X, y = slice_extra@data$Y,
-                                      radius = neigh_sizes[3], ncpu = lidR::get_lidr_threads())
+                                         x = slice_extra@data$X, y = slice_extra@data$Y,
+                                         radius = neigh_sizes[3], ncpu = lidR::get_lidr_threads())
   slice_extra <- lidR::add_lasattribute(slice_extra, as.numeric(cnt_local/cnt_large),
                                         name = "relative_density", desc = "relative density")
 
   ##---------------------- Eigen & Raster Processing -------------------------------------
   message("Gridding relative density... (6/14)\n")
-  filename = paste0(output_location, paste0("temp_RelDens_",grid_slice_min,"-",grid_slice_max,"_",
-                                                                 dens_threshold,"threshold_res-",res,".shp"))
 
   density_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~stats::median(relative_density, na.rm = T), res = res,
                                                  start = c(min(slice_extra@data$X), min(slice_extra@data$Y))))
   density_polygon <- terra::as.polygons(terra::classify(density_grid, rbind(c(0,dens_threshold,0),
-                                                              c(dens_threshold,1,1))), dissolve = T)
-  terra::writeVector(terra::disagg(density_polygon[density_polygon$V1 > 0,]), filename = filename, overwrite=TRUE)
-
-  suppressMessages(sf::sf_use_s2(FALSE)) ## Turn off the s2 processing
-
-  density_polygon <- sf::read_sf(filename)
+                                                                            c(dens_threshold,1,1))), dissolve = T)
+  density_polygon <- terra::disagg(density_polygon[density_polygon$V1 > 0,])
+  density_polygon <- sf::st_as_sf(density_polygon)
   density_polygon$area = as.numeric(sf::st_area(density_polygon))
   density_polygon <- density_polygon[density_polygon$area > minimum_polygon_area,]
   density_polygon <- sfheaders::sf_remove_holes(density_polygon)
@@ -136,15 +126,12 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   if(nrow(density_polygon) == 0 | is.null(density_polygon)) stop("No density polygons were created from the rasterized point cloud metrics! Try adjusting the threshold values.", call. = FALSE)
 
   message("Gridding verticality... (7/14)\n")
-  filename = paste0(output_location, paste0("temp_vertical_",grid_slice_min,"-",grid_slice_max,"_",
-                                                                 eigen_threshold,"threshold_res-",res,".shp"))
 
   verticality_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~stats::quantile(verticality, 0.5, na.rm = T), res = res))
   verticality_polygon <- terra::as.polygons(terra::classify(verticality_grid, rbind(c(0,eigen_threshold,0),
-                                                                      c(eigen_threshold,1,1))), dissolve = T)
-  terra::writeVector(terra::disagg(verticality_polygon[verticality_polygon$V1 > 0,]), filename = filename, overwrite=TRUE)
-
-  verticality_polygon <- sf::read_sf(filename)
+                                                                                    c(eigen_threshold,1,1))), dissolve = T)
+  verticality_polygon <- terra::disagg(verticality_polygon[verticality_polygon$V1 > 0,])
+  verticality_polygon <- sf::st_as_sf(verticality_polygon)
   verticality_polygon$area = as.numeric(sf::st_area(verticality_polygon))
   verticality_polygon <- verticality_polygon[verticality_polygon$area > minimum_polygon_area,]
   verticality_polygon <- sfheaders::sf_remove_holes(verticality_polygon)
@@ -175,8 +162,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                         fun = function(x){stats::median(x, na.rm = T)})[,2],2)
   merged$diffHGT <- round(merged$highHGT - merged$lowHGT,2)
   # merged <- merged[merged$diffHGT > ((grid_slice_max - grid_slice_min) / 2), ]
-  merged$maxHGT <- round(terra::extract(terra::rast(cancov), terra::vect(sf::as_Spatial(merged)),
-                                        fun = max)[,2], 2)
+  merged$maxHGT <- round(terra::extract(terra::rast(cancov), terra::vect(sf::as_Spatial(merged)), fun = function(x) max(x, na.rm = TRUE))[,2], 2)
 
   merged <- merged[merged$SDvert < SDvert, ]
   merged <- merged[merged$diffHGT > (grid_slice_max-grid_slice_min)*0.5, ]
@@ -203,16 +189,16 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   circles_sf <- sf::st_buffer(circles_sf, 0.075)
   sf::st_crs(circles_sf) = sf::st_crs(slice_extra)
   slice_clip <- lidR::merge_spatial(las = lidR::clip_roi(slice_extra, sf::st_sf(sf::st_union(circles_sf))),
-                              source = circles_sf, attribute = "TreeID")
+                                    source = circles_sf, attribute = "TreeID")
 
   slice_clip <- lidR::filter_poi(slice_clip, verticality >= eigen_threshold)
   if(is.null(slice_clip)) stop("No points in the las object after processing the resulting clipped slice! Try adjusting the threshold values.", call. = FALSE)
 
-   ##---------------------- Identify Trees -------------------------------------
+  ##---------------------- Identify Trees -------------------------------------
   message("Fitting nested height (length) cylinders...(12/14)\n")
   cyl_fit <- list()
   for(t in 1:length(sort(unique(slice_clip$TreeID))))
-    {
+  {
     min = grid_slice_min; max = grid_slice_max
     if(cylinder_fit_type == "ransac"){
       n_pts = n_pts
@@ -226,8 +212,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
     fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t]),
-                                method = cylinder_fit_type, n = n_pts, inliers = inliers,
-                                conf = conf, max_angle = max_angle, n_best = n_best)
+                                 method = cylinder_fit_type, n = n_pts, inliers = inliers,
+                                 conf = conf, max_angle = max_angle, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
     fit$dbh_width <- max-min
 
@@ -246,9 +232,9 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
     fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
-                                           Z >= min, Z <= max),
-                                method = cylinder_fit_type, n = n_pts, inliers = inliers,
-                                conf = conf, max_angle = max_angle, n_best = n_best)
+                                                  Z >= min, Z <= max),
+                                 method = cylinder_fit_type, n = n_pts, inliers = inliers,
+                                 conf = conf, max_angle = max_angle, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
     fit$dbh_width <- max-min
 
@@ -267,9 +253,9 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
     fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
-                                           Z >= min, Z <= max),
-                                method = cylinder_fit_type, n = n_pts, inliers = inliers,
-                                conf = conf, max_angle = max_angle, n_best = n_best)
+                                                  Z >= min, Z <= max),
+                                 method = cylinder_fit_type, n = n_pts, inliers = inliers,
+                                 conf = conf, max_angle = max_angle, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
     fit$dbh_width <- max-min
 
@@ -286,7 +272,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   message("Successfully obtained the cylinder summaries... (13/14)\n")
   output<-summary_cyl_fit[,c("TreeID","px","py","pz","radius","err")]
   colnames(output)<-c("TreeID","X","Y","Z","Radius","Error")
-  if(nrow(output) == 0 | is.null(output)) stop("No output data was created from the fitted cylinders! Try adjusting the threshold values.", call. = FALSE)  
+  if(nrow(output) == 0 | is.null(output)) stop("No output data was created from the fitted cylinders! Try adjusting the threshold values.", call. = FALSE)
   return(st_as_sf(output, coords = c("X", "Y", "Z"), crs = lidR::st_crs(las)))
   message("Done! (14/14)\n")
 }
