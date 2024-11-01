@@ -1,3 +1,36 @@
+# Function to estimate the crown base height of a tree
+estimate_crown_base_height <- function(z) {
+  quantiles <- quantile(z, probs = seq(0, 1, 0.05))
+  quantile_diffs <- diff(quantiles)
+  max_diff_index <- which.max(quantile_diffs)
+  crown_base_height <- quantiles[max_diff_index + 1]
+  return(crown_base_height)
+}
+
+# Function to calculate the convex hull and its volume and surface area
+calculate_hull <- function(xyz) {
+  if (is.list(xyz) && !is.data.frame(xyz)) {
+    p <- as.matrix(do.call("rbind", xyz))
+  } else {
+    p <- as.matrix(xyz)
+  }
+  ch <- geometry::convhulln(p, "FA")
+  return(list(crownvolume = ch$vol, crownsurface = ch$area))
+}
+
+# Function to fit a convex hull to points above the crown base height and calculate its volume
+fit_convex_hull_and_volume <- function(x, y, z) {
+  crown_base_height <- estimate_crown_base_height(z)
+  points_above_crown_base <- data.frame(X = x, Y = y, Z = z)[z > crown_base_height, ]
+  if (nrow(points_above_crown_base) < 4) {
+    return(as.numeric(NA))
+  }
+  hull <- calculate_hull(points_above_crown_base[, c("X", "Y", "Z")])
+  volume <- hull$crownvolume
+  return(volume)
+}
+
+
 #' Obtain tree information by processing point cloud data
 #'
 #' `process_tree_data` processes the output of `get_raster_eigen_treelocs` and `segment_graph` to add information
@@ -23,9 +56,12 @@
 #'   \describe{
 #'     \item{height}{numeric: Height of the highest point for each TreeID.}
 #'     \item{crown_area}{numeric: Area of the convex hull for each TreeID.}
+#'     \item{crown_base_height}{numeric: Height to the base of the live crown for each TreeID.}
+#'     \item{crown_volume}{numeric: Volume of the convex hull for the crown of each TreeID.}
 #'     \item{diameter}{numeric: Diameter of the tree, calculated as twice the Radius.}
 #'   }
-#'   If `return_sf` is TRUE, also returns an `sf` object representing the convex hulls for each tree.
+#'   If `return_sf` is TRUE, returns an `sf` object where the geometry is the convex hulls for each tree.
+#'   If `return_sf` is FALSE, returns an `sf` object with point geometries using treeData.
 #'
 #' @examples
 #'
@@ -103,11 +139,17 @@
 #'
 #' @export
 process_tree_data <- function(treeData, segmentedLAS, return_sf = FALSE) {
-  # Extract unique tree IDs from segmentedLAS
   segmented_tree_ids <- unique(segmentedLAS$treeID)
-  
-  # Check if the same value and number of treeIDs exist in both treeData and segmentedLAS
-  if (!all(treeData$TreeID %in% segmented_tree_ids) || length(unique(treeData$TreeID)) != length(segmented_tree_ids)) {
+  tree_data_ids <- unique(treeData$TreeID)
+
+  # Print diagnostic information
+  cat("TreeIDs in treeData but not in segmentedLAS:\n")
+  print(setdiff(tree_data_ids, segmented_tree_ids))
+
+  cat("TreeIDs in segmentedLAS but not in treeData:\n")
+  print(setdiff(segmented_tree_ids, tree_data_ids))
+
+  if (!all(treeData$TreeID %in% segmented_tree_ids) || length(tree_data_ids) != length(segmented_tree_ids)) {
     warning("TreeIDs do not match between treeData and segmentedLAS.")
   }
 
@@ -116,42 +158,47 @@ process_tree_data <- function(treeData, segmentedLAS, return_sf = FALSE) {
   highest_points <- data.frame(TreeID = integer(), X = numeric(), Y = numeric(), Z = numeric(), Radius = numeric(), Error = numeric())
   convex_hulls <- list()
   crown_areas <- numeric()
+  crown_base_heights <- numeric()
+  crown_volumes <- numeric()
 
   for (tree_id in unique_tree_ids) {
     tree_data <- subset(treeData, TreeID == tree_id)
     tree_las <- lidR::filter_poi(segmentedLAS, treeID == tree_id)
 
-    # Find the highest point
     highest_point <- tree_las[which.max(tree_las$Z), ]
     highest_point_df <- data.frame(TreeID = tree_id, X = highest_point$X, Y = highest_point$Y, Z = highest_point$Z, Radius = NA, Error = NA)
     highest_points <- rbind(highest_points, highest_point_df)
 
-    # Compute the convex hull
     tree_coords <- data.frame(X = tree_las$X, Y = tree_las$Y)
     if (nrow(tree_coords) > 2) {
       convex_hull <- sf::st_convex_hull(sf::st_union(sf::st_sfc(sf::st_multipoint(as.matrix(tree_coords)))))
       convex_hulls[[as.character(tree_id)]] <- convex_hull
-
-      # Calculate the crown area
       crown_area <- sf::st_area(convex_hull)
       crown_areas <- c(crown_areas, crown_area)
     } else {
       convex_hulls[[as.character(tree_id)]] <- NULL
       crown_areas <- c(crown_areas, NA)
     }
+
+    crown_base_height <- estimate_crown_base_height(tree_las$Z)
+    crown_base_heights <- c(crown_base_heights, crown_base_height)
+
+    crown_volume <- fit_convex_hull_and_volume(tree_las$X, tree_las$Y, tree_las$Z)
+    crown_volumes <- c(crown_volumes, crown_volume)
   }
 
-  # Add height, crown area, and diameter to the original data
   treeData$height <- NA
   treeData$crown_area <- NA
   treeData$diameter <- treeData$Radius * 2
+  treeData$crown_base_height <- NA
+  treeData$crown_volume <- NA
 
   for (tree_id in unique_tree_ids) {
     treeData[treeData$TreeID == tree_id, "height"] <- highest_points[highest_points$TreeID == tree_id, "Z"]
     treeData[treeData$TreeID == tree_id, "crown_area"] <- crown_areas[unique_tree_ids == tree_id]
+    treeData[treeData$TreeID == tree_id, "crown_base_height"] <- crown_base_heights[unique_tree_ids == tree_id]
+    treeData[treeData$TreeID == tree_id, "crown_volume"] <- crown_volumes[unique_tree_ids == tree_id]
   }
-
-  result <- list(data = treeData)
 
   if (return_sf) {
     hulls_sf <- do.call(rbind, lapply(names(convex_hulls), function(tree_id) {
@@ -159,7 +206,10 @@ process_tree_data <- function(treeData, segmentedLAS, return_sf = FALSE) {
         sf::st_sf(TreeID = as.integer(tree_id), geometry = convex_hulls[[tree_id]])
       }
     }))
-    result$sf <- hulls_sf
+    result <- sf::st_sf(treeData)
+    result$geometry <- hulls_sf$geometry
+  } else {
+    result <- sf::st_as_sf(treeData, coords = c("X", "Y"), crs = sf::st_crs(segmentedLAS))
   }
 
   return(result)
