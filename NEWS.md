@@ -1,4 +1,7 @@
 # spanner 1.0.2
+* Added `process_tree_data` funciton that takes the output of `get_raster_eigen_treelocs` and `segment_graph` to adds information
+*  about the height, crown area and volume, and diameter for each unique TreeID. It also has an optional parameter to return
+*  either points or hulls as an `sf` object for each tree.
 * Added the citation for the package
 * Added a couple default datasets and fixed the call for getExampleData()
 * Added the xyz normals as returns for eigen_metrics()
@@ -9,7 +12,7 @@
 * Added dependencies fopr sf and terra
 * Modified get_raster_eigen_treelocs and segment_graph
 ** to use sf and not write any intermediate files to optput locations
-** wit parallel processing to make sure that all possible operations use the available CPU cores.
+** with parallel processing to make sure that all possible operations use the available CPU cores.
 ** efficient data structures; used lapply for list operations and dplyr::bind_rows for combining data frames.
 ** reduce redundant ralculations; stored intermediate results and reused them where possible.
 ** removed unnecessary objects and used more efficient data structures.
