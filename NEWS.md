@@ -1,7 +1,7 @@
 # spanner 1.0.2
 * Added `process_tree_data` funciton that takes the output of `get_raster_eigen_treelocs` and `segment_graph` to adds information
-*  about the height, crown area and volume, and diameter for each unique TreeID. It also has an optional parameter to return
-*  either points or hulls as an `sf` object for each tree.
+**  about the height, crown area and volume, and diameter for each unique TreeID. It also has an optional parameter to return
+**  either points or hulls as an `sf` object for each tree.
 * Added the citation for the package
 * Added a couple default datasets and fixed the call for getExampleData()
 * Added the xyz normals as returns for eigen_metrics()
