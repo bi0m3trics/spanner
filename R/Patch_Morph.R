@@ -91,10 +91,11 @@ process_rasters_patchmorph <- function(input_raster, suitList, gapList, spurList
         message(paste("Processing Suitability:", suit, "Gap:", cntGap, "Spur:", cntSpur))
 
         # Assign a name to the raster based on the current parameters
-        names(rGap) <- paste("suit", suit, "gap", cntGap, "spur", cntSpur, sep = "_")
+        raster_name <- paste("suit", suit, "gap", cntGap, "spur", cntSpur, sep = "_")
+        names(rGap) <- raster_name
         # plot(rGap)
         # Add the raster to the list
-        rasters[[length(rasters) + 1]] <- rGap
+        rasters[[raster_name]] <- rGap
       }
     }
   }
@@ -128,20 +129,11 @@ process_rasters_patchmorph <- function(input_raster, suitList, gapList, spurList
 #' }
 #'
 #' @export
-plot_raster_by_name <- function(rasters, raster_name) {
-  # Find the index of the raster in the list by its name
-  index <- which(sapply(rasters, function(r) raster_name %in% names(r)))
-
-  # Check if the raster with the given name exists in the list
-  if (length(index) > 0) {
-    # If it exists, select the raster from the list using its index
-    r <- rasters[[index]]
-
-    # Plot the selected raster
-    plot(r)
+plot_raster_by_name <- function(rasters, name) {
+  if (name %in% names(rasters)) {
+    plot(rasters[[name]], main = name)
   } else {
-    # If it doesn't exist, print a message indicating that no raster was found with the given name
-    print(paste("No raster found with name", raster_name))
+    message("Raster with the specified name does not exist.")
   }
 }
 
@@ -181,7 +173,7 @@ sum_rasters_by_suitability <- function(rasters, suitList) {
   # Loop over the unique suitability levels
   for (suit in unique(suitList)) {
     # Filter the rasters in the list by the current suitability level
-    suitRasters <- rasters[sapply(rasters, function(x) any(grepl(paste0("suit_", suit), names(x))))]
+    suitRasters <- rasters[sapply(names(rasters), function(x) grepl(paste0("suit_", suit), x))]
 
     # Check if there are any rasters for the current suitability level
     if (length(suitRasters) > 0) {
@@ -198,10 +190,11 @@ sum_rasters_by_suitability <- function(rasters, suitList) {
       }
 
       # Assign a name to the summed raster based on the current suitability level
-      names(rSum) <- paste("suit", suit, "sum", sep = "_")
+      raster_name <- paste("suit", suit, "sum", sep = "_")
+      names(rSum) <- raster_name
 
       # Add the summed raster to the list
-      rSumList[[length(rSumList) + 1]] <- rSum
+      rSumList[[raster_name]] <- rSum
     }
   }
 
