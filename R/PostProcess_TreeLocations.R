@@ -1,9 +1,13 @@
 # Function to estimate the crown base height of a tree
-estimate_crown_base_height <- function(z) {
+estimate_crown_base_height <- function(z, threshold = 0.05) {
   quantiles <- quantile(z, probs = seq(0, 1, 0.05))
   quantile_diffs <- diff(quantiles)
-  max_diff_index <- which.max(quantile_diffs)
-  crown_base_height <- quantiles[max_diff_index + 1]
+  asymptote_index <- which(quantile_diffs > threshold)[1]
+   if (!is.na(asymptote_index)) {
+    crown_base_height <- quantiles[asymptote_index + 1]
+  } else {
+    crown_base_height <- max(z)
+  }
   return(crown_base_height)
 }
 
@@ -14,7 +18,13 @@ calculate_hull <- function(xyz) {
   } else {
     p <- as.matrix(xyz)
   }
-  ch <- geometry::convhulln(p, "FA")
+  # Wrap the convhulln call in tryCatch to handle errors
+  ch <- tryCatch({
+    geometry::convhulln(p, "FA")
+  }, error = function(e) {
+    # Return NA values if an error occurs
+    return(list(vol = NA_real_, area = NA_real_))
+  })
   return(list(crownvolume = ch$vol, crownsurface = ch$area))
 }
 
@@ -22,14 +32,19 @@ calculate_hull <- function(xyz) {
 fit_convex_hull_and_volume <- function(x, y, z) {
   crown_base_height <- estimate_crown_base_height(z)
   points_above_crown_base <- data.frame(X = x, Y = y, Z = z)[z > crown_base_height, ]
+  # Check if there are enough points to calculate a convex hull
   if (nrow(points_above_crown_base) < 4) {
-    return(as.numeric(NA))
+    return(NA_real_)  # Return NA if there are not enough points
   }
+  # Calculate the convex hull
   hull <- calculate_hull(points_above_crown_base[, c("X", "Y", "Z")])
-  volume <- hull$crownvolume
-  return(volume)
+  # Check if the hull calculation returned NA values
+  if (is.na(hull$crownvolume)) {
+    return(NA_real_)  # Return NA if the convex hull calculation failed
+  }
+  # Return the calculated volume
+  return(hull$crownvolume)
 }
-
 
 #' Obtain tree information by processing point cloud data
 #'
