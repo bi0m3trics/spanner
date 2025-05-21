@@ -88,7 +88,7 @@ cylinderFit = function(las, method = 'ransac', n=5, inliers=.9, conf=.95, max_an
     names(pars) = c('x','y','radius', 'err', 'ax', 'ay')
   }else{
     pars[5] = pars[5]
-    pars %<>% as.double(c(apply(las@data[,.(X,Y,Z)], 2, function(x) sum(range(x))/2))
+    pars %<>% as.double(c(apply(las@data[,.(X,Y,Z)], 2, function(x) sum(range(x))/2)))
     names(pars) = c('rho','theta','phi', 'alpha', 'radius', 'err', 'px', 'py', 'pz')
   }
   pars = as.data.frame(t(pars))
