@@ -204,9 +204,10 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       n_pts = n_pts
       n_best = n_best
     } else if(cylinder_fit_type == "irls"){
-      n_pts = min(data.frame(lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data %>%
-                               dplyr::group_by(TreeID) %>%
-                               dplyr::summarize(count = length(X)))$count)/2
+      tmp_dat <- lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data
+      tmp_dat_grouped <- dplyr::group_by(tmp_dat, TreeID)
+      tmp_dat_summary <- dplyr::summarize(tmp_dat_grouped, count = length(X))
+      n_pts = min(tmp_dat_summary$count)/2
       n_best = 100
     } else {
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
@@ -224,9 +225,10 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       n_pts = n_pts
       n_best = n_best
     } else if(cylinder_fit_type == "irls"){
-      n_pts = min(data.frame(lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data %>%
-                               dplyr::group_by(TreeID) %>%
-                               dplyr::summarize(count = length(X)))$count)/2
+      tmp_dat <- lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data
+      tmp_dat_grouped <- dplyr::group_by(tmp_dat, TreeID)
+      tmp_dat_summary <- dplyr::summarize(tmp_dat_grouped, count = length(X))
+      n_pts = min(tmp_dat_summary$count)/2
       n_best = 100
     } else {
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
@@ -245,9 +247,10 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       n_pts = n_pts
       n_best = n_best
     } else if(cylinder_fit_type == "irls"){
-      n_pts = min(data.frame(lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data %>%
-                               dplyr::group_by(TreeID) %>%
-                               dplyr::summarize(count = length(X)))$count)/2
+      tmp_dat <- lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data
+      tmp_dat_grouped <- dplyr::group_by(tmp_dat, TreeID)
+      tmp_dat_summary <- dplyr::summarize(tmp_dat_grouped, count = length(X))
+      n_pts = min(tmp_dat_summary$count)/2
       n_best = 100
     } else {
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
