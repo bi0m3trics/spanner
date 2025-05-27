@@ -1,4 +1,5 @@
 # spanner 1.0.2
+* Removed depends on magrittr and removed all %>% in codebase
 * Added `process_tree_data` funciton that takes the output of `get_raster_eigen_treelocs` and `segment_graph` to adds information
 **  about the height, crown area and volume, and diameter for each unique TreeID. It also has an optional parameter to return
 **  either points or hulls as an `sf` object for each tree.
