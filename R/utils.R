@@ -82,16 +82,16 @@ eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
 cylinderFit = function(las, method = 'ransac', n=5, inliers=.9, conf=.95, max_angle=30, n_best=20){
   if(nrow(las@data) < 3) return(NULL)
   if(method == 'ransac' & nrow(las@data) <= n) method = 'nm'
-  pars = cppCylinderFit(las %>% las2xyz, method, n, conf, inliers, max_angle, n_best)
+  pars = cppCylinderFit(las2xyz(las), method, n, conf, inliers, max_angle, n_best)
   if(method == 'bf'){
     pars[3] = pars[3]
     names(pars) = c('x','y','radius', 'err', 'ax', 'ay')
   }else{
     pars[5] = pars[5]
-    pars %<>% c(apply(las@data[,.(X,Y,Z)], 2, function(x) sum(range(x))/2) %>% as.double)
+    pars = c(pars, as.double(apply(las@data[,c('X','Y','Z')], 2, function(x) sum(range(x))/2)))
     names(pars) = c('rho','theta','phi', 'alpha', 'radius', 'err', 'px', 'py', 'pz')
   }
-  pars = pars %>% t %>% as.data.frame
+  pars = as.data.frame(t(pars))
   return(pars)
 }
 
