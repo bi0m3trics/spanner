@@ -40,7 +40,6 @@ Imports:
     lwgeom,
     mathjaxr
 Depends: 
-    magrittr,
     lidR,
     data.table,
     sf,
