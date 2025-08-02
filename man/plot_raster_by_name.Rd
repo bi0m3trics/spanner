@@ -4,31 +4,93 @@
 \alias{plot_raster_by_name}
 \title{Plot a raster by its name}
 \usage{
-plot_raster_by_name(rasters, raster_name)
+plot_raster_by_name(
+  rasters,
+  name,
+  color_palette = "viridis",
+  custom_colors = NULL,
+  na_color = "white",
+  theme_style = "minimal",
+  legend_position = "right",
+  title = NULL,
+  subtitle = NULL,
+  x_label = "X",
+  y_label = "Y",
+  legend_title = "Value",
+  aspect_ratio = "fixed",
+  point_size = 0.5,
+  alpha = 1
+)
 }
 \arguments{
 \item{rasters}{list A list of rasters.}
 
-\item{raster_name}{character The name of the raster to be plotted.}
+\item{name}{character The name of the raster to be plotted.}
+
+\item{color_palette}{character Color palette to use. Options: "viridis", "plasma", "inferno",
+"magma", "cividis", "terrain", "heat", "topo", "rainbow", or "custom"}
+
+\item{custom_colors}{character vector Custom colors for "custom" palette option}
+
+\item{na_color}{character Color for NA values (default: "white")}
+
+\item{theme_style}{character ggplot2 theme style. Options: "minimal", "classic", "void", "bw"}
+
+\item{legend_position}{character Legend position. Options: "right", "left", "top", "bottom", "none"}
+
+\item{title}{character Custom plot title (default: uses raster name)}
+
+\item{subtitle}{character Plot subtitle (default: NULL)}
+
+\item{x_label}{character X-axis label (default: "X")}
+
+\item{y_label}{character Y-axis label (default: "Y")}
+
+\item{legend_title}{character Legend title (default: "Value")}
+
+\item{aspect_ratio}{character Aspect ratio control. Options: "fixed", "free", "auto"}
+
+\item{point_size}{numeric Size of points if using point geom (default: 0.5)}
+
+\item{alpha}{numeric Alpha transparency for raster (default: 1.0)}
 }
 \value{
-NULL This function does not return a value. It plots the raster if found.
+ggplot object or NULL if raster not found
 }
 \description{
-\code{plot_raster_by_name} plots a raster from a list of rasters based on the provided raster name.
+Enhanced plotting function for rasters using ggplot2 with customizable themes,
+color palettes, and additional visualization options.
+}
+\details{
+Plot Raster by Name with Enhanced ggplot2 Visualization
 }
 \examples{
 \dontrun{
-# Define a list of rasters
-rasters <- list(raster1 = raster::raster(matrix(1:100, 10, 10)),
-                raster2 = raster::raster(matrix(101:200, 10, 10)))
+# Define input parameters
+las <- lidR::readLAS(system.file("extdata", "MixedConifer.laz", package="lidR"))
+input_raster <- lidR::rasterize_canopy(las, res = 1, lidR::pitfree(c(0,2,5,10,15), c(0, 2)))
+suitList <- c(0, 2, 32)
+gapList <- seq(1, 8, by = 1)
+spurList <- seq(1, 8, by = 1)
 
-# Assign names to the rasters
-names(rasters[[1]]) <- "raster1"
-names(rasters[[2]]) <- "raster2"
+# Process the rasters
+processed_rasters <- process_rasters_patchmorph(input_raster, suitList, gapList, spurList)
 
-# Plot a raster by its name
-plot_raster_by_name(rasters, "raster1")
+# Basic plot
+plot_raster_by_name(processed_rasters, "suit_2_gap_2_spur_6")
+
+# Enhanced plot with custom styling
+plot_raster_by_name(processed_rasters, "suit_2_gap_2_spur_6",
+                    color_palette = "viridis",
+                    theme_style = "minimal",
+                    title = "Patch Morphology Analysis",
+                    subtitle = "Suitability 2, Gap 2, Spur 6")
+
+# Plot with terrain colors
+p <- plot_raster_by_name(processed_rasters, "suit_2_gap_2_spur_6",
+                         color_palette = "terrain",
+                         theme_style = "classic")
+print(p)
 }
 
 }

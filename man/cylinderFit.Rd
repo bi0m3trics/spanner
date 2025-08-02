@@ -15,25 +15,40 @@ cylinderFit(
 )
 }
 \arguments{
-\item{las}{LAS normalized and segmented las object.}
+\item{las}{LAS object containing the 3D point cloud data}
 
-\item{method}{method for estimating the cylinder parameters. Currently available: \code{"nm"}, \code{"irls"}, \code{"ransac"} and \code{"bf"}.}
+\item{method}{character Method for cylinder fitting: 'ransac' (default) or 'nm' (Nelder-Mead) or 'bf'}
 
-\item{n}{number of points selected on every RANSAC iteration.}
+\item{n}{integer Number of sample points for RANSAC (default: 5)}
 
-\item{inliers}{expected proportion of inliers among stem segments' point cloud chunks.}
+\item{inliers}{numeric Proportion of inlier points required (default: 0.9)}
 
-\item{conf}{confidence level.}
+\item{conf}{numeric Confidence level for RANSAC (default: 0.95)}
 
-\item{max_angle}{used when \code{method == "bf"}. The maximum tolerated deviation, in degrees, from an absolute vertical line (Z = c(0,0,1)).}
+\item{max_angle}{numeric Maximum angle deviation for cylinder fitting in degrees (default: 30)}
 
-\item{n_best}{estimate optimal RANSAC parameters as the median of the \code{n_best} estimations with lowest error.}
+\item{n_best}{integer Number of best cylinder candidates to consider (default: 20)}
 }
 \value{
 vector of parameters
+
+data.frame containing cylinder parameters:
+\itemize{
+\item For RANSAC/NM: rho, theta, phi, alpha (cylinder orientation), radius, err (error), px, py, pz (center position)
+\item For BF: x, y, radius, err, ax, ay (axis components)
+}
 }
 \description{
 Fits a cylinder on a set of 3D points.
+
+Fits a cylinder to a 3D point cloud using either RANSAC or Nelder-Mead optimization.
+This function is particularly useful for fitting cylinders to tree trunks or other cylindrical structures
+in LiDAR point cloud data.
+}
+\details{
+The function automatically switches from RANSAC to Nelder-Mead method if the number of points
+is less than or equal to the sample size parameter 'n'. The RANSAC method is more robust for noisy data,
+while Nelder-Mead can be faster for clean, small datasets.
 }
 \examples{
 # Define the cylinder attributes
@@ -44,13 +59,22 @@ radius = 0.2718
 # Generate the X,Y,Z values
 Z=runif(n = n, min = 0, max = cyl_length)
 angs = runif(n, 0, 2*pi)
-X = sin(angs)*radius
-Y = cos(angs)*radius
+Cylinder Fitting Using RANSAC or Nelder-Mead Methods
 
-# Creation of a LAS object out of external data
-cloud <- LAS(data.frame(X,Y,Z))
+\dontrun{
+# Create synthetic cylinder data
+angs <- runif(100, 0, 2*pi)
+radius <- 0.2
+Z <- runif(100, 0, 3)
+X <- sin(angs) * radius
+Y <- cos(angs) * radius
 
-# Fit a cylinder and retrun the information
-cyl_par = spanner::cylinderFit(cloud, method = 'ransac', n=5, inliers=.9,
-                               conf=.95, max_angle=30, n_best=20)
+# Create LAS object
+cloud <- LAS(data.frame(X, Y, Z))
+
+# Fit cylinder using RANSAC
+cyl_par <- cylinderFit(cloud, method = 'ransac', n = 5, inliers = 0.9,
+                       conf = 0.95, max_angle = 30, n_best = 20)
+}
+
 }

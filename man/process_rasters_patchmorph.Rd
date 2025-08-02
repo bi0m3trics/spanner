@@ -4,7 +4,17 @@
 \alias{process_rasters_patchmorph}
 \title{Process rasters based on suitability, gap, and spur parameters}
 \usage{
-process_rasters_patchmorph(input_raster, suitList, gapList, spurList)
+process_rasters_patchmorph(
+  input_raster,
+  suitList,
+  gapList,
+  spurList,
+  progress = TRUE,
+  verbose = FALSE,
+  cache_kernels = TRUE,
+  parallel = FALSE,
+  ncores = 2
+)
 }
 \arguments{
 \item{input_raster}{RasterLayer The input raster to be processed.}
@@ -14,6 +24,16 @@ process_rasters_patchmorph(input_raster, suitList, gapList, spurList)
 \item{gapList}{numeric A vector of gap distances for processing.}
 
 \item{spurList}{numeric A vector of spur distances for processing.}
+
+\item{progress}{logical Show progress bar (default: TRUE)}
+
+\item{verbose}{logical Print detailed messages (default: FALSE)}
+
+\item{cache_kernels}{logical Cache circular kernels to avoid recomputation (default: TRUE)}
+
+\item{parallel}{logical Use parallel processing where possible (default: FALSE)}
+
+\item{ncores}{integer Number of cores for parallel processing (default: 2)}
 }
 \value{
 list A list of processed rasters with names indicating the suitability, gap, and spur parameters used.
@@ -25,13 +45,18 @@ and then applying gap and spur distance transformations to generate a list of pr
 \examples{
 \dontrun{
 # Define input parameters
-input_raster <- raster::raster(system.file("external/test.grd", package="raster"))
-suitList <- c(0.2, 0.5, 0.8)
-gapList <- c(1, 2, 3)
-spurList <- c(0.5, 1, 1.5)
+las <- lidR::readLAS(system.file("extdata", "MixedConifer.laz", package="lidR"))
+input_raster <- lidR::rasterize_canopy(las, res = 1, lidR::pitfree(c(0,2,5,10,15), c(0, 2)))
+suitList <- c(0, 2, 32)
+gapList <- seq(1, 8, by = 1)
+spurList <- seq(1, 8, by = 1)
 
-# Process the rasters
+# Process the rasters with progress bar
 processed_rasters <- process_rasters_patchmorph(input_raster, suitList, gapList, spurList)
+
+# Process with parallel execution
+processed_rasters <- process_rasters_patchmorph(input_raster, suitList, gapList, spurList,
+                                                parallel = TRUE, ncores = 4)
 
 # Plot the first processed raster
 plot(processed_rasters[[1]])

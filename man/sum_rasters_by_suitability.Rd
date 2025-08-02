@@ -19,19 +19,21 @@ list A list of summed rasters for each suitability level.
 }
 \examples{
 \dontrun{
-# Define a list of rasters
-rasters <- list(raster1 = raster::raster(matrix(1:100, 10, 10)),
-                raster2 = raster::raster(matrix(101:200, 10, 10)))
+# Define input parameters
+las <- lidR::readLAS(system.file("extdata", "MixedConifer.laz", package="lidR"))
+input_raster <- lidR::rasterize_canopy(las, res = 1, lidR::pitfree(c(0,2,5,10,15), c(0, 2)))
+suitList <- c(0, 2, 32)
+gapList <- seq(1, 8, by = 1)
+spurList <- seq(1, 8, by = 1)
 
-# Assign names to the rasters
-names(rasters[[1]]) <- "suit_0.2"
-names(rasters[[2]]) <- "suit_0.5"
+# Process the rasters
+processed_rasters <- process_rasters_patchmorph(input_raster, suitList, gapList, spurList)
 
-# Define suitability levels
-suitList <- c(0.2, 0.5)
 
-# Sum rasters by suitability level
-summed_rasters <- sum_rasters_by_suitability(rasters, suitList)
+Sum rasters by suitability level
+summed_rasters <- sum_rasters_by_suitability(processed_rasters, suitList)
+# Call the plot_raster_by_name function to plot the raster named "suit_2_sum"
+plot_raster_by_name(rSumList, "suit_2_sum")
 }
 
 }

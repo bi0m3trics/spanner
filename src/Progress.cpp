@@ -5,7 +5,7 @@
  *    https://github.com/Jean-Romain/lidR
  */
 
-#include "omp.h"
+#include "omp_local.h"
 #include "Progress.h"
 
 Progress::Progress(unsigned int iter_max, std::string prefix)

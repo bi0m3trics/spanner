@@ -32,6 +32,7 @@
 #' @param inliers integer expected proportion of inliers among cylinder points
 #' @param conf numeric confidence level
 #' @param max_angle numeric maximum tolerated deviation, in degrees, from vertical.
+#' @param run_full_pipeline logical If TRUE (default), runs the complete tree detection pipeline. If FALSE, only performs initial processing and verticality calculation for testing purposes.
 #' #' @return sf A sf object containing the following tree seed information: `TreeID`,
 #' `Radius`, and `Error` in the same units as the .las, as well as the point geometry
 #'
@@ -47,34 +48,40 @@
 #'
 #' # plot(las, color="Z", backend="lidRviewer", trim=30)
 #'
-#' # find tree locations and attribute data
-#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.0254,
-#'                                        dens_threshold = 0.25,
-#'                                        neigh_sizes = c(0.333, 0.166, 0.5),
+#' # find tree locations and attribute data (optimized for dense patches)
+#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.03, pt_spacing = 0.0254,
+#'                                        dens_threshold = 0.1,
+#'                                        neigh_sizes = c(0.2, 0.1, 0.3),
 #'                                        eigen_threshold = 0.5,
-#'                                        grid_slice_min = 0.666,
-#'                                        grid_slice_max = 2,
+#'                                        grid_slice_min = 0.5,
+#'                                        grid_slice_max = 2.5,
 #'                                        minimum_polygon_area = 0.01,
 #'                                        cylinder_fit_type = "ransac",
-#'                                        max_dia = 1,
-#'                                        SDvert = 0.25,
+#'                                        max_dia = 0.8,
+#'                                        SDvert = 0.15,
 #'                                        n_pts = 20,
 #'                                        n_best = 25,
 #'                                        inliers = 0.9,
 #'                                        conf = 0.99,
 #'                                        max_angle = 20)
+#'
+#' # For testing/debugging: run only initial processing (faster)
+#' initial_results = get_raster_eigen_treelocs(las = las, res = 0.03,
+#'                                            run_full_pipeline = FALSE)
+#' print(initial_results)  # Shows verticality calculation summary
+#'
 #' plot(lidR::grid_canopy(las, res = 0.2, p2r()))
 #' symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
 #' circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
 #' }
 #'
 #' @export
-get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254, dens_threshold = 0.2,
-                                      neigh_sizes=c(0.333, 0.166, 0.5), eigen_threshold = 0.6666,
-                                      grid_slice_min = 0.6666, grid_slice_max = 2.0,
-                                      minimum_polygon_area = 0.025, cylinder_fit_type = "ransac",
-                                      output_location = getwd(), max_dia=0.5, SDvert = 0.25, n_best=25, n_pts=20,
-                                      inliers = 0.9, conf = 0.99, max_angle = 20)
+get_raster_eigen_treelocs <- function(las = las, res = 0.03, pt_spacing = 0.0254, dens_threshold = 0.1,
+                                      neigh_sizes=c(0.2, 0.1, 0.3), eigen_threshold = 0.5,
+                                      grid_slice_min = 0.5, grid_slice_max = 2.5,
+                                      minimum_polygon_area = 0.01, cylinder_fit_type = "ransac",
+                                      output_location = getwd(), max_dia=0.8, SDvert = 0.15, n_best=25, n_pts=20,
+                                      inliers = 0.9, conf = 0.99, max_angle = 20, run_full_pipeline = TRUE)
 {
 
   ##---------------------- Preprocesssing -------------------------------------
@@ -89,13 +96,42 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   if(is.null(slice_extra)) stop("No points in the las object after processing slice! Try increasing the grid slice min/max.", call. = FALSE)
 
   message("Calculating verticality... (3/14)\n")
-  vert_temp <- spanner::eigen_metrics(slice_extra, radius=neigh_sizes[1], ncpu=lidR::get_lidr_threads())
-  if(nrow(vert_temp) == 0) stop("Problemn calculating verticality...!", call. = FALSE)
+  # Use optimized geometric features function with automatic chunking for large datasets
+  n_points <- nrow(slice_extra@data)
+  cat("Processing", n_points, "points for verticality calculation...\n")
+
+  vert_temp <- spanner:::C_geometric_features_simple(slice_extra, radius=neigh_sizes[1], max_neighbors=50)
+
+  # Convert to data.table
+  vert_temp <- data.table::as.data.table(vert_temp)
+  if(nrow(vert_temp) == 0) stop("Problem calculating verticality...!", call. = FALSE)
 
   # vert_temp <- spanner::C_vert_in_sphere(slice_extra, radius = neigh_sizes[1], ncpu = lidR::get_lidr_threads())
-  slice_extra <- lidR::add_lasattribute(slice_extra, as.numeric(vert_temp$Verticality),
+  slice_extra <- lidR::add_lasattribute(slice_extra, as.numeric(vert_temp$verticality),
                                         name = "verticality", desc = "verticality")
   slice_extra@data$verticality[is.na(slice_extra@data$verticality)] <- 0.5
+
+  # Check if user wants to run full pipeline or stop after initial processing
+  if (!run_full_pipeline) {
+    message("Stopping after verticality calculation (run_full_pipeline = FALSE)\n")
+    message("Verticality calculation completed successfully!\n")
+    message("Points processed: ", nrow(slice_extra@data), "\n")
+    message("Verticality range: ", round(min(slice_extra@data$verticality, na.rm = TRUE), 3), " - ",
+            round(max(slice_extra@data$verticality, na.rm = TRUE), 3), "\n")
+
+    # Return a summary data frame instead of sf object
+    summary_result <- data.frame(
+      stage_completed = "verticality_calculation",
+      points_processed = nrow(slice_extra@data),
+      min_verticality = min(slice_extra@data$verticality, na.rm = TRUE),
+      max_verticality = max(slice_extra@data$verticality, na.rm = TRUE),
+      mean_verticality = mean(slice_extra@data$verticality, na.rm = TRUE),
+      processing_time = as.character(Sys.time()),
+      message = "Initial processing completed. Set run_full_pipeline = TRUE to continue with tree detection."
+    )
+
+    return(summary_result)
+  }
 
   message("Creating canopy cover raster... (4/14)\n")
   cancov <- lidR::grid_canopy(las, 0.1, p2r(0.1))
@@ -204,10 +240,9 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       n_pts = n_pts
       n_best = n_best
     } else if(cylinder_fit_type == "irls"){
-      tmp_dat <- lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data
-      tmp_dat_grouped <- dplyr::group_by(tmp_dat, TreeID)
-      tmp_dat_summary <- dplyr::summarize(tmp_dat_grouped, count = length(X))
-      n_pts = min(tmp_dat_summary$count)/2
+      n_pts = min(data.frame(lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data %>%
+                               dplyr::group_by(TreeID) %>%
+                               dplyr::summarize(count = length(X)))$count)/2
       n_best = 100
     } else {
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
@@ -225,10 +260,9 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       n_pts = n_pts
       n_best = n_best
     } else if(cylinder_fit_type == "irls"){
-      tmp_dat <- lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data
-      tmp_dat_grouped <- dplyr::group_by(tmp_dat, TreeID)
-      tmp_dat_summary <- dplyr::summarize(tmp_dat_grouped, count = length(X))
-      n_pts = min(tmp_dat_summary$count)/2
+      n_pts = min(data.frame(lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data %>%
+                               dplyr::group_by(TreeID) %>%
+                               dplyr::summarize(count = length(X)))$count)/2
       n_best = 100
     } else {
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
@@ -247,10 +281,9 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
       n_pts = n_pts
       n_best = n_best
     } else if(cylinder_fit_type == "irls"){
-      tmp_dat <- lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data
-      tmp_dat_grouped <- dplyr::group_by(tmp_dat, TreeID)
-      tmp_dat_summary <- dplyr::summarize(tmp_dat_grouped, count = length(X))
-      n_pts = min(tmp_dat_summary$count)/2
+      n_pts = min(data.frame(lidR::filter_poi(slice_clip, Z <= max, Z >= min)@data %>%
+                               dplyr::group_by(TreeID) %>%
+                               dplyr::summarize(count = length(X)))$count)/2
       n_best = 100
     } else {
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
@@ -278,4 +311,176 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   if(nrow(output) == 0 | is.null(output)) stop("No output data was created from the fitted cylinders! Try adjusting the threshold values.", call. = FALSE)
   return(st_as_sf(output, coords = c("X", "Y", "Z"), crs = lidR::st_crs(las)))
   message("Done! (14/14)\n")
+
+  ##---------------------- Secondary Segmentation for High Error Trees ------
+  message("Checking for under-segmented trees using RANSAC error... (13.5/14)\n")
+
+  # Define error threshold for detecting potentially multi-tree segments
+  error_threshold <- quantile(summary_cyl_fit$err, 0.75, na.rm = TRUE)  # Top 25% of errors
+  high_error_trees <- summary_cyl_fit[summary_cyl_fit$err > error_threshold, ]
+
+  if(nrow(high_error_trees) > 0) {
+    message("Found ", nrow(high_error_trees), " trees with high RANSAC error - attempting secondary segmentation...")
+
+    # Store original results
+    original_output <- summary_cyl_fit
+    additional_trees <- list()
+
+    for(i in 1:nrow(high_error_trees)) {
+      tree_id <- high_error_trees$TreeID[i]
+      message("  Analyzing tree ", tree_id, " (error: ", round(high_error_trees$err[i], 4), ")")
+
+      # Extract points for this high-error tree
+      tree_points <- lidR::filter_poi(slice_clip, TreeID == tree_id)
+
+      if(nrow(tree_points@data) > 50) {  # Need sufficient points for secondary segmentation
+
+        # Try more aggressive clustering using smaller resolution
+        tree_coords <- tree_points@data[, c("X", "Y", "Z")]
+
+        # Create a finer grid for this specific tree area
+        tree_bbox <- list(
+          xmin = min(tree_coords$X) - 0.1,
+          xmax = max(tree_coords$X) + 0.1,
+          ymin = min(tree_coords$Y) - 0.1,
+          ymax = max(tree_coords$Y) + 0.1
+        )
+
+        # Use 2/3 of the original resolution for finer detection
+        fine_res <- res * 0.67
+
+        # Create density raster for just this tree area
+        tree_las_temp <- tree_points
+        tree_density <- grid_density(tree_las_temp, res = fine_res)
+
+        # Lower threshold for secondary detection
+        secondary_dens_threshold <- dens_threshold * 0.7
+
+        # Find high-density cells
+        high_dens_cells <- terra::as.data.frame(tree_density, xy = TRUE)
+        high_dens_cells <- high_dens_cells[high_dens_cells$density >= secondary_dens_threshold, ]
+
+        if(nrow(high_dens_cells) > 2) {
+          # Apply clustering to find potential tree centers
+          if(nrow(high_dens_cells) > 4) {
+            # Use k-means with k=2 or k=3 based on point distribution
+            max_clusters <- min(3, floor(nrow(high_dens_cells) / 2))
+
+            if(max_clusters >= 2) {
+              # Try clustering
+              clusters <- kmeans(high_dens_cells[, c("x", "y")],
+                                centers = max_clusters,
+                                nstart = 10)
+
+              # Check if clusters are spatially separated
+              cluster_centers <- clusters$centers
+              min_distance <- min(dist(cluster_centers))
+
+              # Only proceed if clusters are separated by at least 0.3m
+              if(min_distance > 0.3) {
+                message("    Found ", max_clusters, " potential sub-trees")
+
+                # Assign points to clusters based on proximity
+                tree_coords$cluster <- clusters$cluster[
+                  apply(tree_coords[, c("X", "Y")], 1, function(point) {
+                    distances <- apply(high_dens_cells[, c("x", "y")], 1, function(cell) {
+                      sqrt(sum((point - cell)^2))
+                    })
+                    which.min(distances)
+                  })
+                ]
+
+                tree_coords$cluster <- clusters$cluster[
+                  apply(tree_coords[, c("X", "Y")], 1, function(point) {
+                    distances <- apply(high_dens_cells[, c("x", "y")], 1, function(cell) {
+                      sqrt(sum((point - cell)^2))
+                    })
+                    if(min(distances) < fine_res * 2) {
+                      high_dens_cells$cluster[which.min(distances)]
+                    } else {
+                      NA  # Point too far from any high-density cell
+                    }
+                  })
+                ]
+
+                # Remove points not assigned to any cluster
+                tree_coords <- tree_coords[!is.na(tree_coords$cluster), ]
+
+                # Fit cylinders to each cluster
+                for(cluster_id in unique(tree_coords$cluster)) {
+                  cluster_points <- tree_coords[tree_coords$cluster == cluster_id, ]
+
+                  if(nrow(cluster_points) >= 20) {  # Need minimum points for cylinder fitting
+                    # Create temporary LAS object for this cluster
+                    cluster_las <- LAS(cluster_points[, c("X", "Y", "Z")])
+
+                    # Fit cylinder using same parameters as main function
+                    cluster_fit <- spanner:::cylinderFit(
+                      cluster_las,
+                      method = cylinder_fit_type,
+                      n = n_pts,
+                      inliers = inliers,
+                      conf = conf,
+                      max_angle = max_angle,
+                      n_best = n_best
+                    )
+
+                    if(!is.null(cluster_fit) && !is.na(cluster_fit$err)) {
+                      # Check if this sub-tree has better (lower) error than original
+                      if(cluster_fit$err < high_error_trees$err[i] * 0.8) {  # 20% improvement
+                        cluster_fit$TreeID <- max(c(summary_cyl_fit$TreeID,
+                                                   sapply(additional_trees, function(x) x$TreeID)),
+                                                 na.rm = TRUE) + 1
+                        cluster_fit$dbh_width <- grid_slice_max - grid_slice_min
+
+                        # Check size constraints
+                        if(cluster_fit$radius <= max_dia && cluster_fit$radius > 0.05) {
+                          additional_trees[[length(additional_trees) + 1]] <- cluster_fit
+                          message("      Added sub-tree with radius ", round(cluster_fit$radius, 3),
+                                 " and error ", round(cluster_fit$err, 4))
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    # Combine original results with additional trees
+    if(length(additional_trees) > 0) {
+      additional_df <- dplyr::bind_rows(additional_trees)
+
+      # Remove original high-error trees that were successfully split
+      successfully_split <- sapply(additional_trees, function(x) {
+        # Check if any additional tree is close to the original high-error tree
+        orig_tree <- high_error_trees[high_error_trees$TreeID %in%
+                                     summary_cyl_fit$TreeID, ]
+        if(nrow(orig_tree) > 0) {
+          distance <- sqrt((x$px - orig_tree$px[1])^2 + (x$py - orig_tree$py[1])^2)
+          return(distance < 1.0)  # Within 1 meter
+        }
+        return(FALSE)
+      })
+
+      if(any(successfully_split)) {
+        # Remove trees that were successfully split
+        split_tree_ids <- unique(sapply(additional_trees[successfully_split],
+                                       function(x) high_error_trees$TreeID[
+                                         which.min(sqrt((x$px - high_error_trees$px)^2 +
+                                                        (x$py - high_error_trees$py)^2))
+                                       ]))
+
+        summary_cyl_fit <- summary_cyl_fit[!summary_cyl_fit$TreeID %in% split_tree_ids, ]
+        message("  Removed ", length(split_tree_ids), " original high-error trees")
+      }
+
+      # Add new trees
+      summary_cyl_fit <- dplyr::bind_rows(summary_cyl_fit, additional_df)
+      message("  Added ", nrow(additional_df), " new trees from secondary segmentation")
+    }
+  }
 }

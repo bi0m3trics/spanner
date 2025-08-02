@@ -80,5 +80,10 @@ vector<vector<double> > fastApply(vector<vector<double> >& matrix, vector<string
 vector<unsigned int> sortIndexes(vector<double>& values);
 
 void progressPrinter(string units, unsigned int n, unsigned int total);
+void patchMorphProgress(unsigned int current, unsigned int total, 
+                       unsigned int suit_idx, unsigned int suit_total,
+                       unsigned int gap_idx, unsigned int gap_total,
+                       unsigned int spur_idx, unsigned int spur_total,
+                       const string& suit_val, double gap_val, double spur_val);
 
 #endif // UTILS_HPP

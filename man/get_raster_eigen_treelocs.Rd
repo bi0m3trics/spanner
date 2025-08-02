@@ -6,23 +6,25 @@
 verticality within a slice of a normalized point cloud}
 \usage{
 get_raster_eigen_treelocs(
-  las,
-  res = 0.05,
+  las = las,
+  res = 0.03,
   pt_spacing = 0.0254,
-  dens_threshold = 0.2,
-  neigh_sizes = c(0.333, 0.166, 0.5),
-  eigen_threshold = 0.6666,
-  grid_slice_min = 0.6666,
-  grid_slice_max = 2,
-  minimum_polygon_area = 0.025,
+  dens_threshold = 0.1,
+  neigh_sizes = c(0.2, 0.1, 0.3),
+  eigen_threshold = 0.5,
+  grid_slice_min = 0.5,
+  grid_slice_max = 2.5,
+  minimum_polygon_area = 0.01,
   cylinder_fit_type = "ransac",
-  max_dia = 0.5,
-  SDvert = 0.25,
+  output_location = getwd(),
+  max_dia = 0.8,
+  SDvert = 0.15,
   n_best = 25,
   n_pts = 20,
   inliers = 0.9,
   conf = 0.99,
-  max_angle = 20
+  max_angle = 20,
+  run_full_pipeline = TRUE
 )
 }
 \arguments{
@@ -58,11 +60,11 @@ get_raster_eigen_treelocs(
 
 \item{max_angle}{numeric maximum tolerated deviation, in degrees, from vertical.}
 
+\item{run_full_pipeline}{logical If TRUE (default), runs the complete tree detection pipeline. If FALSE, only performs initial processing and verticality calculation for testing purposes.
+#' @return sf A sf object containing the following tree seed information: \code{TreeID},
+\code{Radius}, and \code{Error} in the same units as the .las, as well as the point geometry}
+
 \item{neigh_size}{numeric Vector for verticality and relative density (small and large neighborhoods) calculations}
-}
-\value{
-sf object An \code{sf} object containing the following seed information: \code{TreeID},
-\code{X}, \code{Y}, \code{Z}, \code{Radius}, and \code{Error} in the same units as the .las
 }
 \description{
 \code{get_raster_eigen_treelocs} returns a data.frame containing \code{TreeID}, \code{X}, \code{Y}, \code{Z}, \code{Radius}
@@ -82,56 +84,41 @@ to an individual tree segmentation
 }
 \examples{
 
-
 \dontrun{
-# Set the number of threads to use in lidR
+# set the number of threads to use in lidR
 set_lidr_threads(8)
 
-# Download and read an example laz
-getExampleData("DensePatchA")
-LASfile = system.file("extdata", "DensePatchA.laz", package="spanner")
-las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
-# Don't forget to make sure the las object has a projection
-projection(las) = sp::CRS("+init=epsg:26912")
+# read the las (which must be downloaded with getExampleData())
+LASfile <- system.file("extdata", "DensePatchA.laz", package="spanner")
+las = readLAS(LASfile, select = "xyzc")
 
-# Pre-process the example lidar dataset by classifying the ground points
-# using lidR::csf(), normalizing it, and removing outlier points
-# using lidR::ivf()
-las = classify_ground(las, csf(sloop_smooth = FALSE,
-                                class_threshold = 0.5,
-                                cloth_resolution = 0.5, rigidness = 1L,
-                                iterations = 500L, time_step = 0.65))
-las = normalize_height(las, tin())
-las = classify_noise(las, ivf(0.25, 3))
-las = filter_poi(las, Classification != LASNOISE)
+# plot(las, color="Z", backend="lidRviewer", trim=30)
 
-# Plot the non-ground points, colored by height
-plot(filter_poi(las, Classification != 2), color = "Z")
-
-# Perform a deep inspection of the las object. If you see any
-# red text, you may have issues!
-las_check(las)
-
-# Find individual tree locations and attribute data
-myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05,
-                                       pt_spacing = 0.0254,
-                                       dens_threshold = 0.2,
-                                       neigh_sizes = c(0.333, 0.166, 0.5),
+# find tree locations and attribute data (optimized for dense patches)
+myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.03, pt_spacing = 0.0254,
+                                       dens_threshold = 0.1,
+                                       neigh_sizes = c(0.2, 0.1, 0.3),
                                        eigen_threshold = 0.5,
-                                       grid_slice_min = 0.6666,
-                                       grid_slice_max = 2.0,
-                                       minimum_polygon_area = 0.025,
+                                       grid_slice_min = 0.5,
+                                       grid_slice_max = 2.5,
+                                       minimum_polygon_area = 0.01,
                                        cylinder_fit_type = "ransac",
-                                       max_dia = 0.5,
-                                       SDvert = 0.25,
+                                       max_dia = 0.8,
+                                       SDvert = 0.15,
                                        n_pts = 20,
-                                       n_best = 25)
+                                       n_best = 25,
+                                       inliers = 0.9,
+                                       conf = 0.99,
+                                       max_angle = 20)
 
-# Plot the tree information over a CHM
+# For testing/debugging: run only initial processing (faster)
+initial_results = get_raster_eigen_treelocs(las = las, res = 0.03,
+                                           run_full_pipeline = FALSE)
+print(initial_results)  # Shows verticality calculation summary
+
 plot(lidR::grid_canopy(las, res = 0.2, p2r()))
-points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch = 16,
-       cex = myTreeLocs$Radius^2 * 10, asp = 1)
-
+symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
+circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
 }
 
 }

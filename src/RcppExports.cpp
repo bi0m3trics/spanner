@@ -54,6 +54,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// C_geometric_features_simple
+Rcpp::List C_geometric_features_simple(Rcpp::S4 las, double radius, int max_neighbors, int ncpu, Rcpp::Nullable<Rcpp::CharacterVector> features);
+RcppExport SEXP _spanner_C_geometric_features_simple(SEXP lasSEXP, SEXP radiusSEXP, SEXP max_neighborsSEXP, SEXP ncpuSEXP, SEXP featuresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type las(lasSEXP);
+    Rcpp::traits::input_parameter< double >::type radius(radiusSEXP);
+    Rcpp::traits::input_parameter< int >::type max_neighbors(max_neighborsSEXP);
+    Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::CharacterVector> >::type features(featuresSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_geometric_features_simple(las, radius, max_neighbors, ncpu, features));
+    return rcpp_result_gen;
+END_RCPP
+}
 // thinCloud
 LogicalVector thinCloud(NumericMatrix& las, double voxel);
 RcppExport SEXP _spanner_thinCloud(SEXP lasSEXP, SEXP voxelSEXP) {
@@ -478,6 +493,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_spanner_C_eigen_in_sphere", (DL_FUNC) &_spanner_C_eigen_in_sphere, 3},
     {"_spanner_C_count_in_disc", (DL_FUNC) &_spanner_C_count_in_disc, 6},
     {"_spanner_C_count_in_sphere", (DL_FUNC) &_spanner_C_count_in_sphere, 3},
+    {"_spanner_C_geometric_features_simple", (DL_FUNC) &_spanner_C_geometric_features_simple, 5},
     {"_spanner_thinCloud", (DL_FUNC) &_spanner_thinCloud, 2},
     {"_spanner_RCropCloud", (DL_FUNC) &_spanner_RCropCloud, 6},
     {"_spanner_getHoughCircle", (DL_FUNC) &_spanner_getHoughCircle, 5},

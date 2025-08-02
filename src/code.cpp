@@ -6,6 +6,7 @@
 #include <RcppArmadillo.h>
 #include "SpatialIndex.h"
 #include "Progress.h"
+#include "utils.hpp"
 
 using namespace lidR;
 using namespace Rcpp;

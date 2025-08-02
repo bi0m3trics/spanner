@@ -19,9 +19,12 @@ sf object An updated \code{sf} object with the original columns plus:
 \describe{
 \item{height}{numeric: Height of the highest point for each TreeID.}
 \item{crown_area}{numeric: Area of the convex hull for each TreeID.}
+\item{crown_base_height}{numeric: Height to the base of the live crown for each TreeID.}
+\item{crown_volume}{numeric: Volume of the convex hull for the crown of each TreeID.}
 \item{diameter}{numeric: Diameter of the tree, calculated as twice the Radius.}
 }
-If \code{return_sf} is TRUE, also returns an \code{sf} object representing the convex hulls for each tree.
+If \code{return_sf} is TRUE, returns an \code{sf} object where the geometry is the convex hulls for each tree.
+If \code{return_sf} is FALSE, returns an \code{sf} object with point geometries using treeData.
 }
 \description{
 \code{process_tree_data} processes the output of \code{get_raster_eigen_treelocs} and \code{segment_graph} to add information
