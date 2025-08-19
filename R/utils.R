@@ -26,7 +26,13 @@
 #'  \item \code{Linearity}: linear saliency, \mjeqn{(\lambda_{1} + \lambda_{2}) / \lambda_{1}}{ASCII representation}
 #'  \item \code{Verticality}: vertical saliency, \mjeqn{1-abs(\langle (0,0,1),e_3\rangle)}{ASCII representation}
 #'  \item \code{Planarity}: planar saliency, \mjeqn{(\lambda_{2} + \lambda_{3}) / \lambda_{1}}{ASCII representation}
-#'  \item \code{Nx,Ny,Nz}: 3 components of the normal vector, {ASCII representation}
+#'  \item \code{Nx,Ny,Nz}: 3 components of the normal vector
+#'  \item \code{SurfaceVariation}: surface variation (change of curvature), same as Curvature
+#'  \item \code{ChangeCurvature}: alternative name for surface variation
+#'  \item \code{SurfaceDensity}: number of neighbors per unit area
+#'  \item \code{VolumeDensity}: number of neighbors per unit volume
+#'  \item \code{MomentOrder1}: 1st order moment (distance to local centroid)
+#'  \item \code{NormalChangeRate}: normal change rate (related to planarity)
 #' }
 #' @return A labeled data.table of point metrics for each point in the LAS object
 #'
@@ -41,7 +47,8 @@ eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
   data.table::setDT(temp)
   cols<-c("eLargest","eMedium","eSmallest","eSum","Curvature","Omnivariance",
           "Anisotropy","Eigentropy","Linearity","Verticality","Planarity",
-          "Sphericity", "Nx", "Ny", "Nz")
+          "Sphericity", "Nx", "Ny", "Nz", "SurfaceVariation", "ChangeCurvature",
+          "SurfaceDensity", "VolumeDensity", "MomentOrder1", "NormalChangeRate")
   data.table::setnames(temp, cols)
   pca_basic = princomp(temp[,c("eLargest","eMedium","eSmallest")])
   temp$PCA1 = pca_basic$scores[,1]

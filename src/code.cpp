@@ -5,8 +5,14 @@
 
 #include <RcppArmadillo.h>
 #include <limits>
+#include <cmath>
 #include "SpatialIndex.h"
 #include "Progress.h"
+
+// Define M_PI if not already defined
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 using namespace lidR;
 using namespace Rcpp;
@@ -19,7 +25,7 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   NumericVector Y = data["Y"];
   NumericVector Z = data["Z"];
   int n = X.size();
-  int n_metrics = 15;
+  int n_metrics = 21;  // Increased to include additional CloudCompare metrics
 
   //https://ethz.ch/content/dam/ethz/special-interest/baug/igp/photogrammetry-remote-sensing-dam/documents/pdf/timo-jan-cvpr2016.pdf
   NumericVector eigenlar_sph(n);
@@ -37,6 +43,14 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   NumericVector nx_sph(n);
   NumericVector ny_sph(n);
   NumericVector nz_sph(n);
+  
+  // Additional CloudCompare metrics
+  NumericVector surface_variation_sph(n);
+  NumericVector change_curvature_sph(n);
+  NumericVector surface_density_sph(n);
+  NumericVector volume_density_sph(n);
+  NumericVector moment_order1_sph(n);
+  NumericVector normal_change_rate_sph(n);
 
   List out(n_metrics);
 
@@ -68,18 +82,25 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
     double anisotropy = 0.0, eigentropy = 0.0, linearity = 0.0;
     double verticality = 0.0, planarity = 0.0, sphericity = 0.0;
     double nx = 0.0, ny = 0.0, nz = 0.0;
-
-    // Only perform eigenvalue decomposition if we have enough points
-    if (k >= 3) {
-      // Compute centroid
-      double cx = 0.0, cy = 0.0, cz = 0.0;
+    
+    // Additional CloudCompare metrics initialization
+    double surface_variation = 0.0, change_curvature = 0.0;
+    double surface_density = 0.0, volume_density = 0.0;
+    double moment_order1 = 0.0, normal_change_rate = 0.0;
+    
+    // Compute centroid for all points (needed for some metrics)
+    double cx = 0.0, cy = 0.0, cz = 0.0;
+    if (k > 0) {
       for (unsigned int j = 0; j < sphpts.size(); j++) {
         cx += sphpts[j].x;
         cy += sphpts[j].y;
         cz += sphpts[j].z;
       }
       cx /= k; cy /= k; cz /= k;
-      
+    }
+
+    // Only perform eigenvalue decomposition if we have enough points
+    if (k >= 3) {
       // Compute covariance matrix manually (like CloudCompare)
       arma::mat cov_matrix(3, 3, arma::fill::zeros);
       for (unsigned int j = 0; j < sphpts.size(); j++) {
@@ -146,6 +167,31 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   nx = normal[0];
   ny = normal[1];
   nz = normal[2];
+  
+  // Additional CloudCompare metrics calculations
+  
+  // Surface variation (change of curvature) - λ3 / (λ1 + λ2 + λ3)
+  surface_variation = curvature;  // This is the same as curvature in CloudCompare
+  
+  // Change of curvature (alternative name for surface variation)
+  change_curvature = surface_variation;
+  
+  // Surface density - number of neighbors per unit area
+  double sphere_area = 4.0 * M_PI * radius * radius;
+  surface_density = k / sphere_area;
+  
+  // Volume density - number of neighbors per unit volume  
+  double sphere_volume = (4.0/3.0) * M_PI * radius * radius * radius;
+  volume_density = k / sphere_volume;
+  
+  // 1st order moment - distance to local centroid (measure of how far point is from local center)
+  double dx = X[i] - cx;
+  double dy = Y[i] - cy; 
+  double dz = Z[i] - cz;
+  moment_order1 = sqrt(dx*dx + dy*dy + dz*dz);
+  
+  // Normal change rate - variation in normal direction (related to planarity)
+  normal_change_rate = planarity;
 }
     } // end if k >= 3
     
@@ -167,6 +213,14 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   nx_sph[i] = nx;
   ny_sph[i] = ny;
   nz_sph[i] = nz;
+  
+  // Additional CloudCompare metrics assignments
+  surface_variation_sph[i] = surface_variation;
+  change_curvature_sph[i] = change_curvature;
+  surface_density_sph[i] = surface_density;
+  volume_density_sph[i] = volume_density;
+  moment_order1_sph[i] = moment_order1;
+  normal_change_rate_sph[i] = normal_change_rate;
 
 }
   }
@@ -188,6 +242,12 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   out[12] = nx_sph;
   out[13] = ny_sph;
   out[14] = nz_sph;
+  out[15] = surface_variation_sph;
+  out[16] = change_curvature_sph;
+  out[17] = surface_density_sph;
+  out[18] = volume_density_sph;
+  out[19] = moment_order1_sph;
+  out[20] = normal_change_rate_sph;
 
   return out;
 }
