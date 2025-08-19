@@ -4,6 +4,7 @@
 // [[Rcpp::depends(lidR)]]
 
 #include <RcppArmadillo.h>
+#include <limits>
 #include "SpatialIndex.h"
 #include "Progress.h"
 
@@ -61,40 +62,95 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
 
     int k = sphpts.size();  // Determine the neighborhood size of the sphere
 
-    // Memory Allocations
-    arma::mat A(k,3);
-    arma::mat coeff;        // Principle component matrix
-    arma::mat score;
-    arma::vec latent;       // Eigenvalues in descending order
+    // Initialize default values for edge cases
+    double eigen_largest = 0.0, eigen_medium = 0.0, eigen_smallest = 0.0;
+    double eigensum = 0.0, curvature = 0.0, omnivariance = 0.0;
+    double anisotropy = 0.0, eigentropy = 0.0, linearity = 0.0;
+    double verticality = 0.0, planarity = 0.0, sphericity = 0.0;
+    double nx = 0.0, ny = 0.0, nz = 0.0;
 
-    // Eigen decomposition is the real cost of the function
-    for (unsigned int j = 0 ; j < sphpts.size() ; j++)
-    {
-      A(j,0) = sphpts[j].x;
-      A(j,1) = sphpts[j].y;
-      A(j,2) = sphpts[j].z;
-    }
-    arma::princomp(coeff, score, latent, A);
-
+    // Only perform eigenvalue decomposition if we have enough points
+    if (k >= 3) {
+      // Compute centroid
+      double cx = 0.0, cy = 0.0, cz = 0.0;
+      for (unsigned int j = 0; j < sphpts.size(); j++) {
+        cx += sphpts[j].x;
+        cy += sphpts[j].y;
+        cz += sphpts[j].z;
+      }
+      cx /= k; cy /= k; cz /= k;
+      
+      // Compute covariance matrix manually (like CloudCompare)
+      arma::mat cov_matrix(3, 3, arma::fill::zeros);
+      for (unsigned int j = 0; j < sphpts.size(); j++) {
+        double dx = sphpts[j].x - cx;
+        double dy = sphpts[j].y - cy;
+        double dz = sphpts[j].z - cz;
+        
+        cov_matrix(0,0) += dx * dx;
+        cov_matrix(0,1) += dx * dy;
+        cov_matrix(0,2) += dx * dz;
+        cov_matrix(1,0) += dy * dx;
+        cov_matrix(1,1) += dy * dy;
+        cov_matrix(1,2) += dy * dz;
+        cov_matrix(2,0) += dz * dx;
+        cov_matrix(2,1) += dz * dy;
+        cov_matrix(2,2) += dz * dz;
+      }
+      
+      // Normalize covariance matrix by k (not k-1) to match CloudCompare
+      cov_matrix /= k;
+      
+      // Compute eigenvalues and eigenvectors
+      arma::vec eigenvalues;
+      arma::mat eigenvectors;
+      arma::eig_sym(eigenvalues, eigenvectors, cov_matrix);
+      
+      // Sort eigenvalues in descending order (CloudCompare convention)
+      arma::uvec sorted_indices = arma::sort_index(eigenvalues, "descend");
+      
 #pragma omp critical
 {
   // Calculate decomposed eigen values
 
-  double eigen_largest  = latent[0];
-  double eigen_medium   = latent[1];
-  double eigen_smallest = latent[2];
-  double eigensum       = latent[0] + latent[1] + latent[2];
-  double curvature      = eigen_smallest/eigensum;
-  double omnivariance   = pow((latent[0] * latent[1] * latent[2]), (1.0/3.0));
-  double anisotropy     = (latent[0] - latent[2]) / latent[0];
-  double eigentropy     = -((latent[0] * log(latent[0])) + (latent[1] * log(latent[1])) + (latent[2] * log(latent[2])));
-  double linearity      = (latent[0] - latent[1]) / latent[0];
-  double verticality    = 1-abs(coeff(2,2));
-  double planarity      = (latent[1] - latent[2])/latent[0];
-  double sphericity     = latent[2]/latent[0];
-  double nx = coeff(0,0);
-  double ny = coeff(0,1);
-  double nz = coeff(0,2);
+  eigen_largest  = eigenvalues[sorted_indices[0]];
+  eigen_medium   = eigenvalues[sorted_indices[1]];
+  eigen_smallest = eigenvalues[sorted_indices[2]];
+  eigensum       = eigen_largest + eigen_medium + eigen_smallest;
+  curvature      = eigen_smallest/eigensum;
+  
+  // CloudCompare-style omnivariance calculation using raw eigenvalues
+  if (eigen_largest <= 0.0 || eigen_medium <= 0.0 || eigen_smallest <= 0.0) {
+    omnivariance = 0.0;
+  } else {
+    // Use raw eigenvalues (not normalized) like CloudCompare
+    omnivariance = pow((eigen_largest * eigen_medium * eigen_smallest), (1.0/3.0));
+  }
+  
+  anisotropy     = (eigen_largest - eigen_smallest) / eigen_largest;
+  
+  // CloudCompare-style eigentropy calculation using raw eigenvalues (exact match)
+  if (eigen_largest > 0.0 && eigen_medium > 0.0 && eigen_smallest > 0.0) {
+    eigentropy = -((eigen_largest * log(eigen_largest)) + (eigen_medium * log(eigen_medium)) + (eigen_smallest * log(eigen_smallest)));
+  } else {
+    eigentropy = 0.0;
+  }
+  
+  linearity      = (eigen_largest - eigen_medium) / eigen_largest;
+  
+  // Get the eigenvector corresponding to the smallest eigenvalue (normal vector)
+  arma::vec normal = eigenvectors.col(sorted_indices[2]);
+  verticality    = 1 - abs(normal[2]);
+  planarity      = (eigen_medium - eigen_smallest) / eigen_largest;
+  sphericity     = eigen_smallest / eigen_largest;
+  nx = normal[0];
+  ny = normal[1];
+  nz = normal[2];
+}
+    } // end if k >= 3
+    
+#pragma omp critical
+{
 
   eigenlar_sph[i]   = eigen_largest;
   eigenmed_sph[i]   = eigen_medium;
