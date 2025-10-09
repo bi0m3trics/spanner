@@ -181,6 +181,10 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     circles[[id]] <- data.frame(conicfit::CircleFitByLandau(coords[coords$L2 == id, c("X","Y")]))
     names(circles[[id]]) <- c("X","Y","R")
   }
+  if (length(circles) == 0) {
+    message(" No stem detection for this slice.")
+    return(NULL) # stop function and return NULL
+  }
   circles <- dplyr::bind_rows((circles))
   circles_sf <- sf::st_sf(sf::st_buffer(sf::st_cast(sf::st_sfc(sf::st_multipoint(as.matrix(circles)[,1:2])),
                                                     to = "POINT"), circles$R))
