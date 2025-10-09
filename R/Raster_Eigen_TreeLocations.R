@@ -181,19 +181,18 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     circles[[id]] <- data.frame(conicfit::CircleFitByLandau(coords[coords$L2 == id, c("X","Y")]))
     names(circles[[id]]) <- c("X","Y","R")
   }
-  
-  # Handle case where no circles are detected
-  if (length(circles) == 0) {
-    message("No stem detection for this slice.")
-    return(NULL)
-  }
-  
-  circles <- dplyr::bind_rows(circles)
-  
-  # Handle single tree case with explicit column selection and drop=FALSE
-  circle_coords <- as.matrix(circles[, c("X", "Y"), drop = FALSE])
-  circles_sf <- sf::st_sf(sf::st_buffer(sf::st_cast(sf::st_sfc(sf::st_multipoint(circle_coords)),
+  circles <- dplyr::bind_rows((circles))
+  circles_sf <- sf::st_sf(sf::st_buffer(sf::st_cast(sf::st_sfc(sf::st_multipoint(as.matrix(circles)[,1:2])),
                                                     to = "POINT"), circles$R))
+  circles_sf$R <- circles$R
+  circles_sf$TreeID <- sample(1:nrow(circles_sf), nrow(circles_sf), replace=F)
+  circles_sf <- sf::st_buffer(circles_sf, 0.075)
+  sf::st_crs(circles_sf) = sf::st_crs(slice_extra)
+  slice_clip <- lidR::merge_spatial(las = lidR::clip_roi(slice_extra, sf::st_sf(sf::st_union(circles_sf))),
+                                    source = circles_sf, attribute = "TreeID")
+
+  slice_clip <- lidR::filter_poi(slice_clip, verticality >= eigen_threshold)
+  if(is.null(slice_clip)) stop("No points in the las object after processing the resulting clipped slice! Try adjusting the threshold values.", call. = FALSE)
 
   ##---------------------- Identify Trees -------------------------------------
   message("Fitting nested height (length) cylinders...(12/14)\n")
