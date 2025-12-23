@@ -1,4 +1,5 @@
 # spanner 1.0.2
+* Bug fixes - replaced null checks with is.empty for LAS objects and stopped R from collapsing the one-row subset into a vector, so the circle fit still receives a 2-column input when there's on one tree in `get_raster_eigen_treelocs`.
 * Removed depends on magrittr and removed all %>% in codebase
 * Added `process_tree_data` funciton that takes the output of `get_raster_eigen_treelocs` and `segment_graph` to adds information
 **  about the height, crown area and volume, and diameter for each unique TreeID. It also has an optional parameter to return
