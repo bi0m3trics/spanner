@@ -42,7 +42,7 @@
 #' set_lidr_threads(8)
 #'
 #' # read the las (which must be downloaded with getExampleData())
-#' LASfile <- system.file("extdata", "DensePatchA.laz", package="spanner")
+#' LASfile <- system.file("extdata", "TLSSparseCloudA - xyzOnly.laz", package="spanner")
 #' las = readLAS(LASfile, select = "xyzc")
 #'
 #' # plot(las, color="Z", backend="lidRviewer", trim=30)
@@ -63,9 +63,15 @@
 #'                                        inliers = 0.9,
 #'                                        conf = 0.99,
 #'                                        max_angle = 20)
-#' plot(lidR::grid_canopy(las, res = 0.2, p2r()))
-#' symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
-#' circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
+#' 
+#' # Plot results if trees were found
+#' if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
+#'   plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+#'   symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
+#'           circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
+#' } else {
+#'   message("No tree locations were found. Try adjusting the parameters.")
+#' }
 #' }
 #'
 #' @export
@@ -186,7 +192,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     return(NULL) # stop function and return NULL
   }
   circles <- dplyr::bind_rows((circles))
-  circles_sf <- sf::st_sf(sf::st_buffer(sf::st_cast(sf::st_sfc(sf::st_multipoint(as.matrix(circles)[,1:2], drop = FALSE)),
+  circles_sf <- sf::st_sf(sf::st_buffer(sf::st_cast(sf::st_sfc(sf::st_multipoint(as.matrix(circles)[,1:2, drop = FALSE])),
                                                     to = "POINT"), circles$R))
   circles_sf$R <- circles$R
   circles_sf$TreeID <- sample(1:nrow(circles_sf), nrow(circles_sf), replace=F)

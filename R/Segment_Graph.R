@@ -48,7 +48,7 @@
 #'
 #' # Download and read an example laz
 #' getExampleData("DensePatchA")
-#' LASfile = system.file("extdata", "DensePatchA.laz", package="spanner")
+#' LASfile = system.file("extdata", "TLSSparseCloudA - xyzOnly.laz", package="spanner")
 #' las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 #' # Don't forget to make sure the las object has a projection
 #' projection(las) = sp::CRS("+init=epsg:26912")

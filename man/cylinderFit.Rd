@@ -42,8 +42,8 @@ cyl_length = 0.5
 radius = 0.2718
 
 # Generate the X,Y,Z values
-Z=runif(n = n, min = 0, max = cyl_length)
-angs = runif(n, 0, 2*pi)
+Z=runif(n = npts, min = 0, max = cyl_length)
+angs = runif(npts, 0, 2*pi)
 X = sin(angs)*radius
 Y = cos(angs)*radius
 

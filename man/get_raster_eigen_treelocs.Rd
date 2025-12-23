@@ -86,7 +86,7 @@ to an individual tree segmentation
 set_lidr_threads(8)
 
 # read the las (which must be downloaded with getExampleData())
-LASfile <- system.file("extdata", "DensePatchA.laz", package="spanner")
+LASfile <- system.file("extdata", "TLSSparseCloudA - xyzOnly.laz", package="spanner")
 las = readLAS(LASfile, select = "xyzc")
 
 # plot(las, color="Z", backend="lidRviewer", trim=30)

@@ -102,16 +102,33 @@ cylinderFit = function(las, method = 'ransac', n=5, inliers=.9, conf=.95, max_an
   return(pars)
 }
 
+#' Convert LAS object to XYZ matrix
+#' @description Extracts the X, Y, and Z coordinates from a LAS object and returns them as a matrix.
+#' @param las LAS object to convert
+#' @return A numeric matrix with three columns (X, Y, Z) containing the point coordinates
+#' @examples
+#' LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
+#' las <- readLAS(LASfile)
+#' xyz_matrix <- las2xyz(las)
+#' head(xyz_matrix)
 #' @export
 las2xyz = function(las){
-
   if(class(las)[1] != "LAS")
     stop("las must be a LAS object")
-
   las = as.matrix(las@data[,c('X','Y','Z')])
   return(las)
 }
 
+#' Spanner color palette
+#' @description Returns a named vector of colors for use in spanner visualizations.
+#' The palette includes 10 distinct colors suitable for categorical data visualization.
+#' @return A named character vector of hex color codes
+#' @examples
+#' # Get the palette
+#' colors <- spanner_pal()
+#' 
+#' # Use in a plot
+#' barplot(1:10, col = spanner_pal(), names.arg = names(spanner_pal()), las = 2)
 #' @export
 spanner_pal <- function() {
   c(
