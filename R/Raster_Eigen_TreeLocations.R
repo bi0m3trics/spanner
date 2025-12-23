@@ -81,12 +81,12 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   ## Subsample using systematic voxel grid to 1in
   message("Downsampling the scan... (step 1 of 14)\n")
   las <- lidR::decimate_points(las, random_per_voxel(res = pt_spacing, n = 1))
-  if(is.null(las)) stop("No points in the las object after downsampling! Try increasing the point spacing.", call. = FALSE)
+  if(lidR::is.empty(las)) stop("No points in the las object after downsampling! Try increasing the point spacing.", call. = FALSE)
 
   ## Create the processing slice based on user's grid slice min/max
   message("Creating processing slice... (2/14)\n")
   slice_extra <- lidR::filter_poi(las, Z >= grid_slice_min, Z <= grid_slice_max)
-  if(is.null(slice_extra)) stop("No points in the las object after processing slice! Try increasing the grid slice min/max.", call. = FALSE)
+  if(lidR::is.empty(slice_extra)) stop("No points in the las object after processing slice! Try increasing the slice min/max.", call. = FALSE)
 
   message("Calculating verticality... (3/14)\n")
   vert_temp <- spanner::eigen_metrics(slice_extra, radius=neigh_sizes[1], ncpu=lidR::get_lidr_threads())
@@ -186,7 +186,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     return(NULL) # stop function and return NULL
   }
   circles <- dplyr::bind_rows((circles))
-  circles_sf <- sf::st_sf(sf::st_buffer(sf::st_cast(sf::st_sfc(sf::st_multipoint(as.matrix(circles)[,1:2])),
+  circles_sf <- sf::st_sf(sf::st_buffer(sf::st_cast(sf::st_sfc(sf::st_multipoint(as.matrix(circles)[,1:2], drop = FALSE)),
                                                     to = "POINT"), circles$R))
   circles_sf$R <- circles$R
   circles_sf$TreeID <- sample(1:nrow(circles_sf), nrow(circles_sf), replace=F)
@@ -196,7 +196,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                     source = circles_sf, attribute = "TreeID")
 
   slice_clip <- lidR::filter_poi(slice_clip, verticality >= eigen_threshold)
-  if(is.null(slice_clip)) stop("No points in the las object after processing the resulting clipped slice! Try adjusting the threshold values.", call. = FALSE)
+  if(lidR::is.empty(slice_clip)) stop("No points in the las object after processing the resulting clipped slice! Try adjusting the threshold values.", call. = FALSE)
 
   ##---------------------- Identify Trees -------------------------------------
   message("Fitting nested height (length) cylinders...(12/14)\n")
