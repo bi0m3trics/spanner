@@ -68,7 +68,6 @@ this into consideration when choosing the extent of the input las object.
 }
 \examples{
 \dontrun{
-\dontrun{
 # Set the number of threads to use in lidR
 set_lidr_threads(8)
 
@@ -114,8 +113,8 @@ myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05,
 
 # Plot the tree information over a CHM
 plot(lidR::grid_canopy(las, res = 0.2, p2r()))
-points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch = 16,
-       cex = myTreeLocs$Radius^2 * 10, asp = 1)
+symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
+circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
 
 # Segment the point cloud
 myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
@@ -128,8 +127,6 @@ myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
 
 # Plot it in 3D colored by treeID
 plot(myTreeGraph, color = "treeID", pal=spanner_pal())
-
-}
 }
 
 }

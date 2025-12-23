@@ -36,7 +36,13 @@ a user-specified radius.
 \item \code{Linearity}: linear saliency, \mjeqn{(\lambda_{1} + \lambda_{2}) / \lambda_{1}}{ASCII representation}
 \item \code{Verticality}: vertical saliency, \mjeqn{1-abs(\langle (0,0,1),e_3\rangle)}{ASCII representation}
 \item \code{Planarity}: planar saliency, \mjeqn{(\lambda_{2} + \lambda_{3}) / \lambda_{1}}{ASCII representation}
-\item \code{Nx,Ny,Nz}: 3 components of the normal vector, {ASCII representation}
+\item \code{Nx,Ny,Nz}: 3 components of the normal vector
+\item \code{SurfaceVariation}: surface variation (change of curvature), same as Curvature
+\item \code{ChangeCurvature}: alternative name for surface variation
+\item \code{SurfaceDensity}: number of neighbors per unit area
+\item \code{VolumeDensity}: number of neighbors per unit volume
+\item \code{MomentOrder1}: 1st order moment (distance to local centroid)
+\item \code{NormalChangeRate}: normal change rate (related to planarity)
 }
 }
 

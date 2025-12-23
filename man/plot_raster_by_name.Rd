@@ -4,7 +4,7 @@
 \alias{plot_raster_by_name}
 \title{Plot a raster by its name}
 \usage{
-plot_raster_by_name(rasters, raster_name)
+plot_raster_by_name(rasters, name)
 }
 \arguments{
 \item{rasters}{list A list of rasters.}
@@ -19,16 +19,18 @@ NULL This function does not return a value. It plots the raster if found.
 }
 \examples{
 \dontrun{
-# Define a list of rasters
-rasters <- list(raster1 = raster::raster(matrix(1:100, 10, 10)),
-                raster2 = raster::raster(matrix(101:200, 10, 10)))
+# Define input parameters
+las <- lidR::readLAS(system.file("extdata", "MixedConifer.laz", package="lidR"))
+input_raster <- lidR::rasterize_canopy(las, res = 1, lidR::pitfree(c(0,2,5,10,15), c(0, 2)))
+suitList <- c(0, 2, 32)
+gapList <- seq(1, 8, by = 1)
+spurList <- seq(1, 8, by = 1)
 
-# Assign names to the rasters
-names(rasters[[1]]) <- "raster1"
-names(rasters[[2]]) <- "raster2"
+# Process the rasters
+processed_rasters <- process_rasters_patchmorph(input_raster, suitList, gapList, spurList)
 
 # Plot a raster by its name
-plot_raster_by_name(rasters, "raster1")
+plot_raster_by_name(processed_rasters, "suit_2_gap_2_spur_6")
 }
 
 }

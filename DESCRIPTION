@@ -10,7 +10,7 @@ URL: https://github.com/bi0m3trcis/spanner
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 RdMacros: mathjaxr
 Suggests: 
     testthat (>= 3.0.0)
