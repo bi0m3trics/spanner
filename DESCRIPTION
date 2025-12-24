@@ -33,7 +33,8 @@ Imports:
     Rfast,
     geometry,
     dplyr,
-    lidR,
+    lidR (>= 4.2.0),
+    mathjaxr,
     data.table
 Depends: 
-    R (>= 3.5.0)
+    R (>= 4.0.0)
