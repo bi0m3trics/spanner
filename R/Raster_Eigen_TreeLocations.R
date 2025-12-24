@@ -19,7 +19,7 @@
 #' @param res numeric Pixel width of rasterized point cloud metrics.
 #' @param pt_spacing numeric Subsample spacing for graph connections.
 #' @param dens_threshold numeric Minimum point density in raster cell to be considered as potential tree bole.
-#' @param neigh_size numeric Vector for verticality and relative density (small and large neighborhoods) calculations
+#' @param neigh_sizes numeric Vector for verticality and relative density (small and large neighborhoods) calculations
 #' @param eigen_threshold numeric Minimum average verticality in raster cell to be considered as potential tree bole.
 #' @param grid_slice_min numeric Lower bound of point cloud slice in normalized point cloud.
 #' @param grid_slice_max numeric Upper bound of point cloud slice in normalized point cloud.
@@ -92,8 +92,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                       neigh_sizes=c(0.333, 0.166, 0.5), eigen_threshold = 0.6666,
                                       grid_slice_min = 0.6666, grid_slice_max = 2.0,
                                       minimum_polygon_area = 0.025, cylinder_fit_type = "ransac",
-                                      output_location = getwd(), max_dia=0.5, SDvert = 0.25, n_best=25, n_pts=20,
-                                      inliers = 0.9, conf = 0.99, max_angle = 20)
+                                      max_dia=0.5, SDvert = 0.25, n_best=25, n_pts=20, inliers = 0.9,
+                                      conf = 0.99, max_angle = 20)
 {
 
   ##---------------------- Preprocesssing -------------------------------------

@@ -16,7 +16,6 @@ get_raster_eigen_treelocs(
   grid_slice_max = 2,
   minimum_polygon_area = 0.025,
   cylinder_fit_type = "ransac",
-  output_location = getwd(),
   max_dia = 0.5,
   SDvert = 0.25,
   n_best = 25,
@@ -34,6 +33,8 @@ get_raster_eigen_treelocs(
 \item{pt_spacing}{numeric Subsample spacing for graph connections.}
 
 \item{dens_threshold}{numeric Minimum point density in raster cell to be considered as potential tree bole.}
+
+\item{neigh_sizes}{numeric Vector for verticality and relative density (small and large neighborhoods) calculations}
 
 \item{eigen_threshold}{numeric Minimum average verticality in raster cell to be considered as potential tree bole.}
 
@@ -60,8 +61,6 @@ get_raster_eigen_treelocs(
 \item{max_angle}{numeric maximum tolerated deviation, in degrees, from vertical.
 #' @return sf A sf object containing the following tree seed information: \code{TreeID},
 \code{Radius}, and \code{Error} in the same units as the .las, as well as the point geometry}
-
-\item{neigh_size}{numeric Vector for verticality and relative density (small and large neighborhoods) calculations}
 }
 \description{
 \code{get_raster_eigen_treelocs} returns a data.frame containing \code{TreeID}, \code{X}, \code{Y}, \code{Z}, \code{Radius}
