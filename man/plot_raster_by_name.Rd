@@ -4,7 +4,7 @@
 \alias{plot_raster_by_name}
 \title{Plot a raster by its name}
 \usage{
-plot_raster_by_name(rasters, name)
+plot_raster_by_name(rasters, raster_name)
 }
 \arguments{
 \item{rasters}{list A list of rasters.}

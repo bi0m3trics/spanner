@@ -45,9 +45,6 @@ time increases quickly with smaller point spacing with negligible returns in acc
 
 \item{return.dense}{bool Decision to return the subsampled point cloud or assign treeIDs back to
 points in the input dense point cloud.}
-
-\item{plot_radius}{numeric Radius (in the same units as the .las) used to define a region of
-interest for processing}
 }
 \value{
 a sparse/dense normalized .las with the column treeID added.

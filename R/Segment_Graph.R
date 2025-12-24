@@ -19,8 +19,6 @@
 #' @param distance.threshold numeric Maximum distance (in the same units as the .las) under which
 #' two points are connected in the graph object (greater than point spacing). Two points with a greater
 #' distance than this threshold are not connected in the graph for processing.
-#' @param plot_radius numeric Radius (in the same units as the .las) used to define a region of
-#' interest for processing
 #' @param use.metabolic.scale bool Use of weights in the assignment of points to a given treeID. Useful
 #' when interlocking crowns are present and trees are of different sizes.
 #' @param ptcloud_slice_min numeric Lower bound of point cloud slice in normalized point cloud used for treeID matching.

@@ -15,7 +15,7 @@ bibentry(bibtype="Article",
          doi = "10.3390/rs13122297",
          url = "https://www.mdpi.com/2072-4292/13/12/2297",
          textVersion =
-           paste("Donager, Jonathon J., Andrew J. Sánchez Meador, and Ryan C. Blackburn. 2021. "Adjudicating Perspectives on Forest ",
-		 "Structure: How Do Airborne, Terrestrial, and Mobile Lidar-Derived Estimates Compare?" Remote Sensing 13, no. 12: 2297.",
+           paste("Donager, Jonathon J., Andrew J. Sánchez Meador, and Ryan C. Blackburn. 2021. \"Adjudicating Perspectives on Forest ",
+		 "Structure: How Do Airborne, Terrestrial, and Mobile Lidar-Derived Estimates Compare?\" Remote Sensing 13, no. 12: 2297.",
                  "<https://doi.org/10.3390/rs13122297>.")
 )
