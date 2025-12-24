@@ -1,3 +1,5 @@
 ^spanner\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^\.github$
+^img$

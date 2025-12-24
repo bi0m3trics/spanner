@@ -41,7 +41,7 @@
 #' # Set the number of threads to use in lidR
 #' set_lidr_threads(8)
 #'
-#' LASfile = system.file("extdata", "TLSSparseCloud - xyzOnly.laz", package="spanner")
+#' LASfile = system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package="spanner")
 #' las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 #' # Don't forget to make sure the las object has a projection
 #' projection(las) = sp::CRS("+init=epsg:26912")
