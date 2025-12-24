@@ -16,8 +16,10 @@ A numeric matrix with three columns (X, Y, Z) containing the point coordinates
 Extracts the X, Y, and Z coordinates from a LAS object and returns them as a matrix.
 }
 \examples{
+\dontrun{
 LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
 las <- readLAS(LASfile)
 xyz_matrix <- las2xyz(las)
 head(xyz_matrix)
+}
 }

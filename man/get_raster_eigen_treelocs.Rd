@@ -47,7 +47,7 @@ get_raster_eigen_treelocs(
 
 \item{max_dia}{numeric The max diameter (in m) of a resulting tree (use to eliminate commission errors).}
 
-\item{SDvert}{numeric The standard deviation threshold below whihc polygons will be considered as tree boles.}
+\item{SDvert}{numeric The standard deviation threshold below which polygons will be considered as tree boles.}
 
 \item{n_best}{integer number of "best" ransac fits to keep when evaluating the best fit.}
 
@@ -82,34 +82,53 @@ to an individual tree segmentation
 \examples{
 
 \dontrun{
-# set the number of threads to use in lidR
+# Set the number of threads to use in lidR
 set_lidr_threads(8)
 
-# read the las (which must be downloaded with getExampleData())
-LASfile <- system.file("extdata", "TLSSparseCloudA - xyzOnly.laz", package="spanner")
-las = readLAS(LASfile, select = "xyzc")
+LASfile = system.file("extdata", "TLSSparseCloud - xyzOnly.laz", package="spanner")
+las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
+# Don't forget to make sure the las object has a projection
+projection(las) = sp::CRS("+init=epsg:26912")
 
-# plot(las, color="Z", backend="lidRviewer", trim=30)
+# Pre-process the example lidar dataset by classifying the ground points
+# using lidR::csf(), normalizing it, and removing outlier points
+# using lidR::ivf()
+las = classify_ground(las, csf(sloop_smooth = FALSE,
+                                class_threshold = 0.5,
+                                cloth_resolution = 0.5, rigidness = 1L,
+                                iterations = 500L, time_step = 0.65))
+las = normalize_height(las, tin())
+las = classify_noise(las, ivf(0.25, 3))
+las = filter_poi(las, Classification != LASNOISE)
+
+# Plot the non-ground points, colored by height
+plot(filter_poi(las, Classification != 2), color = "Z")
 
 # find tree locations and attribute data
-myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05, pt_spacing = 0.0254,
-                                       dens_threshold = 0.25,
-                                       neigh_sizes = c(0.333, 0.166, 0.5),
-                                       eigen_threshold = 0.5,
-                                       grid_slice_min = 0.666,
+myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.33, pt_spacing = 0.0254,
+                                       dens_threshold = 0.33,
+                                       neigh_sizes = c(0.33, 0.15, 0.66),
+                                       eigen_threshold = 0.8,
+                                       grid_slice_min = 1,
                                        grid_slice_max = 2,
                                        minimum_polygon_area = 0.01,
                                        cylinder_fit_type = "ransac",
                                        max_dia = 1,
-                                       SDvert = 0.25,
+                                       SDvert = 0.33,
                                        n_pts = 20,
                                        n_best = 25,
                                        inliers = 0.9,
                                        conf = 0.99,
                                        max_angle = 20)
-plot(lidR::grid_canopy(las, res = 0.2, p2r()))
-symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
-circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
+
+# Plot results if trees were found
+if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
+  plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+  symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
+          circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
+} else {
+  message("No tree locations were found. Try adjusting the parameters.")
+}
 }
 
 }

@@ -2,7 +2,6 @@
 #' @useDynLib spanner, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
 #' @importFrom stats complete.cases density dist na.omit princomp quantile
-#' @importFrom magrittr %>%
 #' @importFrom sf st_as_sf st_coordinates
 #' @importFrom terra classify focal ifel rast res values<-
 #' @importFrom lidR filter_poi grid_metrics random_per_voxel LAS

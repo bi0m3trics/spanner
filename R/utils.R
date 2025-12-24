@@ -37,9 +37,11 @@
 #' @return A labeled data.table of point metrics for each point in the LAS object
 #'
 #' @examples
+#' \dontrun{
 #' LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
 #' las <- readLAS(LASfile)
 #' eigen = eigen_metrics(las, radius=2, ncpu=4)
+#' }
 #'
 #' @export
 eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
@@ -67,7 +69,9 @@ eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
 #' @param max_angle used when \code{method == "bf"}. The maximum tolerated deviation, in degrees, from an absolute vertical line (Z = c(0,0,1)).
 #' @param n_best estimate optimal RANSAC parameters as the median of the \code{n_best} estimations with lowest error.
 #' @return vector of parameters
+#'
 #' @examples
+#' \dontrun{
 #' # Define the cylinder attributes
 #' npts = 500
 #' cyl_length = 0.5
@@ -85,6 +89,7 @@ eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
 #' # Fit a cylinder and retrun the information
 #' cyl_par = spanner::cylinderFit(cloud, method = 'ransac', n=5, inliers=.9,
 #'                                conf=.95, max_angle=30, n_best=20)
+#' }
 #' @export
 cylinderFit = function(las, method = 'ransac', n=5, inliers=.9, conf=.95, max_angle=30, n_best=20){
   if(nrow(las@data) < 3) return(NULL)
@@ -106,11 +111,14 @@ cylinderFit = function(las, method = 'ransac', n=5, inliers=.9, conf=.95, max_an
 #' @description Extracts the X, Y, and Z coordinates from a LAS object and returns them as a matrix.
 #' @param las LAS object to convert
 #' @return A numeric matrix with three columns (X, Y, Z) containing the point coordinates
+#'
 #' @examples
+#' \dontrun{
 #' LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
 #' las <- readLAS(LASfile)
 #' xyz_matrix <- las2xyz(las)
 #' head(xyz_matrix)
+#' }
 #' @export
 las2xyz = function(las){
   if(class(las)[1] != "LAS")
@@ -123,12 +131,15 @@ las2xyz = function(las){
 #' @description Returns a named vector of colors for use in spanner visualizations.
 #' The palette includes 10 distinct colors suitable for categorical data visualization.
 #' @return A named character vector of hex color codes
+#'
 #' @examples
+#' \dontrun{
 #' # Get the palette
 #' colors <- spanner_pal()
-#' 
+#'
 #' # Use in a plot
 #' barplot(1:10, col = spanner_pal(), names.arg = names(spanner_pal()), las = 2)
+#' }
 #' @export
 spanner_pal <- function() {
   c(

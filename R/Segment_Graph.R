@@ -39,16 +39,13 @@
 #' crowns from terrestrial and mobile LiDAR data by exploring ecological theories. ISPRS Journal of
 #' Photogrammetry and Remote Sensing, 110, 66-76.
 #'
-#'
-#'
 #' @examples
+#'
 #' \dontrun{
 #' # Set the number of threads to use in lidR
 #' set_lidr_threads(8)
 #'
-#' # Download and read an example laz
-#' getExampleData("DensePatchA")
-#' LASfile = system.file("extdata", "TLSSparseCloudA - xyzOnly.laz", package="spanner")
+#' LASfile = system.file("extdata", "TLSSparseCloud - xyzOnly.laz", package="spanner")
 #' las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 #' # Don't forget to make sure the las object has a projection
 #' projection(las) = sp::CRS("+init=epsg:26912")
@@ -72,19 +69,21 @@
 #' las_check(las)
 #'
 #' # Find individual tree locations and attribute data
-#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05,
-#'                                        pt_spacing = 0.0254,
-#'                                        dens_threshold = 0.2,
-#'                                        neigh_sizes = c(0.333, 0.166, 0.5),
-#'                                        eigen_threshold = 0.5,
-#'                                        grid_slice_min = 0.6666,
-#'                                        grid_slice_max = 2.0,
-#'                                        minimum_polygon_area = 0.025,
+#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.33, pt_spacing = 0.0254,
+#'                                        dens_threshold = 0.33,
+#'                                        neigh_sizes = c(0.33, 0.15, 0.66),
+#'                                        eigen_threshold = 0.8,
+#'                                        grid_slice_min = 1,
+#'                                        grid_slice_max = 2,
+#'                                        minimum_polygon_area = 0.01,
 #'                                        cylinder_fit_type = "ransac",
-#'                                        max_dia = 0.5,
-#'                                        SDvert = 0.25,
+#'                                        max_dia = 1,
+#'                                        SDvert = 0.33,
 #'                                        n_pts = 20,
-#'                                        n_best = 25)
+#'                                        n_best = 25,
+#'                                        inliers = 0.9,
+#'                                        conf = 0.99,
+#'                                        max_angle = 20)
 #'
 #' # Plot the tree information over a CHM
 #' plot(lidR::grid_canopy(las, res = 0.2, p2r()))
@@ -93,10 +92,10 @@
 #'
 #' # Segment the point cloud
 #' myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
-#'                              distance.threshold = 0.5,
+#'                              distance.threshold = 1,
 #'                              use.metabolic.scale = FALSE,
-#'                              ptcloud_slice_min = 0.6666,
-#'                              ptcloud_slice_max = 2.0,
+#'                              ptcloud_slice_min = 1,
+#'                              ptcloud_slice_max = 2,
 #'                              subsample.graph = 0.1,
 #'                              return.dense = FALSE)
 #'
@@ -171,7 +170,7 @@ segment_graph <- function(las, tree.locations, k = 50, distance.threshold = 0.38
   ## create the network by connecting lidar points within X meters
   ## and add in the points for the tree centers to make connections
   message("Identifing neighbors... (2/7)\n")
-  point_density <- density(working_las)
+  point_density <- lidR::density(working_las)
 
   # point_dist_threshold <- round((1/sqrt(point_density))*k, 1) ## in meters, the distance within which points
   ## will be connected into a network

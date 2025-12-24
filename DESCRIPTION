@@ -38,7 +38,8 @@ Imports:
     sfheaders,
     Rfast,
     lwgeom,
-    mathjaxr
+    mathjaxr, 
+    geometry
 Depends: 
     lidR,
     data.table,

@@ -14,9 +14,11 @@ Returns a named vector of colors for use in spanner visualizations.
 The palette includes 10 distinct colors suitable for categorical data visualization.
 }
 \examples{
+\dontrun{
 # Get the palette
 colors <- spanner_pal()
 
 # Use in a plot
 barplot(1:10, col = spanner_pal(), names.arg = names(spanner_pal()), las = 2)
+}
 }

@@ -84,9 +84,7 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #' # Set the number of threads to use in lidR
 #' set_lidr_threads(8)
 #'
-#' # Download and read an example laz
-#' getExampleData("DensePatchA")
-#' LASfile = system.file("extdata", "DensePatchA.laz", package="spanner")
+#' LASfile = system.file("extdata", "TLSSparseCloud - xyzOnly.laz", package="spanner")
 #' las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 #' # Don't forget to make sure the las object has a projection
 #' projection(las) = sp::CRS("+init=epsg:26912")
@@ -110,19 +108,21 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #' las_check(las)
 #'
 #' # Find individual tree locations and attribute data
-#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.05,
-#'                                        pt_spacing = 0.0254,
-#'                                        dens_threshold = 0.2,
-#'                                        neigh_sizes = c(0.333, 0.166, 0.5),
-#'                                        eigen_threshold = 0.5,
-#'                                        grid_slice_min = 0.6666,
-#'                                        grid_slice_max = 2.0,
-#'                                        minimum_polygon_area = 0.025,
+#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.33, pt_spacing = 0.0254,
+#'                                        dens_threshold = 0.33,
+#'                                        neigh_sizes = c(0.33, 0.15, 0.66),
+#'                                        eigen_threshold = 0.8,
+#'                                        grid_slice_min = 1,
+#'                                        grid_slice_max = 2,
+#'                                        minimum_polygon_area = 0.01,
 #'                                        cylinder_fit_type = "ransac",
-#'                                        max_dia = 0.5,
-#'                                        SDvert = 0.25,
+#'                                        max_dia = 1,
+#'                                        SDvert = 0.33,
 #'                                        n_pts = 20,
-#'                                        n_best = 25)
+#'                                        n_best = 25,
+#'                                        inliers = 0.9,
+#'                                        conf = 0.99,
+#'                                        max_angle = 20)
 #'
 #' # Plot the tree information over a CHM
 #' plot(lidR::grid_canopy(las, res = 0.2, p2r()))
@@ -131,10 +131,10 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #'
 #' # Segment the point cloud
 #' myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
-#'                              distance.threshold = 0.5,
+#'                              distance.threshold = 1,
 #'                              use.metabolic.scale = FALSE,
-#'                              ptcloud_slice_min = 0.6666,
-#'                              ptcloud_slice_max = 2.0,
+#'                              ptcloud_slice_min = 1,
+#'                              ptcloud_slice_max = 2,
 #'                              subsample.graph = 0.1,
 #'                              return.dense = FALSE)
 #'
@@ -154,15 +154,27 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #'
 #' @export
 process_tree_data <- function(treeData, segmentedLAS, return_sf = FALSE) {
-  segmented_tree_ids <- unique(segmentedLAS$treeID)
+  # Filter out NA TreeIDs from segmented data before comparison
+  segmented_tree_ids <- unique(segmentedLAS$treeID[!is.na(segmentedLAS$treeID)])
   tree_data_ids <- unique(treeData$TreeID)
 
   # Print diagnostic information
+  missing_in_segmented <- setdiff(tree_data_ids, segmented_tree_ids)
+  missing_in_treedata <- setdiff(segmented_tree_ids, tree_data_ids)
+
   cat("TreeIDs in treeData but not in segmentedLAS:\n")
-  print(setdiff(tree_data_ids, segmented_tree_ids))
+  if (length(missing_in_segmented) == 0) {
+    cat("  None - all treeData TreeIDs found in segmentedLAS\n")
+  } else {
+    print(missing_in_segmented)
+  }
 
   cat("TreeIDs in segmentedLAS but not in treeData:\n")
-  print(setdiff(segmented_tree_ids, tree_data_ids))
+  if (length(missing_in_treedata) == 0) {
+    cat("  None - all segmentedLAS TreeIDs found in treeData\n")
+  } else {
+    print(missing_in_treedata)
+  }
 
   if (!all(treeData$TreeID %in% segmented_tree_ids) || length(tree_data_ids) != length(segmented_tree_ids)) {
     warning("TreeIDs do not match between treeData and segmentedLAS.")

@@ -36,6 +36,7 @@ vector of parameters
 Fits a cylinder on a set of 3D points.
 }
 \examples{
+\dontrun{
 # Define the cylinder attributes
 npts = 500
 cyl_length = 0.5
@@ -53,4 +54,5 @@ cloud <- LAS(data.frame(X,Y,Z))
 # Fit a cylinder and retrun the information
 cyl_par = spanner::cylinderFit(cloud, method = 'ransac', n=5, inliers=.9,
                                conf=.95, max_angle=30, n_best=20)
+}
 }
