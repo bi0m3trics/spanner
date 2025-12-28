@@ -5,7 +5,8 @@ Version: 1.0.2
 Date: 2024-10-06
 Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre", "ctb"), comment = c(ORCID = "0000-0003-4238-8587")),
              person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb"), comment = c(ORCID = "0000-0001-9448-1703")),
-             person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb"), comment = c(ORCID = "0000-0002-2952-0865")))
+             person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb"), comment = c(ORCID = "0000-0002-2952-0865")),
+             person("Cannon", "Jeffery", email = "Jeffery.Cannon@jonesctr.org", role = c("ctb"), comment = c(ORCID = "0000-0002-8436-8712")))
 Description: Utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization.
 URL: https://github.com/bi0m3trcis/spanner
 License: GPL-3 + file LICENSE
