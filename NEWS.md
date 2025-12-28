@@ -1,11 +1,20 @@
 # spanner 1.0.2
+* Code optimization and cleanup:
+** Removed 20+ unused C++ exports to streamline the package interface
+** Fixed namespace issues by removing ::: calls in internal code
+** Reduced exported C++ functions to only those actively used (C_eigen_in_sphere, C_count_in_disc, C_count_in_sphere, cppCylinderFit)
+** Removed lidR from Imports field (kept in Depends and LinkingTo only)
+* Updated documentation examples:
+** Fixed examples to use sf::st_coordinates() with proper namespace qualification
+** Updated get_raster_eigen_treelocs() examples with optimized parameters for better tree detection in forests with interlocking crowns (res=0.25, dens_threshold=0.25, eigen_threshold=0.75, minimum_polygon_area=0.005)
+** Corrected circle area formula in plotting examples (Radius^2*3.14)
 * Bug fixes - replaced null checks with is.empty for LAS objects and stopped R from collapsing the one-row subset into a vector, so the circle fit still receives a 2-column input when there's on one tree in `get_raster_eigen_treelocs`.
 * Removed depends on magrittr and removed all %>% in codebase
 * Added `process_tree_data` funciton that takes the output of `get_raster_eigen_treelocs` and `segment_graph` to adds information
 **  about the height, crown area and volume, and diameter for each unique TreeID. It also has an optional parameter to return
 **  either points or hulls as an `sf` object for each tree.
 * Added the citation for the package
-* Added a couple default datasets and fixed the call for getExampleData()
+* Added a couple default datasets and got rid of getExampleData()
 * Added the xyz normals as returns for eigen_metrics()
 * Added PatchMorph functions:
 ** process_rasters_patchmorph: Processes an input raster by reclassifying it based on suitability levels and applying gap and spur distance transformations to generate a list of processed rasters.

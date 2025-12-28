@@ -61,13 +61,13 @@
 #' plot(filter_poi(las, Classification != 2), color = "Z")
 #'
 #' # find tree locations and attribute data
-#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.33, pt_spacing = 0.0254,
-#'                                        dens_threshold = 0.33,
-#'                                        neigh_sizes = c(0.33, 0.15, 0.66),
-#'                                        eigen_threshold = 0.8,
+#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.25, pt_spacing = 0.0254,
+#'                                        dens_threshold = 0.25,
+#'                                        neigh_sizes = c(0.25, 0.15, 0.66),
+#'                                        eigen_threshold = 0.75,
 #'                                        grid_slice_min = 1,
 #'                                        grid_slice_max = 2,
-#'                                        minimum_polygon_area = 0.01,
+#'                                        minimum_polygon_area = 0.005,
 #'                                        cylinder_fit_type = "ransac",
 #'                                        max_dia = 1,
 #'                                        SDvert = 0.33,
@@ -80,8 +80,8 @@
 #' # Plot results if trees were found
 #' if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
 #'   plot(lidR::grid_canopy(las, res = 0.2, p2r()))
-#'   symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
-#'           circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
+#'   symbols(sf::st_coordinates(myTreeLocs)[,1], sf::st_coordinates(myTreeLocs)[,2],
+#'           circles = myTreeLocs$Radius^2*3.14, inches = FALSE, add = TRUE, bg = 'black')
 #' } else {
 #'   message("No tree locations were found. Try adjusting the parameters.")
 #' }
@@ -108,7 +108,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   if(lidR::is.empty(slice_extra)) stop("No points in the las object after processing slice! Try increasing the slice min/max.", call. = FALSE)
 
   message("Calculating verticality... (3/14)\n")
-  vert_temp <- spanner::eigen_metrics(slice_extra, radius=neigh_sizes[1], ncpu=lidR::get_lidr_threads())
+  vert_temp <- eigen_metrics(slice_extra, radius=neigh_sizes[1], ncpu=lidR::get_lidr_threads())
   if(nrow(vert_temp) == 0) stop("Problemn calculating verticality...!", call. = FALSE)
 
   # vert_temp <- spanner::C_vert_in_sphere(slice_extra, radius = neigh_sizes[1], ncpu = lidR::get_lidr_threads())
@@ -120,12 +120,12 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   cancov <- lidR::grid_canopy(las, 0.1, p2r(0.1))
 
   message("Calculating relative density... (5/14)\n")
-  cnt_local <- spanner:::C_count_in_disc(X = slice_extra@data$X, Y = slice_extra@data$Y,
-                                         x = slice_extra@data$X, y = slice_extra@data$Y,
-                                         radius = neigh_sizes[2], ncpu = lidR::get_lidr_threads())
-  cnt_large <- spanner:::C_count_in_disc(X = slice_extra@data$X, Y = slice_extra@data$Y,
-                                         x = slice_extra@data$X, y = slice_extra@data$Y,
-                                         radius = neigh_sizes[3], ncpu = lidR::get_lidr_threads())
+  cnt_local <- C_count_in_disc(X = slice_extra@data$X, Y = slice_extra@data$Y,
+                               x = slice_extra@data$X, y = slice_extra@data$Y,
+                               radius = neigh_sizes[2], ncpu = lidR::get_lidr_threads())
+  cnt_large <- C_count_in_disc(X = slice_extra@data$X, Y = slice_extra@data$Y,
+                               x = slice_extra@data$X, y = slice_extra@data$Y,
+                               radius = neigh_sizes[3], ncpu = lidR::get_lidr_threads())
   slice_extra <- lidR::add_lasattribute(slice_extra, as.numeric(cnt_local/cnt_large),
                                         name = "relative_density", desc = "relative density")
 
@@ -235,9 +235,9 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     } else {
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
-    fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t]),
-                                 method = cylinder_fit_type, n = n_pts, inliers = inliers,
-                                 conf = conf, max_angle = max_angle, n_best = n_best)
+    fit <- cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t]),
+                       method = cylinder_fit_type, n = n_pts, inliers = inliers,
+                       conf = conf, max_angle = max_angle, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
     fit$dbh_width <- max-min
 
@@ -256,10 +256,10 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     } else {
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
-    fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
-                                                  Z >= min, Z <= max),
-                                 method = cylinder_fit_type, n = n_pts, inliers = inliers,
-                                 conf = conf, max_angle = max_angle, n_best = n_best)
+    fit <- cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
+                                        Z >= min, Z <= max),
+                       method = cylinder_fit_type, n = n_pts, inliers = inliers,
+                       conf = conf, max_angle = max_angle, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
     fit$dbh_width <- max-min
 
@@ -278,10 +278,10 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
     } else {
       stop("You will need to choose either 'ransac' or 'irls' cylinder fitting method...", call. = FALSE)
     }
-    fit <- spanner:::cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
-                                                  Z >= min, Z <= max),
-                                 method = cylinder_fit_type, n = n_pts, inliers = inliers,
-                                 conf = conf, max_angle = max_angle, n_best = n_best)
+    fit <- cylinderFit(lidR::filter_poi(slice_clip, TreeID == sort(unique(slice_clip$TreeID))[t],
+                                        Z >= min, Z <= max),
+                       method = cylinder_fit_type, n = n_pts, inliers = inliers,
+                       conf = conf, max_angle = max_angle, n_best = n_best)
     fit$TreeID <- sort(unique(slice_clip$TreeID))[t]
     fit$dbh_width <- max-min
 

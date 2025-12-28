@@ -93,13 +93,13 @@ plot(filter_poi(las, Classification != 2), color = "Z")
 las_check(las)
 
 # Find individual tree locations and attribute data
-myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.33, pt_spacing = 0.0254,
-                                       dens_threshold = 0.33,
-                                       neigh_sizes = c(0.33, 0.15, 0.66),
-                                       eigen_threshold = 0.8,
+myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.25, pt_spacing = 0.0254,
+                                       dens_threshold = 0.25,
+                                       neigh_sizes = c(0.25, 0.15, 0.66),
+                                       eigen_threshold = 0.75,
                                        grid_slice_min = 1,
                                        grid_slice_max = 2,
-                                       minimum_polygon_area = 0.01,
+                                       minimum_polygon_area = 0.005,
                                        cylinder_fit_type = "ransac",
                                        max_dia = 1,
                                        SDvert = 0.33,
@@ -111,8 +111,8 @@ myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.33, pt_spacing = 0.025
 
 # Plot the tree information over a CHM
 plot(lidR::grid_canopy(las, res = 0.2, p2r()))
-symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
-circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
+symbols(sf::st_coordinates(myTreeLocs)[,1], sf::st_coordinates(myTreeLocs)[,2],
+circles = myTreeLocs$Radius^2*3.14, inches = FALSE, add = TRUE, bg = 'black')
 
 # Segment the point cloud
 myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,

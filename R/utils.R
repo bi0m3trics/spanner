@@ -45,7 +45,7 @@
 #'
 #' @export
 eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
-  temp = spanner:::C_eigen_in_sphere(las, radius = radius, ncpu = ncpu)
+  temp = C_eigen_in_sphere(las, radius = radius, ncpu = ncpu)
   data.table::setDT(temp)
   cols<-c("eLargest","eMedium","eSmallest","eSum","Curvature","Omnivariance",
           "Anisotropy","Eigentropy","Linearity","Verticality","Planarity",

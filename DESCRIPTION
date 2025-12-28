@@ -3,9 +3,9 @@ Type: Package
 Title: Utilities to support landscape-, forest-, and tree-related data analysis
 Version: 1.0.2
 Date: 2024-10-06
-Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre", "ctb")),
-             person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb")),
-             person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb")))
+Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre", "ctb"), comment = c(ORCID = "0000-0003-4238-8587")),
+             person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb"), comment = c(ORCID = "0000-0001-9448-1703")),
+             person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb"), comment = c(ORCID = "0000-0002-2952-0865")))
 Description: Utilities to support landscape-, forest-, and tree-related data collection, manipulation, analysis, modelling, and visualization.
 URL: https://github.com/bi0m3trcis/spanner
 License: GPL-3 + file LICENSE
@@ -19,11 +19,11 @@ Config/testthat/edition: 3
 LinkingTo:
     lidR,
     RcppArmadillo,
-    Rcpp (>= 1.0.12),
+    Rcpp (>= 1.0.13),
     RcppEigen,
     BH,
 Imports: 
-    Rcpp (>= 1.0.12),
+    Rcpp (>= 1.0.13),
     conicfit,
     FNN,
     RANN,
@@ -34,8 +34,8 @@ Imports:
     Rfast,
     geometry,
     dplyr,
-    lidR (>= 4.2.0),
     mathjaxr,
     data.table
 Depends: 
-    R (>= 4.0.0)
+    R (>= 4.0.0),
+    lidR (>= 4.2.0),
