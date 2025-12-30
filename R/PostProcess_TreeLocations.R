@@ -131,12 +131,12 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #'
 #' # Segment the point cloud
 #' myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
-#'                              distance.threshold = 1,
+#'                              distance.threshold = 0.5,
 #'                              use.metabolic.scale = FALSE,
 #'                              ptcloud_slice_min = 1,
 #'                              ptcloud_slice_max = 2,
 #'                              subsample.graph = 0.1,
-#'                              return.dense = FALSE)
+#'                              return.dense = TRUE)
 #'
 #' # Plot it in 3D colored by treeID
 #' plot(myTreeGraph, color = "treeID", pal=spanner_pal())

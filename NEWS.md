@@ -1,4 +1,11 @@
 # spanner 1.0.2
+* New eigen metrics added (to match CloudCompare)
+** Roughness: Distance from query point to fitted plane through neighborhood centroid
+** Mean Curvature: Differential geometry-based curvature using quadric surface fitting
+** Gaussian Curvature: Product of principal curvatures from quadric surface
+** PCA1: Eigenvector projection variance normalized by eigensum
+** PCA2: Second eigenvector projection variance normalized by eigensum
+** NumNeighbors: Count of points in sphere neighborhood
 * Code optimization and cleanup:
 ** Removed 20+ unused C++ exports to streamline the package interface
 ** Fixed namespace issues by removing ::: calls in internal code

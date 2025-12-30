@@ -8,7 +8,7 @@ segment_graph(
   las,
   tree.locations,
   k = 50,
-  distance.threshold = 0.38,
+  distance.threshold = 0.33,
   use.metabolic.scale = FALSE,
   ptcloud_slice_min = 0.5,
   ptcloud_slice_max = 2,
@@ -116,12 +116,12 @@ circles = myTreeLocs$Radius^2*3.14, inches = FALSE, add = TRUE, bg = 'black')
 
 # Segment the point cloud
 myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
-                             distance.threshold = 1,
+                             distance.threshold = 0.5,
                              use.metabolic.scale = FALSE,
                              ptcloud_slice_min = 1,
                              ptcloud_slice_max = 2,
                              subsample.graph = 0.1,
-                             return.dense = FALSE)
+                             return.dense = TRUE)
 
 # Plot it in 3D colored by treeID
 plot(myTreeGraph, color = "treeID", pal=spanner_pal())

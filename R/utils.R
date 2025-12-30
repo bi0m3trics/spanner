@@ -23,16 +23,23 @@
 #'  \item \code{Omnivariance}: high values correspond to spherical features and low values to planes or linear features, \mjeqn{(\lambda_{1} * \lambda_{2} * \lambda_{3})^{1/3}}{ASCII representation}
 #'  \item \code{Anisotropy}: relationships between the directions of the point distribution, \mjeqn{(\lambda_{1} - \lambda_{3}) / \lambda_{1}}{ASCII representation}
 #'  \item \code{Eigentropy}: entropy in the eigenvalues, \mjeqn{- \sum_{i=1}^{n=3} \lambda_{i} * ln(\lambda_{i})}{ASCII representation}
-#'  \item \code{Linearity}: linear saliency, \mjeqn{(\lambda_{1} + \lambda_{2}) / \lambda_{1}}{ASCII representation}
+#'  \item \code{Linearity}: linear saliency, \mjeqn{(\lambda_{1} - \lambda_{2}) / \lambda_{1}}{ASCII representation}
 #'  \item \code{Verticality}: vertical saliency, \mjeqn{1-abs(\langle (0,0,1),e_3\rangle)}{ASCII representation}
-#'  \item \code{Planarity}: planar saliency, \mjeqn{(\lambda_{2} + \lambda_{3}) / \lambda_{1}}{ASCII representation}
-#'  \item \code{Nx,Ny,Nz}: 3 components of the normal vector
+#'  \item \code{Planarity}: planar saliency, \mjeqn{(\lambda_{2} - \lambda_{3}) / \lambda_{1}}{ASCII representation}
+#'  \item \code{Sphericity}: spherical saliency, \mjeqn{\lambda_{3} / \lambda_{1}}{ASCII representation}
+#'  \item \code{Nx,Ny,Nz}: 3 components of the normal vector (smallest eigenvector)
 #'  \item \code{SurfaceVariation}: surface variation (change of curvature), same as Curvature
 #'  \item \code{ChangeCurvature}: alternative name for surface variation
-#'  \item \code{SurfaceDensity}: number of neighbors per unit area
-#'  \item \code{VolumeDensity}: number of neighbors per unit volume
-#'  \item \code{MomentOrder1}: 1st order moment (distance to local centroid)
-#'  \item \code{NormalChangeRate}: normal change rate (related to planarity)
+#'  \item \code{SurfaceDensity}: 2D point density using circle area, \mjeqn{k / (\pi R^{2})}{ASCII representation}
+#'  \item \code{VolumeDensity}: 3D point density using sphere volume, \mjeqn{k / (\frac{4}{3}\pi R^{3})}{ASCII representation}
+#'  \item \code{MomentOrder1}: 1st order moment from CloudCompare, projection onto 2nd eigenvector, \mjeqn{m_{1}^{2} / m_{2}}{ASCII representation}
+#'  \item \code{NormalChangeRate}: normal change rate, same as Curvature, \mjeqn{\lambda_{3} / \sum_{i=1}^{n=3} \lambda_{i}}{ASCII representation}
+#'  \item \code{Roughness}: distance from query point to fitted plane, \mjeqn{|\vec{d} \cdot \vec{n}|}{ASCII representation}
+#'  \item \code{MeanCurvature}: mean curvature from quadric surface fitting, \mjeqn{H = \frac{(1+f_{y}^{2})f_{xx} - 2f_{x}f_{y}f_{xy} + (1+f_{x}^{2})f_{yy}}{2(1+f_{x}^{2}+f_{y}^{2})^{3/2}}}{ASCII representation}
+#'  \item \code{GaussianCurvature}: Gaussian curvature from quadric surface fitting, \mjeqn{K = \frac{f_{xx}f_{yy} - f_{xy}^{2}}{(1+f_{x}^{2}+f_{y}^{2})^{2}}}{ASCII representation}
+#'  \item \code{PCA1}: eigenvector projection variance normalized by eigensum, \mjeqn{\sigma_{PC1}^{2} / \sum_{i=1}^{n=3} \lambda_{i}}{ASCII representation}
+#'  \item \code{PCA2}: eigenvector projection variance normalized by eigensum, \mjeqn{\sigma_{PC2}^{2} / \sum_{i=1}^{n=3} \lambda_{i}}{ASCII representation}
+#'  \item \code{NumNeighbors}: number of points in the spherical neighborhood, \mjeqn{k}{ASCII representation}
 #' }
 #' @return A labeled data.table of point metrics for each point in the LAS object
 #'
@@ -50,11 +57,9 @@ eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
   cols<-c("eLargest","eMedium","eSmallest","eSum","Curvature","Omnivariance",
           "Anisotropy","Eigentropy","Linearity","Verticality","Planarity",
           "Sphericity", "Nx", "Ny", "Nz", "SurfaceVariation", "ChangeCurvature",
-          "SurfaceDensity", "VolumeDensity", "MomentOrder1", "NormalChangeRate")
+          "SurfaceDensity", "VolumeDensity", "MomentOrder1", "NormalChangeRate",
+          "Roughness", "MeanCurvature", "GaussianCurvature", "PCA1", "PCA2", "NumNeighbors")
   data.table::setnames(temp, cols)
-  pca_basic = princomp(temp[,c("eLargest","eMedium","eSmallest")])
-  temp$PCA1 = pca_basic$scores[,1]
-  temp$PCA2 = pca_basic$scores[,2]
   return(temp)
 }
 
