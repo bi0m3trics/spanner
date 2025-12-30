@@ -1,39 +1,36 @@
 # spanner 1.0.2
 * New eigen metrics added (to match CloudCompare)
-** Roughness: Distance from query point to fitted plane through neighborhood centroid
-** Mean Curvature: Differential geometry-based curvature using quadric surface fitting
-** Gaussian Curvature: Product of principal curvatures from quadric surface
-** PCA1: Eigenvector projection variance normalized by eigensum
-** PCA2: Second eigenvector projection variance normalized by eigensum
-** NumNeighbors: Count of points in sphere neighborhood
+    * Roughness: Distance from query point to fitted plane through neighborhood centroid
+    * Mean Curvature: Differential geometry-based curvature using quadric surface fitting
+    * Gaussian Curvature: Product of principal curvatures from quadric surface
+    * PCA1: Eigenvector projection variance normalized by eigensum
+    * PCA2: Second eigenvector projection variance normalized by eigensum
+    * NumNeighbors: Count of points in sphere neighborhood
 * Code optimization and cleanup:
-** Removed 20+ unused C++ exports to streamline the package interface
-** Fixed namespace issues by removing ::: calls in internal code
-** Reduced exported C++ functions to only those actively used (C_eigen_in_sphere, C_count_in_disc, C_count_in_sphere, cppCylinderFit)
-** Removed lidR from Imports field (kept in Depends and LinkingTo only)
+    * Removed 20+ unused C++ exports to streamline the package interface
+    * Fixed namespace issues by removing ::: calls in internal code
+    * Reduced exported C++ functions to only those actively used (C_eigen_in_sphere, C_count_in_disc, C_count_in_sphere, cppCylinderFit)
+    * Removed lidR from Imports field (kept in Depends and LinkingTo only)
 * Updated documentation examples:
-** Fixed examples to use sf::st_coordinates() with proper namespace qualification
-** Updated get_raster_eigen_treelocs() examples with optimized parameters for better tree detection in forests with interlocking crowns (res=0.25, dens_threshold=0.25, eigen_threshold=0.75, minimum_polygon_area=0.005)
-** Corrected circle area formula in plotting examples (Radius^2*3.14)
+    * Fixed examples to use sf::st_coordinates() with proper namespace qualification
+    * Updated get_raster_eigen_treelocs() examples with optimized parameters for better tree detection in forests with interlocking crowns (res=0.25, dens_threshold=0.25, eigen_threshold=0.75, minimum_polygon_area=0.005)
+    * Corrected circle area formula in plotting examples (Radius^2*3.14)
 * Bug fixes - replaced null checks with is.empty for LAS objects and stopped R from collapsing the one-row subset into a vector, so the circle fit still receives a 2-column input when there's on one tree in `get_raster_eigen_treelocs`.
 * Removed depends on magrittr and removed all %>% in codebase
-* Added `process_tree_data` funciton that takes the output of `get_raster_eigen_treelocs` and `segment_graph` to adds information
-**  about the height, crown area and volume, and diameter for each unique TreeID. It also has an optional parameter to return
-**  either points or hulls as an `sf` object for each tree.
+* Added `process_tree_data` funciton that takes the output of `get_raster_eigen_treelocs` and `segment_graph` to adds information about the height, crown area and volume, and diameter for each unique TreeID. It also has an optional parameter to return either points or hulls as an `sf` object for each tree.
 * Added the citation for the package
 * Added a couple default datasets and got rid of getExampleData()
 * Added the xyz normals as returns for eigen_metrics()
 * Added PatchMorph functions:
-** process_rasters_patchmorph: Processes an input raster by reclassifying it based on suitability levels and applying gap and spur distance transformations to generate a list of processed rasters.
-** plot_raster_by_name: Plots a raster from a list of rasters based on the provided raster name.
-** sum_rasters_by_suitability: Sums rasters from a list based on their suitability levels and returns a list of summed rasters for each suitability level.
+    * process_rasters_patchmorph: Processes an input raster by reclassifying it based on suitability levels and applying gap and spur distance transformations to generate a list of processed rasters.
+    * plot_raster_by_name: Plots a raster from a list of rasters based on the provided raster name.
+    * sum_rasters_by_suitability: Sums rasters from a list based on their suitability levels and returns a list of summed rasters for each suitability level.
 * Added dependencies fopr sf and terra
-* Modified get_raster_eigen_treelocs and segment_graph
-** to use sf and not write any intermediate files to optput locations
-** with parallel processing to make sure that all possible operations use the available CPU cores.
-** efficient data structures; used lapply for list operations and dplyr::bind_rows for combining data frames.
-** reduce redundant ralculations; stored intermediate results and reused them where possible.
-** removed unnecessary objects and used more efficient data structures.
+* Modified get_raster_eigen_treelocs and segment_graph to use sf and not write any intermediate files to optput locations with parallel processing to make sure that all possible operations use
+    * the available CPU cores
+    *efficient data structures; used lapply for list operations and dplyr::bind_rows for combining data frames.
+    *reduce redundant ralculations; stored intermediate results and reused them where possible.
+    *removed unnecessary objects and used more efficient data structures.
 * Added spanner_pal() which is a custom color palette
 
 
