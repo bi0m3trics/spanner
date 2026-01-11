@@ -1,3 +1,7 @@
+#' @importFrom stats quantile
+#' @importFrom utils download.file flush.console object.size
+#' @importFrom geometry convhulln
+#' @noRd
 # Function to estimate the crown base height of a tree
 estimate_crown_base_height <- function(z, threshold = 0.05) {
   quantiles <- quantile(z, probs = seq(0, 1, 0.05))

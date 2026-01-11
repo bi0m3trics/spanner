@@ -1,3 +1,8 @@
+# Declare global variables used in data.table and magrittr operations
+utils::globalVariables(c("X", "Y", "Z", "TreeID", ".", "..", "..existing_cols", 
+                         "..available_features", "verticality", "treeID", "Classification",
+                         "x", "y", "value", ".data", "Radius", "Color"))
+
 .onUnload <- function(libpath)
 {
   library.dynam.unload("spanner", libpath)
@@ -11,6 +16,7 @@
 #' @param las LAS Normalized las object.
 #' @param radius numeric the radius of the neighborhood
 #' @param ncpu integer the number of cpu's to be used in parallelfor the calculation
+#' @importFrom magrittr %>% %<>%
 #'
 #' @section List of available point metrics:
 #' \loadmathjax
@@ -74,6 +80,7 @@ eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
 #' @param max_angle used when \code{method == "bf"}. The maximum tolerated deviation, in degrees, from an absolute vertical line (Z = c(0,0,1)).
 #' @param n_best estimate optimal RANSAC parameters as the median of the \code{n_best} estimations with lowest error.
 #' @return vector of parameters
+#' @importFrom stats aggregate kmeans sd
 #'
 #' @examples
 #' \dontrun{
@@ -136,6 +143,7 @@ las2xyz = function(las){
 #' @description Returns a named vector of colors for use in spanner visualizations.
 #' The palette includes 10 distinct colors suitable for categorical data visualization.
 #' @return A named character vector of hex color codes
+#' @importFrom grDevices heat.colors rainbow terrain.colors topo.colors
 #'
 #' @examples
 #' \dontrun{

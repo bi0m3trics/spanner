@@ -32,7 +32,16 @@ Imports:
     geometry,
     dplyr,
     mathjaxr,
-    data.table
+    data.table,
+    lidR (>= 4.2.0),
+    magrittr,
+    igraph,
+    dbscan,
+    lwgeom,
+    stringr
+Suggests:
+    ggplot2,
+    raster,
+    testthat
 Depends: 
-    R (>= 4.0.0),
-    lidR (>= 4.2.0)
+    R (>= 4.0.0)

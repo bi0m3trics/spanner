@@ -1,6 +1,7 @@
 ^spanner\.Rproj$
-^\.Rproj\.user$
+^\. Rproj\.user$
 ^LICENSE\.md$
+^\.github$
 ^\.github$
 ^img$
 ^\.vscode$

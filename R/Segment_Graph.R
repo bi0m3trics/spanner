@@ -30,6 +30,10 @@
 #' time increases quickly with smaller point spacing with negligible returns in accuracy.
 #' @param return.dense bool Decision to return the subsampled point cloud or assign treeIDs back to
 #' points in the input dense point cloud.
+#' @importFrom cppRouting get_distance_matrix
+#' @importFrom igraph graph_from_adjacency_matrix shortest_paths V
+#' @importFrom FNN get.knn
+#' @importFrom RANN nn2
 #'
 #' @return a sparse/dense normalized .las with the column treeID added.
 #'

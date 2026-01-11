@@ -32,8 +32,13 @@
 #' @param inliers integer expected proportion of inliers among cylinder points
 #' @param conf numeric confidence level
 #' @param max_angle numeric maximum tolerated deviation, in degrees, from vertical.
-#' #' @return sf A sf object containing the following tree seed information: `TreeID`,
+#' @param output_location character Output location for saving results
+#' @return sf A sf object containing the following tree seed information: `TreeID`,
 #' `Radius`, and `Error` in the same units as the .las, as well as the point geometry
+#' @importFrom magrittr %>%
+#' @importFrom data.table setDT :=
+#' @importFrom lidR grid_density p2r
+#' @importFrom raster connected_components
 #'
 #' @examples
 #'
