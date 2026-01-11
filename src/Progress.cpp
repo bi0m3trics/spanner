@@ -10,10 +10,14 @@
 
 Progress::Progress(unsigned int iter_max, std::string prefix)
 {
-  SEXP prgssSEXP = Rf_GetOption(Rf_install("lidR.progress"), R_BaseEnv);
-  this->display = Rf_isLogical(prgssSEXP) && (Rcpp::as<bool>(prgssSEXP) == true);
+  Rcpp::Environment base_env = Rcpp::Environment::base_env();
+  Rcpp::Function getOption = base_env["getOption"];
+  
+  SEXP prgssSEXP = getOption("lidR.progress");
+  bool is_logical = Rcpp::is<Rcpp::LogicalVector>(prgssSEXP);
+  this->display = is_logical && (Rcpp::as<bool>(prgssSEXP) == true);
 
-  SEXP delaySEXP = Rf_GetOption(Rf_install("lidR.progress.delay"), R_BaseEnv);
+  SEXP delaySEXP = getOption("lidR.progress.delay");
   this->delay = Rcpp::as<float>(delaySEXP);
 
   iter = 0;

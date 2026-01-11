@@ -26,8 +26,8 @@
   #define USE_RCPP_ARMADILLO
 #endif
 
-#include "optim.hpp"
-#include "algorithms.hpp"
+#include "spanner_optim.hpp"
+#include "spanner_algorithms.hpp"
 
 // eigen conversions
 Eigen::Matrix<double, Eigen::Dynamic, 3> stl2eigenmat(vector<vector<double> >& xyz){
