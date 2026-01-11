@@ -174,7 +174,7 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   // Get the eigenvector corresponding to the smallest eigenvalue (normal vector)
   arma::vec normal = eigenvectors.col(sorted_indices[2]);
   
-  verticality    = 1 - std::abs(normal[2]);
+  verticality    = 1 - abs(normal[2]);
   planarity      = (eigen_medium - eigen_smallest) / eigen_largest;
   sphericity     = eigen_smallest / eigen_largest;
   nx = normal[0];

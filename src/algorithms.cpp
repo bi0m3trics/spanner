@@ -263,7 +263,7 @@ vector<double> irlsCircle(vector<vector<double> >& las, vector<double> initPars,
     vector<double> werr = circleDists(las, init);
     tukeyBiSq(werr);
     las[3] = werr;
-    converge = std::abs(err - ssq) < err_tol || ++count == max_iter;
+    converge = abs(err - ssq) < err_tol || ++count == max_iter;
     ssq = err;
   }
 
@@ -414,7 +414,7 @@ vector<double> irlsCylinder(vector<vector<double> >& las, vector<double> initPar
     vector<double> werr = cylDists(las, init);
     tukeyBiSq(werr);
     las[3] = werr;
-    converge = std::abs(err - ssq) < err_tol || ++count == max_iter;
+    converge = abs(err - ssq) < err_tol || ++count == max_iter;
     ssq = err;
   }
 

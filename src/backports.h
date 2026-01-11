@@ -19,14 +19,9 @@ static inline void CLEAR_ATTRIB(SEXP x) {
 #endif
 
 // ANY_ATTRIB was added in R 4.5.0
-// Using API-compliant implementation without ATTRIB
 #ifndef ANY_ATTRIB
 static inline int ANY_ATTRIB(SEXP x) {
-    // Check common attributes using API functions
-    return (Rf_getAttrib(x, R_NamesSymbol) != R_NilValue ||
-            Rf_getAttrib(x, R_ClassSymbol) != R_NilValue ||
-            Rf_getAttrib(x, R_DimSymbol) != R_NilValue ||
-            Rf_getAttrib(x, R_DimNamesSymbol) != R_NilValue);
+    return ATTRIB(x) != R_NilValue;
 }
 #endif
 

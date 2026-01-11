@@ -423,7 +423,7 @@ vector<vector<double> > ransacStemCircle(vector<vector<double> >& cloud, vector<
     double& hrad = segRadii[i];
     vector<double> temp = ransacCircle(slice, nSamples, pConfidence, pInliers, 20);
 
-    double rdiff = std::abs(temp[2] - hrad);
+    double rdiff = abs(temp[2] - hrad);
     if(rdiff > tolerance){
 
       vector<double> bbox = getMinMax(slice);
@@ -470,7 +470,7 @@ vector<vector<double> > ransacStemCylinder(vector<vector<double> >& cloud, vecto
     double& hrad = segRadii[i];
     vector<double> temp = ransacCylinder(slice, nSamples, pConfidence, pInliers);
 
-    double rdiff = std::abs(temp[4] - hrad);
+    double rdiff = abs(temp[4] - hrad);
     if(rdiff > tolerance){
       temp[0] = 0;
       temp[1] = M_PI/2;
@@ -522,7 +522,7 @@ vector<vector<double> > irlsStemCylinder(vector<vector<double> >& cloud, vector<
     double& hrad = segRadii[i];
     vector<double> temp = irlsCylinder(slice, initPars);
 
-    double rdiff = std::abs(temp[4] - hrad);
+    double rdiff = abs(temp[4] - hrad);
     if(rdiff > tolerance){
       temp[0] = 0;
       temp[1] = M_PI/2;
@@ -571,7 +571,7 @@ vector<vector<double> > irlsStemCircle(vector<vector<double> >& cloud, vector<un
     vector<double> initPars = eigenCircle(slice);
     vector<double> temp = irlsCircle(slice, initPars);
 
-    double rdiff = std::abs(temp[2] - hrad);
+    double rdiff = abs(temp[2] - hrad);
     if(rdiff > tolerance){
       temp[0] = 0;
       temp[1] = 0;
@@ -794,8 +794,8 @@ vector<unsigned int> treeIdsFromMap(vector<vector<double> >& xy, vector<vector<d
         double dist = sqrt( pow(x - xref, 2) + pow(y - yref, 2) );
         isInside = dist < length;
       }else{
-        double xdist = std::abs(x - xref);
-        double ydist = std::abs(y - yref);
+        double xdist = abs(x - xref);
+        double ydist = abs(y - yref);
         isInside = xdist < (length/2) && ydist < (length/2);
       }
 
@@ -836,7 +836,7 @@ vector<vector<double> > bfStemCylinder(vector<vector<double> >& cloud, vector<un
     double& hrad = segRadii[i];
     vector<double> temp = bruteForceRansacCylinder(slice, nSamples, pConfidence, pInliers, 20, max_angle, true)[0];
 
-    double rdiff = std::abs(temp[2] - hrad);
+    double rdiff = abs(temp[2] - hrad);
     if(rdiff > tolerance){
       temp[0] = 0;
       temp[1] = 0;

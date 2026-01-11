@@ -12,8 +12,8 @@
 utils::globalVariables(c("X", "Y", "Z", "TreeID", "treeID", "Classification", 
                          "verticality", "null", "f", "p2r"))
 
-# Note: The inst/include/ directory contains C++ header files (.hpp) used during compilation.
+# Note: The src/ directory contains C++ header files (.hpp) alongside source files (.cpp).
 # These header files (algorithms.hpp, classes.hpp, methods.hpp, utils.hpp, and optim.hpp)
-# contain template definitions, inline functions, and class/function declarations used by
-# the corresponding .cpp implementation files in src/. The optim.hpp file is part of the
-# OptimLib header-only optimization library.
+# are required for compilation and contain template definitions, inline functions, and
+# class/function declarations used by the corresponding .cpp implementation files.
+# The optim.hpp file is part of the OptimLib header-only optimization library.
