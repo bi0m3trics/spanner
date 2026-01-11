@@ -22,13 +22,6 @@ on:
       id:
         description: 'Unique ID. You can leave this empty now.'
         type: string
-<<<<<<< HEAD
-=======
-    push:
-      branches: [main, master, devel]
-    pull_request:
-      branches: [main, master, devel]
->>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 
 jobs:
 
