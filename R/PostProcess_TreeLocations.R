@@ -108,6 +108,7 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #' las_check(las)
 #'
 #' # Find individual tree locations and attribute data
+#' # find tree locations and attribute data
 #' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.25, pt_spacing = 0.0254,
 #'                                        dens_threshold = 0.25,
 #'                                        neigh_sizes = c(0.25, 0.15, 0.66),
@@ -124,10 +125,14 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #'                                        conf = 0.99,
 #'                                        max_angle = 20)
 #'
-#' # Plot the tree information over a CHM
-#' plot(lidR::grid_canopy(las, res = 0.2, p2r()))
-#' points(myTreeLocs$X, myTreeLocs$Y, col = "black", pch = 16,
-#'        cex = myTreeLocs$Radius^2 * 10, asp = 1)
+#' # Plot results if trees were found
+#' if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
+#'   plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+#'   symbols(sf::st_coordinates(myTreeLocs)[,1], sf::st_coordinates(myTreeLocs)[,2],
+#'           circles = myTreeLocs$Radius^2*3.14, inches = FALSE, add = TRUE, bg = 'black')
+#' } else {
+#'   message("No tree locations were found. Try adjusting the parameters.")
+#' }
 #'
 #' # Segment the point cloud
 #' myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
