@@ -46,7 +46,7 @@ double mad(vector<double> x, double c){
   double md = median(x);
 
   for(auto& i : x){
-    i = abs(i - md);
+    i = std::abs(i - md);
   }
 
   return c * median(x);
@@ -63,7 +63,7 @@ void tukeyBiSq(vector<double>& werrors, double b){
 
   for(auto& i : werrors){
     i /= s;
-    i = abs(i) > b ? 0 : pow(1-(i/b)*(i/b),2);
+    i = std::abs(i) > b ? 0 : pow(1-(i/b)*(i/b),2);
   }
 }
 
@@ -162,8 +162,8 @@ vector<vector<double> > cropCloud(vector<vector<double> > cloud, double xCenter,
       double dist = sqrt( pow(x - xCenter, 2) + pow(y - yCenter, 2) );
       keep = dist < len;
     }else{
-      double dx = abs(x - xCenter);
-      double dy = abs(y - yCenter);
+      double dx = std::abs(x - xCenter);
+      double dy = std::abs(y - yCenter);
       keep = dx < (len/2) && dy < (len/2);
     }
 
@@ -195,8 +195,8 @@ vector<bool> cropCloudFilter(vector<vector<double> > cloud, double xCenter, doub
       double dist = sqrt( pow(x - xCenter, 2) + pow(y - yCenter, 2) );
       keep = dist < len;
     }else{
-      double dx = abs(x - xCenter);
-      double dy = abs(y - yCenter);
+      double dx = std::abs(x - xCenter);
+      double dy = std::abs(y - yCenter);
       keep = dx < (len/2) && dy < (len/2);
     }
 
@@ -306,7 +306,7 @@ vector<vector<double> > voxelCounter(vector<vector<double> >& xyzNormals, double
           unsigned int tempCount = voxelRegistry.counter[hash];
           if(tempCount > maxCount){
             maxCount = tempCount;
-            mainDist = abs(d);
+            mainDist = std::abs(d);
           }
         }
       }
