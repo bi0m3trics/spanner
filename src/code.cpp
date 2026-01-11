@@ -8,6 +8,7 @@
 #include <cmath>
 #include "SpatialIndex.h"
 #include "Progress.h"
+#include "spanner_utils.hpp"
 
 // Define M_PI if not already defined
 #ifndef M_PI

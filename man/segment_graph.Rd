@@ -64,7 +64,10 @@ increase processing efficiency. However, graph objects can still get large quite
 this into consideration when choosing the extent of the input las object.
 }
 \examples{
+<<<<<<< HEAD
 
+=======
+>>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 \dontrun{
 # Set the number of threads to use in lidR
 set_lidr_threads(8)
@@ -110,6 +113,7 @@ myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.25, pt_spacing = 0.025
                                        conf = 0.99,
                                        max_angle = 20)
 
+<<<<<<< HEAD
 # Plot results if trees were found
 if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
   plot(lidR::grid_canopy(las, res = 0.2, p2r()))
@@ -118,6 +122,12 @@ if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
 } else {
   message("No tree locations were found. Try adjusting the parameters.")
 }
+=======
+# Plot the tree information over a CHM
+plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+symbols(st_coordinates(myTreeLocs)[,1], st_coordinates(myTreeLocs)[,2],
+circles = myTreeLocs$Radius^2, inches = FALSE, add = TRUE, bg = 'black')
+>>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 
 # Segment the point cloud
 myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,

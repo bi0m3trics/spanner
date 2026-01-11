@@ -19,7 +19,7 @@
 //
 //  ===============================================================================
 
-#include "methods.hpp"
+#include "spanner_methods.hpp"
 
 // convert point cloud slice to raster of point count
 Raster getCounts(vector<vector<double> >& slice, double pixel_size){

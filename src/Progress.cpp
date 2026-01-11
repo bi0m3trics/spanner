@@ -5,16 +5,25 @@
  *    https://github.com/Jean-Romain/lidR
  */
 
-#include "omp.h"
+#include "omp_local.h"
 #include "Progress.h"
 
 Progress::Progress(unsigned int iter_max, std::string prefix)
 {
+<<<<<<< HEAD
   Rcpp::Environment base = Rcpp::Environment::base_env();
   Rcpp::Function getOption = base["getOption"];
   
   SEXP prgssSEXP = getOption("lidR.progress");
   this->display = Rcpp::is<bool>(prgssSEXP) && Rcpp::as<bool>(prgssSEXP);
+=======
+  Rcpp::Environment base_env = Rcpp::Environment::base_env();
+  Rcpp::Function getOption = base_env["getOption"];
+  
+  SEXP prgssSEXP = getOption("lidR.progress");
+  bool is_logical = Rcpp::is<Rcpp::LogicalVector>(prgssSEXP);
+  this->display = is_logical && (Rcpp::as<bool>(prgssSEXP) == true);
+>>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 
   SEXP delaySEXP = getOption("lidR.progress.delay");
   this->delay = Rcpp::as<float>(delaySEXP);

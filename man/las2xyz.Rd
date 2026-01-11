@@ -2,11 +2,16 @@
 % Please edit documentation in R/utils.R
 \name{las2xyz}
 \alias{las2xyz}
+<<<<<<< HEAD
 \title{Convert LAS object to XYZ matrix}
+=======
+\title{Convert LAS Object to XYZ Matrix}
+>>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 \usage{
 las2xyz(las)
 }
 \arguments{
+<<<<<<< HEAD
 \item{las}{LAS object to convert}
 }
 \value{
@@ -22,4 +27,33 @@ las <- readLAS(LASfile)
 xyz_matrix <- las2xyz(las)
 head(xyz_matrix)
 }
+=======
+\item{las}{LAS object containing point cloud data}
+}
+\value{
+numeric matrix with 3 columns (X, Y, Z) and one row per point
+}
+\description{
+Extracts the X, Y, Z coordinates from a LAS object and returns them as a numeric matrix.
+This is a utility function commonly used for interfacing with functions that require matrix input
+rather than LAS objects.
+}
+\details{
+This function validates that the input is a LAS object and extracts only the coordinate
+columns. The resulting matrix is suitable for use with geometric algorithms and C++ functions
+that require matrix input.
+}
+\examples{
+\dontrun{
+# Load LAS data
+las <- readLAS("path/to/file.las")
+
+# Convert to matrix
+xyz_matrix <- las2xyz(las)
+
+# Check dimensions
+dim(xyz_matrix)  # Should be [n_points, 3]
+}
+
+>>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 }

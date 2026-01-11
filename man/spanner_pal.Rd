@@ -2,11 +2,16 @@
 % Please edit documentation in R/utils.R
 \name{spanner_pal}
 \alias{spanner_pal}
+<<<<<<< HEAD
 \title{Spanner color palette}
+=======
+\title{Spanner Package Color Palette}
+>>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 \usage{
 spanner_pal()
 }
 \value{
+<<<<<<< HEAD
 A named character vector of hex color codes
 }
 \description{
@@ -21,4 +26,33 @@ colors <- spanner_pal()
 # Use in a plot
 barplot(1:10, col = spanner_pal(), names.arg = names(spanner_pal()), las = 2)
 }
+=======
+Named character vector containing 10 hex color codes with descriptive names
+}
+\description{
+Returns the official color palette for the spanner package. This palette consists
+of 10 carefully selected colors that provide good contrast and are suitable for data visualization
+and plotting functions within the spanner ecosystem.
+}
+\details{
+The palette includes colors ranging from reds and oranges to greens and blues,
+providing a diverse set of colors for various visualization needs. Color names follow
+standard color naming conventions.
+}
+\examples{
+\dontrun{
+# Get the spanner color palette
+colors <- spanner_pal()
+
+# View the colors
+print(colors)
+
+# Use in a plot
+plot(1:10, col = spanner_pal(), pch = 16, cex = 2)
+
+# Use specific colors by name
+plot(1:3, col = spanner_pal()[c("Red_CMYK", "Kelly_green", "Keppel")])
+}
+
+>>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 }

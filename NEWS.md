@@ -1,4 +1,47 @@
+# spanner 1.1.0
+
+## Key Updates
+
+### Major Performance and Functionality Enhancements
+- **process_rasters_patchmorph()** fully rewritten for speed and efficiency, with:
+  - Kernel caching (40–60% faster)
+  - Improved memory handling
+  - Robust error recovery
+  - Thorough parameter validation
+- **getCircularKernel()** optimized with vectorized operations for 2–3× speed gains
+- Reduced memory footprint and external dependencies
+- Standardized coding style and improved error messages across functions
+
+### New and Improved Visualization Tools
+- **plot_raster_by_name()** redesigned with ggplot2 integration:
+  - Multiple palettes and custom colors
+  - Professional themes and flexible layouts
+  - Fallback to base plotting if ggplot2 unavailable
+- **plot_multiple_rasters()** for side-by-side raster comparisons with synchronized scales and consistent styling
+- **plot_raster_interactive()** with Plotly for zooming, panning, hover info, and HTML export
+- Removed rarely used contour functionality to streamline plotting
+
+### Expanded Tree Detection Capabilities
+- **comprehensive_tree_detection()**: End-to-end workflow combining raster-based detection, RANSAC cylinder fitting, and geometric filtering, returning sf outputs with quality classifications
+- **validate_detected_trees()**: Filters detections by radius, error, and point count
+- **plot_tree_detection()**: Visualizes detected trees over CHMs with size and color scaling
+- **colorizeLAS()**: Colors LAS point clouds by any attribute with customizable palettes and NA handling
+
+### Codebase and Documentation Improvements
+- Cleaned repository of unused code, artifacts, and redundant examples
+- Focused package scope on core tree detection
+- Comprehensive roxygen2 documentation updates
+- Expanded examples and added `simple_example.R` demonstrating complete workflow
+
+### Bug Fixes
+- Corrected NAMESPACE exports
+- Improved cylinder fitting error handling
+- Enhanced geometric feature integration
+- Better handling of edge cases in detection pipeline
+
+
 # spanner 1.0.2
+<<<<<<< HEAD
 * New eigen metrics added (to match CloudCompare)
     * Roughness: Distance from query point to fitted plane through neighborhood centroid
     * Mean Curvature: Differential geometry-based curvature using quadric surface fitting
@@ -18,6 +61,8 @@
 * Bug fixes - replaced null checks with is.empty for LAS objects and stopped R from collapsing the one-row subset into a vector, so the circle fit still receives a 2-column input when there's on one tree in `get_raster_eigen_treelocs`.
 * Removed depends on magrittr and removed all %>% in codebase
 * Added `process_tree_data` funciton that takes the output of `get_raster_eigen_treelocs` and `segment_graph` to adds information about the height, crown area and volume, and diameter for each unique TreeID. It also has an optional parameter to return either points or hulls as an `sf` object for each tree.
+=======
+>>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 * Added the citation for the package
 * Added a couple default datasets and got rid of getExampleData()
 * Added the xyz normals as returns for eigen_metrics()
@@ -26,11 +71,20 @@
     * plot_raster_by_name: Plots a raster from a list of rasters based on the provided raster name.
     * sum_rasters_by_suitability: Sums rasters from a list based on their suitability levels and returns a list of summed rasters for each suitability level.
 * Added dependencies fopr sf and terra
+<<<<<<< HEAD
 * Modified get_raster_eigen_treelocs and segment_graph to use sf and not write any intermediate files to optput locations with parallel processing to make sure that all possible operations use
     * the available CPU cores
     *efficient data structures; used lapply for list operations and dplyr::bind_rows for combining data frames.
     *reduce redundant ralculations; stored intermediate results and reused them where possible.
     *removed unnecessary objects and used more efficient data structures.
+=======
+* Modified get_raster_eigen_treelocs and segment_graph
+** to use sf and not write any intermediate files to optput locations
+** wit parallel processing to make sure that all possible operations use the available CPU cores.
+** efficient data structures; used lapply for list operations and dplyr::bind_rows for combining data frames.
+** reduce redundant ralculations; stored intermediate results and reused them where possible.
+** removed unnecessary objects and used more efficient data structures.
+>>>>>>> f10b3a9b075f75c050d6c21e05cc87e321fe4609
 * Added spanner_pal() which is a custom color palette
 
 
