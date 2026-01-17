@@ -1,6 +1,6 @@
 Package: spanner
 Type: Package
-Title: Utilities to support landscape-, forest-, and tree-related data analysis
+Title: Utilities to support lidar (airborne, mobile, terrestial) applicaitons at the landscape-, forest-, and tree-scale
 Version: 1.0.2
 Date: 2024-10-06
 Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre", "ctb"), comment = c(ORCID = "0000-0003-4238-8587")),
