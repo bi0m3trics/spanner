@@ -6,7 +6,7 @@
 Definition of spanner
 <br/>1 (chiefly British): WRENCH
 <br/>2: a wrench that has a hole, projection, or hook at one or both ends of the head for engaging with a corresponding device on the object that is to be turned
-<br/>3: utilities to support lidar (airborne, mobile, terrestial) applicaitons at the landscape-, forest-, and tree-scale in support of ecologcial data collection, manipulation, analysis, modelling, and visualization. 
+<br/>3: utilities to support lidar (airborne, mobile, terrestial) applicaitons at the landscape-, forest-, and tree-scale to facilitate ecologcial data collection, manipulation, analysis, modelling, and visualization. 
 
 <img src="https://github.com/bi0m3trics/spanner/blob/master/img/tshirt3.png" width="100%"  height="auto" align="center"/>
 
