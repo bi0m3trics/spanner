@@ -8,7 +8,7 @@ Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@na
              person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb"), comment = c(ORCID = "0000-0002-2952-0865")),
              person("Cannon", "Jeffery", email = "Jeffery.Cannon@jonesctr.org", role = c("ctb"), comment = c(ORCID = "0000-0002-8436-8712")))
 Description: Utilities to support lidar (airborne, mobile, terrestial) applications at the landscape-, forest-, and tree-scale to facilitate ecologcial data collection, manipulation, analysis, modelling, and visualization.
-URL: https://github.com/bi0m3trcis/spanner
+URL: https://github.com/bi0m3trics/spanner
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
