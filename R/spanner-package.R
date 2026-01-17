@@ -10,7 +10,7 @@
 
 # Declare global variables to avoid R CMD check NOTEs for non-standard evaluation
 utils::globalVariables(c("X", "Y", "Z", "TreeID", "treeID", "Classification", 
-                         "verticality", "null", "f", "p2r"))
+                         "verticality", "f", "p2r"))
 
 # Note: The src/ directory contains C++ header files (.hpp) alongside source files (.cpp).
 # These header files (algorithms.hpp, classes.hpp, methods.hpp, utils.hpp, and optim.hpp)
