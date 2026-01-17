@@ -22,7 +22,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include "classes.hpp"
+#include "classes.h"
 using namespace Rcpp;
 
 void bringToOrigin(vector<vector<double> >& las);
