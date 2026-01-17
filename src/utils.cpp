@@ -19,7 +19,7 @@
 //
 //  ===============================================================================
 
-#include "utils.hpp"
+#include "utils.h"
 
 // statistics
 vector<double> pointDistances(vector<vector<double> >& cloud){

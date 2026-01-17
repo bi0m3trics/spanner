@@ -94,9 +94,11 @@
 #' }
 #'
 #' # Segment the point cloud
+#' # For areas with interlocking crowns and trees of different sizes,
+#' # enable metabolic scaling to prevent height overestimation
 #' myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
 #'                              distance.threshold = 0.5,
-#'                              use.metabolic.scale = FALSE,
+#'                              use.metabolic.scale = TRUE,
 #'                              ptcloud_slice_min = 1,
 #'                              ptcloud_slice_max = 2,
 #'                              subsample.graph = 0.1,
@@ -104,6 +106,16 @@
 #'
 #' # Plot it in 3D colored by treeID
 #' plot(myTreeGraph, color = "treeID", pal=spanner_pal())
+#'
+#' # Optional: Use a custom metabolic scaling function
+#' # myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
+#' #                              distance.threshold = 0.5,
+#' #                              use.metabolic.scale = TRUE,
+#' #                              metabolic.scale.function = '1/((2*x)^(1/8))',
+#' #                              ptcloud_slice_min = 1,
+#' #                              ptcloud_slice_max = 2,
+#' #                              subsample.graph = 0.1,
+#' #                              return.dense = TRUE)
 #' }
 #'
 #' @export
@@ -162,11 +174,13 @@ segment_graph <- function(las, tree.locations, k = 50, distance.threshold = 0.33
   ## it seems like the equation in the original manuscript doesn't
   ## work that well for me... this can be modified
   if(use.metabolic.scale == TRUE) {
-    if(!null(metabolic.scale.function)){
+    if(!is.null(metabolic.scale.function)){
       eval(parse(text = paste('f <- function(x) { return(' , metabolic.scale.function , ')}', sep='')))
       met_scale <- f(tree.locations$Radius)
     } else {
-      met_scale <- (1 / ( tree.locations$Radius))^(3/2)
+      ## Default metabolic scaling function based on empirical results
+      ## Helps prevent smaller trees from 'growing' into taller intersecting tree canopies
+      met_scale <- 1/((2*tree.locations$Radius)^(1/8))
     }
   }
   ##---------------------- Identify neighbors  -------------------------------------
@@ -196,7 +210,7 @@ segment_graph <- function(las, tree.locations, k = 50, distance.threshold = 0.33
   # hist(weight_matrix[which(weight_matrix[,3] > point_dist_threshold),3])
 
   ## get rid of rows in the matrix that have a distance greater than the point_dist_threshold
-  weight_matrix <- weight_matrix[-(which(weight_matrix[,3] > distance.threshold)), ]
+  weight_matrix <- weight_matrix[(weight_matrix[,3] <= distance.threshold), ]
 
   ## actually make the graph using this matrix
   graph_obj <- cppRouting::makegraph(weight_matrix,

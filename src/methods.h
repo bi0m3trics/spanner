@@ -22,7 +22,7 @@
 #ifndef METHODS_HPP
 #define METHODS_HPP
 
-#include "algorithms.hpp"
+#include "algorithms.h"
 
 void assignTreeId(vector<HoughCenters>& disks, double distmax, double countDensity, unsigned int minLayers=1);
 

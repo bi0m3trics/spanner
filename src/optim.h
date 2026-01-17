@@ -18,10 +18,39 @@
   ##
   ################################################################################*/
 
-#include "determine_bounds_type.hpp"
-#include "error_reporting.hpp"
-#include "jacobian_adjust.hpp"
-#include "numerical_gradient.hpp"
-#include "numerical_hessian.hpp"
-#include "transform_vals.hpp"
-#include "unit_vec.hpp"
+#ifndef OPTIMLIB_INCLUDES
+#define OPTIMLIB_INCLUDES
+
+#include "misc/optim_options.h"
+
+namespace optim
+{
+    // structs
+    #include "misc/optim_structs.h"
+
+    // misc files
+    #include "misc/misc.h"
+
+    // line search
+    #include "line_search/more_thuente.h"
+
+    // unconstrained optimization
+    #include "unconstrained/bfgs.h"
+    #include "unconstrained/lbfgs.h"
+    #include "unconstrained/newton.h"
+    #include "unconstrained/cg.h"
+    #include "unconstrained/gd.h"
+    #include "unconstrained/de.h"
+    #include "unconstrained/de_prmm.h"
+    #include "unconstrained/nm.h"
+    #include "unconstrained/pso.h"
+    #include "unconstrained/pso_dv.h"
+
+    // constrained optimization
+    #include "constrained/sumt.h"
+
+    // solving systems of nonlinear equations
+    #include "zeros/broyden.h"
+}
+
+#endif

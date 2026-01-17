@@ -24,7 +24,7 @@
 #ifndef ALGORITHMS_HPP
 #define ALGORITHMS_HPP
 
-#include "utils.hpp"
+#include "utils.h"
 
 vector<double> circleDists(vector<vector<double> >& xyz, arma::vec& pars);
 
