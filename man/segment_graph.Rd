@@ -120,6 +120,8 @@ if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
 }
 
 # Segment the point cloud
+# For areas with interlocking crowns and trees of different sizes,
+# enable metabolic scaling to prevent height overestimation
 myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
                              distance.threshold = 0.5,
                              use.metabolic.scale = FALSE,
@@ -130,6 +132,16 @@ myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
 
 # Plot it in 3D colored by treeID
 plot(myTreeGraph, color = "treeID", pal=spanner_pal())
+
+# Optional: Use a custom metabolic scaling function
+# myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
+#                              distance.threshold = 0.5,
+#                              use.metabolic.scale = TRUE,
+#                              metabolic.scale.function = '1/((2*x)^(1/8))',
+#                              ptcloud_slice_min = 1,
+#                              ptcloud_slice_max = 2,
+#                              subsample.graph = 0.1,
+#                              return.dense = TRUE)
 }
 
 }

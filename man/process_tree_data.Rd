@@ -100,6 +100,8 @@ if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
 }
 
 # Segment the point cloud
+# For areas with interlocking crowns and trees of different sizes,
+# enable metabolic scaling to prevent height overestimation
 myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
                              distance.threshold = 0.5,
                              use.metabolic.scale = FALSE,
