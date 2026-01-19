@@ -6,7 +6,7 @@
 Definition of spanner
 <br/>1 (chiefly British): WRENCH
 <br/>2: a wrench that has a hole, projection, or hook at one or both ends of the head for engaging with a corresponding device on the object that is to be turned
-<br/>3: utilities to support lidar (airborne, mobile, terrestrial) applications at the landscape-, forest-, and tree-scale to facilitate ecological data collection, manipulation, analysis, modelling, and visualization. 
+<br/>3: implements algorithms for terrestrial, mobile, and airborne lidar processing, tree detection, segmentation, and attribute estimation (Donager et al., 2021), and hierarchical patch delineation (Girvetz & Greco, 2007). 
 
 <img src="https://github.com/bi0m3trics/spanner/blob/master/img/tshirt3.png" width="100%"  height="auto" align="center"/>
 
@@ -19,12 +19,12 @@ remotes::install_github('bi0m3trics/spanner')
 ```
 
 # Workflows
-## Terrestial Lidar Tree Attributes and Segmentation
+## Terrestrial Lidar Tree Attributes and Segmentation
 
 <img align="right" height="240" src="./img/output.gif">
 
-The following is the full processing pipeline described in <a href="https://doi.org/10.3390/rs13122297">Donager et al. (2021)</a>, and provides an example from downloading an example dataset, preprocesing it using lidR's functionality, estimating tree locations and DBH by rasterizing individual point cloud values of relative neighborhood density (at 0.3 and 1 m radius) and verticality within a slice of the normalized point cloud around breast height to 
-(1.37 m), to individual tree segmentation following ecological principles for “growing” trees based on input locations in a graph-theory approach. Relies heavily on work of <a href = "https://www.sciencedirect.com/science/article/pii/S0034425720304314">Roussel et al (2020)</a>, <a href="https://www.sciencedirect.com/science/article/abs/pii/S0924271615002373?via%3Dihub">Tao and others (2015)</a>, and <a href="https://www.sciencedirect.com/science/article/abs/pii/S0168169917301114?via%3Dihub">de Conto et al. (2017)</a>.<br/><br/>
+This package implements the tree detection and segmentation algorithm described in <a href="https://doi.org/10.3390/rs13122297">Donager et al. (2021)</a>. The algorithm estimates tree locations and DBH by rasterizing individual point cloud values of relative neighborhood density and verticality within a slice of the normalized point cloud around breast height 
+(1.37 m), then performs individual tree (instance) segmentation following ecological principles for "growing" trees based on input locations in a graph-theory approach. Implementation relies on work of <a href = "https://www.sciencedirect.com/science/article/pii/S0034425720304314">Roussel et al. (2020)</a>, <a href="https://www.sciencedirect.com/science/article/abs/pii/S0924271615002373?via%3Dihub">Tao et al. (2015)</a>, and <a href="https://www.sciencedirect.com/science/article/abs/pii/S0168169917301114?via%3Dihub">de Conto et al. (2017)</a>.<br/><br/>
 
 Citation: Donager, Jonathon J., Andrew J. Sánchez Meador, and Ryan C. Blackburn 2021. Adjudicating Perspectives on Forest Structure: How Do Airborne, Terrestrial, and Mobile Lidar-Derived Estimates Compare? Remote Sensing 13, no. 12: 2297. https://doi.org/10.3390/rs13122297
 

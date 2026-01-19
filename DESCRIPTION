@@ -1,13 +1,23 @@
 Package: spanner
 Type: Package
-Title: spanner: Utilities to support lidar (airborne, mobile, terrestial) applications at the landscape-, forest-, and tree-scale
+Title: Utilities to Support Lidar Applications at the Landscape, Forest, and Tree Scale
 Version: 1.0.2
-Date: 2026-01-17
+Date: 2026-01-19
 Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre", "ctb"), comment = c(ORCID = "0000-0003-4238-8587")),
              person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb"), comment = c(ORCID = "0000-0001-9448-1703")),
              person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb"), comment = c(ORCID = "0000-0002-2952-0865")),
              person("Cannon", "Jeffery", email = "Jeffery.Cannon@jonesctr.org", role = c("ctb"), comment = c(ORCID = "0000-0002-8436-8712")))
-Description: Utilities to support lidar (airborne, mobile, terrestial) applications at the landscape-, forest-, and tree-scale to facilitate ecologcial data collection, manipulation, analysis, modelling, and visualization.
+Description: Implements algorithms for terrestrial, mobile, and airborne lidar processing, tree detection, 
+    segmentation, and attribute estimation (Donager et al., 2021) 
+    <doi:10.3390/rs13122297>, and a hierarchical patch delineation algorithm 
+    'PatchMorph' (Girvetz & Greco, 2007) <doi:10.1007/s10980-007-9104-8>. Tree 
+    detection uses rasterized point cloud metrics (relative neighborhood density and 
+    verticality) combined with RANSAC cylinder fitting to locate tree boles and estimate 
+    diameter at breast height. Tree segmentation applies graph-theory approaches inspired 
+    by Tao et al. (2015) <doi:10.1016/j.isprsjprs.2015.08.007> with cylinder fitting 
+    methods from de Conto et al. (2017) <doi:10.1016/j.compag.2017.07.019>. PatchMorph 
+    delineates habitat patches across spatial scales using organism-specific thresholds. 
+    Built on 'lidR' (Roussel et al., 2020) <doi:10.1016/j.rse.2020.112061>.
 URL: https://github.com/bi0m3trics/spanner
 License: GPL-3
 Encoding: UTF-8
