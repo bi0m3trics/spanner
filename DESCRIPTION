@@ -6,7 +6,9 @@ Date: 2026-01-19
 Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre", "ctb"), comment = c(ORCID = "0000-0003-4238-8587")),
              person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb"), comment = c(ORCID = "0000-0001-9448-1703")),
              person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb"), comment = c(ORCID = "0000-0002-2952-0865")),
-             person("Cannon", "Jeffery", email = "Jeffery.Cannon@jonesctr.org", role = c("ctb"), comment = c(ORCID = "0000-0002-8436-8712")))
+             person("Cannon", "Jeffery", email = "Jeffery.Cannon@jonesctr.org", role = c("ctb"), comment = c(ORCID = "0000-0002-8436-8712")),
+             person("Tiago", "de Conto", role = c("ctb", "cph"), comment = "Author of included TreeLS code"),
+             person("Keith", "O'Hara", role = c("ctb", "cph"), comment = "Author of included OptimLib code"))
 Description: Implements algorithms for terrestrial, mobile, and airborne lidar processing, tree detection, 
     segmentation, and attribute estimation (Donager et al., 2021) 
     <doi:10.3390/rs13122297>, and a hierarchical patch delineation algorithm 
@@ -47,3 +49,6 @@ Imports:
 Depends: 
     R (>= 4.0.0),
     lidR (>= 4.2.0),
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

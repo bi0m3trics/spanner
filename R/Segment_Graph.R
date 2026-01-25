@@ -46,21 +46,21 @@
 #' LASfile = system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package="spanner")
 #' las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 #' # Don't forget to make sure the las object has a projection
-#' projection(las) = sp::CRS("+init=epsg:26912")
+#' sf::st_crs(las) <- 26912
 #'
-#' # Pre-process the example lidar dataset by classifying the ground points
+#' # Pre-process the example lidar dataset by classifying the ground  and noise points
 #' # using lidR::csf(), normalizing it, and removing outlier points
 #' # using lidR::ivf()
-#' las = classify_ground(las, csf(sloop_smooth = FALSE,
-#'                                 class_threshold = 0.5,
-#'                                 cloth_resolution = 0.5, rigidness = 1L,
-#'                                 iterations = 500L, time_step = 0.65))
-#' las = normalize_height(las, tin())
-#' las = classify_noise(las, ivf(0.25, 3))
-#' las = filter_poi(las, Classification != LASNOISE)
+#' # las = classify_ground(las, csf(sloop_smooth = FALSE,
+#' #                                 class_threshold = 0.5,
+#' #                                cloth_resolution = 0.5, rigidness = 1L,
+#' #                                 iterations = 500L, time_step = 0.65))
+#' # las = normalize_height(las, tin())
+#' # las = classify_noise(las, ivf(0.25, 3))
+#' # las = filter_poi(las, Classification != LASNOISE)
 #'
 #' # Plot the non-ground points, colored by height
-#' plot(filter_poi(las, Classification != 2), color = "Z")
+#' # plot(filter_poi(las, Classification != 2), color = "Z")
 #'
 #' # Perform a deep inspection of the las object. If you see any
 #' # red text, you may have issues!
@@ -86,7 +86,7 @@
 #'
 #' # Plot results if trees were found
 #' if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
-#'   plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+#'   plot(lidR::rasterize_canopy(las, res = 0.2, p2r()))
 #'   symbols(sf::st_coordinates(myTreeLocs)[,1], sf::st_coordinates(myTreeLocs)[,2],
 #'           circles = myTreeLocs$Radius^2*3.14, inches = FALSE, add = TRUE, bg = 'black')
 #' } else {
@@ -149,6 +149,12 @@ segment_graph <- function(las, tree.locations, k = 50, distance.threshold = 0.33
 
   ## how many tree objects
   ntree <- nrow(tree.locations)
+  
+  ## Early return if no trees detected
+  if(is.null(tree.locations) || ntree == 0) {
+    message("No trees detected. Returning NULL.")
+    return(NULL)
+  }
 
   ## Give tree locations a uniform Z coordinate and move them to origin too
   tree.locations$Z <- 1.3
@@ -158,7 +164,7 @@ segment_graph <- function(las, tree.locations, k = 50, distance.threshold = 0.33
   tree.locations$Radius[is.na(tree.locations$Radius)] = 0.01
   ## Make sure tree location is close to bole points (if in center, distance threshold could cut it off)
   ## Eventually, this should be a value tied to the actual DBH of the tree
-  for(d in 1:nrow(tree.locations)){
+  for(d in seq_len(nrow(tree.locations))){
     if(tree.locations$Radius[d] > distance.threshold){
       if(tree.locations$Y[d] > mean(tree.locations$Y)){
         tree.locations$Y <- tree.locations$Y - ((tree.locations$Radius)/2)

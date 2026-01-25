@@ -52,6 +52,20 @@
 #'
 #' @export
 eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
+  # Input validation
+  if (!inherits(las, "LAS")) {
+    stop("las must be a LAS object")
+  }
+  if (!is.numeric(radius) || length(radius) != 1) {
+    stop("radius must be a single numeric value")
+  }
+  if (radius <= 0) {
+    stop("radius must be positive")
+  }
+  if (!is.numeric(ncpu) || length(ncpu) != 1 || ncpu < 1) {
+    stop("ncpu must be a positive integer")
+  }
+  
   temp = C_eigen_in_sphere(las, radius = radius, ncpu = ncpu)
   data.table::setDT(temp)
   cols<-c("eLargest","eMedium","eSmallest","eSum","Curvature","Omnivariance",

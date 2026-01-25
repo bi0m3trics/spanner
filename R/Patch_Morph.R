@@ -131,7 +131,7 @@ process_rasters_patchmorph <- function(input_raster, suitList, gapList, spurList
 #' @export
 plot_raster_by_name <- function(rasters, raster_name) {
   if (raster_name %in% names(rasters)) {
-    plot(rasters[[raster_name]], main = raster_name)
+    terra::plot(rasters[[raster_name]], main = raster_name)
   } else {
     message("Raster with the specified name does not exist.")
   }

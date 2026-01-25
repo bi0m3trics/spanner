@@ -72,21 +72,21 @@ set_lidr_threads(8)
 LASfile = system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package="spanner")
 las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 # Don't forget to make sure the las object has a projection
-projection(las) = sp::CRS("+init=epsg:26912")
+sf::st_crs(las) <- 26912
 
-# Pre-process the example lidar dataset by classifying the ground points
+# Pre-process the example lidar dataset by classifying the ground  and noise points
 # using lidR::csf(), normalizing it, and removing outlier points
 # using lidR::ivf()
-las = classify_ground(las, csf(sloop_smooth = FALSE,
-                                class_threshold = 0.5,
-                                cloth_resolution = 0.5, rigidness = 1L,
-                                iterations = 500L, time_step = 0.65))
-las = normalize_height(las, tin())
-las = classify_noise(las, ivf(0.25, 3))
-las = filter_poi(las, Classification != LASNOISE)
+# las = classify_ground(las, csf(sloop_smooth = FALSE,
+#                                 class_threshold = 0.5,
+#                                cloth_resolution = 0.5, rigidness = 1L,
+#                                 iterations = 500L, time_step = 0.65))
+# las = normalize_height(las, tin())
+# las = classify_noise(las, ivf(0.25, 3))
+# las = filter_poi(las, Classification != LASNOISE)
 
 # Plot the non-ground points, colored by height
-plot(filter_poi(las, Classification != 2), color = "Z")
+# plot(filter_poi(las, Classification != 2), color = "Z")
 
 # Perform a deep inspection of the las object. If you see any
 # red text, you may have issues!
@@ -112,7 +112,7 @@ myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.25, pt_spacing = 0.025
 
 # Plot results if trees were found
 if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
-  plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+  plot(lidR::rasterize_canopy(las, res = 0.2, p2r()))
   symbols(sf::st_coordinates(myTreeLocs)[,1], sf::st_coordinates(myTreeLocs)[,2],
           circles = myTreeLocs$Radius^2*3.14, inches = FALSE, add = TRUE, bg = 'black')
 } else {

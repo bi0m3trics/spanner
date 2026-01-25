@@ -87,25 +87,21 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #' LASfile = system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package="spanner")
 #' las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 #' # Don't forget to make sure the las object has a projection
-#' projection(las) = sp::CRS("+init=epsg:26912")
+#' sf::st_crs(las) <- 26912
 #'
-#' # Pre-process the example lidar dataset by classifying the ground points
+#' # Pre-process the example lidar dataset by classifying the ground  and noise points
 #' # using lidR::csf(), normalizing it, and removing outlier points
 #' # using lidR::ivf()
-#' las = classify_ground(las, csf(sloop_smooth = FALSE,
-#'                                 class_threshold = 0.5,
-#'                                 cloth_resolution = 0.5, rigidness = 1L,
-#'                                 iterations = 500L, time_step = 0.65))
-#' las = normalize_height(las, tin())
-#' las = classify_noise(las, ivf(0.25, 3))
-#' las = filter_poi(las, Classification != LASNOISE)
+#' # las = classify_ground(las, csf(sloop_smooth = FALSE,
+#' #                                 class_threshold = 0.5,
+#' #                                cloth_resolution = 0.5, rigidness = 1L,
+#' #                                 iterations = 500L, time_step = 0.65))
+#' # las = normalize_height(las, tin())
+#' # las = classify_noise(las, ivf(0.25, 3))
+#' # las = filter_poi(las, Classification != LASNOISE)
 #'
 #' # Plot the non-ground points, colored by height
-#' plot(filter_poi(las, Classification != 2), color = "Z")
-#'
-#' # Perform a deep inspection of the las object. If you see any
-#' # red text, you may have issues!
-#' las_check(las)
+#' # plot(filter_poi(las, Classification != 2), color = "Z")
 #'
 #' # Find individual tree locations and attribute data
 #' # find tree locations and attribute data
@@ -127,7 +123,7 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #'
 #' # Plot results if trees were found
 #' if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
-#'   plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+#'   plot(lidR::rasterize_canopy(las, res = 0.2, p2r()))
 #'   symbols(sf::st_coordinates(myTreeLocs)[,1], sf::st_coordinates(myTreeLocs)[,2],
 #'           circles = myTreeLocs$Radius^2*3.14, inches = FALSE, add = TRUE, bg = 'black')
 #' } else {
@@ -169,18 +165,18 @@ process_tree_data <- function(treeData, segmentedLAS, return_sf = FALSE) {
   missing_in_segmented <- setdiff(tree_data_ids, segmented_tree_ids)
   missing_in_treedata <- setdiff(segmented_tree_ids, tree_data_ids)
 
-  cat("TreeIDs in treeData but not in segmentedLAS:\n")
+  message("TreeIDs in treeData but not in segmentedLAS:")
   if (length(missing_in_segmented) == 0) {
-    cat("  None - all treeData TreeIDs found in segmentedLAS\n")
+    message("  None - all treeData TreeIDs found in segmentedLAS")
   } else {
-    print(missing_in_segmented)
+    message(paste0("  ", paste(missing_in_segmented, collapse = ", ")))
   }
 
-  cat("TreeIDs in segmentedLAS but not in treeData:\n")
+  message("TreeIDs in segmentedLAS but not in treeData:")
   if (length(missing_in_treedata) == 0) {
-    cat("  None - all segmentedLAS TreeIDs found in treeData\n")
+    message("  None - all segmentedLAS TreeIDs found in treeData")
   } else {
-    print(missing_in_treedata)
+    message(paste0("  ", paste(missing_in_treedata, collapse = ", ")))
   }
 
   if (!all(treeData$TreeID %in% segmented_tree_ids) || length(tree_data_ids) != length(segmented_tree_ids)) {

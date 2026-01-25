@@ -44,21 +44,21 @@
 #' LASfile = system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package="spanner")
 #' las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 #' # Don't forget to make sure the las object has a projection
-#' projection(las) = sp::CRS("+init=epsg:26912")
+#' sf::st_crs(las) <- 26912
 #'
-#' # Pre-process the example lidar dataset by classifying the ground points
+#' # Pre-process the example lidar dataset by classifying the ground  and noise points
 #' # using lidR::csf(), normalizing it, and removing outlier points
 #' # using lidR::ivf()
-#' las = classify_ground(las, csf(sloop_smooth = FALSE,
-#'                                 class_threshold = 0.5,
-#'                                 cloth_resolution = 0.5, rigidness = 1L,
-#'                                 iterations = 500L, time_step = 0.65))
-#' las = normalize_height(las, tin())
-#' las = classify_noise(las, ivf(0.25, 3))
-#' las = filter_poi(las, Classification != LASNOISE)
+#' # las = classify_ground(las, csf(sloop_smooth = FALSE,
+#' #                                 class_threshold = 0.5,
+#' #                                cloth_resolution = 0.5, rigidness = 1L,
+#' #                                 iterations = 500L, time_step = 0.65))
+#' # las = normalize_height(las, tin())
+#' # las = classify_noise(las, ivf(0.25, 3))
+#' # las = filter_poi(las, Classification != LASNOISE)
 #'
 #' # Plot the non-ground points, colored by height
-#' plot(filter_poi(las, Classification != 2), color = "Z")
+#' # plot(filter_poi(las, Classification != 2), color = "Z")
 #'
 #' # find tree locations and attribute data
 #' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.25, pt_spacing = 0.0254,
@@ -79,7 +79,7 @@
 #'
 #' # Plot results if trees were found
 #' if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
-#'   plot(lidR::grid_canopy(las, res = 0.2, p2r()))
+#'   plot(lidR::rasterize_canopy(las, res = 0.2, p2r()))
 #'   symbols(sf::st_coordinates(myTreeLocs)[,1], sf::st_coordinates(myTreeLocs)[,2],
 #'           circles = myTreeLocs$Radius^2*3.14, inches = FALSE, add = TRUE, bg = 'black')
 #' } else {
@@ -116,8 +116,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
                                         name = "verticality", desc = "verticality")
   slice_extra@data$verticality[is.na(slice_extra@data$verticality)] <- 0.5
 
-  message("Creating canopy cover raster... (4/14)\n")
-  cancov <- lidR::grid_canopy(las, 0.1, p2r(0.1))
+  message("Creating canopy height raster... (4/14)\n")
+  cancov <- lidR::pixel_metrics(las, ~max(Z), res = 0.1)
 
   message("Calculating relative density... (5/14)\n")
   cnt_local <- C_count_in_disc(X = slice_extra@data$X, Y = slice_extra@data$Y,
@@ -132,8 +132,8 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   ##---------------------- Eigen & Raster Processing -------------------------------------
   message("Gridding relative density... (6/14)\n")
 
-  density_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~stats::median(relative_density, na.rm = T), res = res,
-                                                 start = c(min(slice_extra@data$X), min(slice_extra@data$Y))))
+  density_grid <- lidR::pixel_metrics(slice_extra, ~stats::median(relative_density, na.rm = T), res = res,
+                                                 start = c(min(slice_extra@data$X), min(slice_extra@data$Y)))
   density_polygon <- terra::as.polygons(terra::classify(density_grid, rbind(c(0,dens_threshold,0),
                                                                             c(dens_threshold,1,1))), dissolve = T)
   density_polygon <- terra::disagg(density_polygon[density_polygon$V1 > 0,])
@@ -146,7 +146,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
 
   message("Gridding verticality... (7/14)\n")
 
-  verticality_grid <- terra::rast(lidR::grid_metrics(slice_extra, ~stats::quantile(verticality, 0.5, na.rm = T), res = res))
+  verticality_grid <- lidR::pixel_metrics(slice_extra, ~stats::quantile(verticality, 0.5, na.rm = T), res = res)
   verticality_polygon <- terra::as.polygons(terra::classify(verticality_grid, rbind(c(0,eigen_threshold,0),
                                                                                     c(eigen_threshold,1,1))), dissolve = T)
   verticality_polygon <- terra::disagg(verticality_polygon[verticality_polygon$V1 > 0,])
@@ -160,28 +160,28 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   message("Merging relative density and verticality... (8/14)\n")
   merged <- sf::st_intersection(verticality_polygon, density_polygon)
   merged$area <- as.numeric(sf::st_area(merged))
-  sf::st_crs(merged) = lidR::crs(las)
+  sf::st_crs(merged) = sf::st_crs(las)
   merged <- merged[merged$area > minimum_polygon_area,]
   if(nrow(merged) == 0 | is.null(merged)) stop("No merged polygons were created from the rasterized point cloud metrics! Try adjusting the threshold values.", call. = FALSE)
 
   message("Filtering merged polygon... (9/14)\n")
   ## sd verticality
-  verticalitySD_grid <- terra::rast(grid_metrics(slice_extra, ~stats::sd(verticality), res = res))
-  merged$SDvert <- round(terra::extract(verticalitySD_grid, terra::vect(sf::as_Spatial(merged)),
+  verticalitySD_grid <- lidR::pixel_metrics(slice_extra, ~stats::sd(verticality), res = res)
+  merged$SDvert <- round(terra::extract(verticalitySD_grid, terra::vect(merged),
                                         fun = function(x){stats::median(x, na.rm = T)})[,2],2)
   ## some simple filtering: lower canopy
-  Z01 <- terra::rast(grid_metrics(slice_extra, res = res, ~stats::quantile(Z, 0.01)))
-  merged$lowHGT <- round(terra::extract(Z01, terra::vect(sf::as_Spatial(merged)),
+  Z01 <- lidR::pixel_metrics(slice_extra, res = res, ~stats::quantile(Z, 0.01))
+  merged$lowHGT <- round(terra::extract(Z01, terra::vect(merged),
                                         fun = function(x){stats::quantile(x, 0.05, na.rm = T)})[,2],2)
-  Z99 <- terra::rast( grid_metrics(slice_extra, res = res, ~stats::quantile(Z, 0.99)) )
-  merged$highHGT <- round(terra::extract(Z99, terra::vect(sf::as_Spatial(merged)),
+  Z99 <- lidR::pixel_metrics(slice_extra, res = res, ~stats::quantile(Z, 0.99))
+  merged$highHGT <- round(terra::extract(Z99, terra::vect(merged),
                                          fun = function(x){stats::quantile(x, 0.99, na.rm = T)})[,2],2)
-  Z50 <- terra::rast(grid_metrics(slice_extra, res = res, ~stats::quantile(Z, 0.5)))
-  merged$medHGT <- round(terra::extract(Z50, terra::vect(sf::as_Spatial(merged)),
+  Z50 <- lidR::pixel_metrics(slice_extra, res = res, ~stats::quantile(Z, 0.5))
+  merged$medHGT <- round(terra::extract(Z50, terra::vect(merged),
                                         fun = function(x){stats::median(x, na.rm = T)})[,2],2)
   merged$diffHGT <- round(merged$highHGT - merged$lowHGT,2)
   # merged <- merged[merged$diffHGT > ((grid_slice_max - grid_slice_min) / 2), ]
-  merged$maxHGT <- round(terra::extract(terra::rast(cancov), terra::vect(sf::as_Spatial(merged)), fun = function(x) max(x, na.rm = TRUE))[,2], 2)
+  merged$maxHGT <- round(terra::extract(cancov, terra::vect(merged), fun = function(x) max(x, na.rm = TRUE))[,2], 2)
 
   merged <- merged[merged$SDvert < SDvert, ]
   merged <- merged[merged$diffHGT > (grid_slice_max-grid_slice_min)*0.5, ]
