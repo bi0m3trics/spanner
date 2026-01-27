@@ -54,9 +54,9 @@ test_that("cylinderFit IRLS returns expected structure", {
   # Test IRLS fitting
   result <- cylinderFit(las_obj, method = "irls")
   
-  # Test that result has expected components
+  # Test that result has expected components (actual column names from implementation)
   expect_type(result, "list")
-  expect_true(all(c("center", "radius", "axis", "error") %in% names(result)))
+  expect_true(all(c("rho", "theta", "phi", "alpha", "radius", "err") %in% names(result)))
   
   # Test that radius is positive
   expect_true(result$radius > 0)

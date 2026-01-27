@@ -20,6 +20,8 @@
 //  ===============================================================================
 
 #include "methods.h"
+#include "pcv.h"
+#include "ssao.h"
 
 // export tree positions point stack
 List exportTreeMap(vector<HoughCenters>& coordinates){
@@ -217,4 +219,21 @@ SEXP cppCylinderFit(NumericMatrix& las, std::string method = "nm", unsigned int 
   }
 
   return wrap( pars );
+}
+
+// [[Rcpp::export]]
+SEXP cppComputePCV(S4 las, double radius = 1.0, int num_directions = 60, int ncpu = 1){
+  // Call PCV computation with S4 LAS object
+  vector<double> pcv_values = computePCV(las, radius, num_directions, ncpu);
+  
+  return wrap(pcv_values);
+}
+
+// [[Rcpp::export]]
+NumericVector cppComputeSSAO(S4 las, int kernel_size = 5, double pixel_size = 0.1,
+                             int num_samples = 16, int ncpu = 4) {
+  // Call SSAO computation with S4 LAS object
+  vector<double> ssao_values = computeSSAO(las, kernel_size, pixel_size, num_samples, ncpu);
+  
+  return wrap(ssao_values);
 }

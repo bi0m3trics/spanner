@@ -23,11 +23,11 @@ test_that("exported functions are available", {
 
 test_that("package data files exist", {
   # Check for example data files
-  tls_file <- system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package = "spanner")
-  mls_file <- system.file("extdata", "MLSSparseCloud_xyzOnly.laz", package = "spanner")
+  tls_file <- system.file("extdata", "TLS_Clip.laz", package = "spanner")
+  mls_file <- system.file("extdata", "MLS_Clip.laz", package = "spanner")
   
-  expect_true(file.exists(tls_file) || length(tls_file) == 0)
-  expect_true(file.exists(mls_file) || length(mls_file) == 0)
+  expect_true(file.exists(tls_file))
+  expect_true(file.exists(mls_file))
 })
 
 test_that("package has proper version", {
@@ -35,3 +35,5 @@ test_that("package has proper version", {
   expect_true(!is.null(desc$Version))
   expect_match(desc$Version, "^\\d+\\.\\d+\\.\\d+")
 })
+
+

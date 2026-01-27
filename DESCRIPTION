@@ -50,5 +50,8 @@ Depends:
     R (>= 4.0.0),
     lidR (>= 4.2.0),
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    magick,
+    rgl,
+    rstac
 Config/testthat/edition: 3

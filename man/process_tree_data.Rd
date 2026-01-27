@@ -49,7 +49,7 @@ to an individual tree segmentation.
 # Set the number of threads to use in lidR
 set_lidr_threads(8)
 
-LASfile = system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package="spanner")
+LASfile = system.file("extdata", "TLS_Clip.laz", package="spanner")
 las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 # Don't forget to make sure the las object has a projection
 sf::st_crs(las) <- 26912
@@ -70,7 +70,7 @@ sf::st_crs(las) <- 26912
 
 # Find individual tree locations and attribute data
 # find tree locations and attribute data
-myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.25, pt_spacing = 0.0254,
+myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.025, pt_spacing = 0.0254,
                                        dens_threshold = 0.25,
                                        neigh_sizes = c(0.25, 0.15, 0.66),
                                        eigen_threshold = 0.75,

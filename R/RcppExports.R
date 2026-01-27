@@ -17,3 +17,11 @@ cppCylinderFit <- function(las, method = "nm", n = 10L, p = 0.95, inliers = 0.9,
     .Call(`_spanner_cppCylinderFit`, las, method, n, p, inliers, max_angle, n_best)
 }
 
+cppComputePCV <- function(las, radius = 1.0, num_directions = 60L, ncpu = 1L) {
+    .Call(`_spanner_cppComputePCV`, las, radius, num_directions, ncpu)
+}
+
+cppComputeSSAO <- function(las, kernel_size = 5L, pixel_size = 0.1, num_samples = 16L, ncpu = 4L) {
+    .Call(`_spanner_cppComputeSSAO`, las, kernel_size, pixel_size, num_samples, ncpu)
+}
+

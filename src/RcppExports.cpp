@@ -71,12 +71,43 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cppComputePCV
+SEXP cppComputePCV(S4 las, double radius, int num_directions, int ncpu);
+RcppExport SEXP _spanner_cppComputePCV(SEXP lasSEXP, SEXP radiusSEXP, SEXP num_directionsSEXP, SEXP ncpuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< S4 >::type las(lasSEXP);
+    Rcpp::traits::input_parameter< double >::type radius(radiusSEXP);
+    Rcpp::traits::input_parameter< int >::type num_directions(num_directionsSEXP);
+    Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
+    rcpp_result_gen = Rcpp::wrap(cppComputePCV(las, radius, num_directions, ncpu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cppComputeSSAO
+NumericVector cppComputeSSAO(S4 las, int kernel_size, double pixel_size, int num_samples, int ncpu);
+RcppExport SEXP _spanner_cppComputeSSAO(SEXP lasSEXP, SEXP kernel_sizeSEXP, SEXP pixel_sizeSEXP, SEXP num_samplesSEXP, SEXP ncpuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< S4 >::type las(lasSEXP);
+    Rcpp::traits::input_parameter< int >::type kernel_size(kernel_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type pixel_size(pixel_sizeSEXP);
+    Rcpp::traits::input_parameter< int >::type num_samples(num_samplesSEXP);
+    Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
+    rcpp_result_gen = Rcpp::wrap(cppComputeSSAO(las, kernel_size, pixel_size, num_samples, ncpu));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_spanner_C_eigen_in_sphere", (DL_FUNC) &_spanner_C_eigen_in_sphere, 3},
     {"_spanner_C_count_in_disc", (DL_FUNC) &_spanner_C_count_in_disc, 6},
     {"_spanner_C_count_in_sphere", (DL_FUNC) &_spanner_C_count_in_sphere, 3},
     {"_spanner_cppCylinderFit", (DL_FUNC) &_spanner_cppCylinderFit, 7},
+    {"_spanner_cppComputePCV", (DL_FUNC) &_spanner_cppComputePCV, 4},
+    {"_spanner_cppComputeSSAO", (DL_FUNC) &_spanner_cppComputeSSAO, 5},
     {NULL, NULL, 0}
 };
 

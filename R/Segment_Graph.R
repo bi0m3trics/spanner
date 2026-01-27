@@ -43,7 +43,7 @@
 #' # Set the number of threads to use in lidR
 #' set_lidr_threads(8)
 #'
-#' LASfile = system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package="spanner")
+#' LASfile = system.file("extdata", "TLS_Clip.laz", package="spanner")
 #' las = readTLSLAS(LASfile, select = "xyzcr", "-filter_with_voxel 0.01")
 #' # Don't forget to make sure the las object has a projection
 #' sf::st_crs(las) <- 26912
@@ -68,7 +68,7 @@
 #'
 #' # Find individual tree locations and attribute data
 #' # find tree locations and attribute data
-#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.25, pt_spacing = 0.0254,
+#' myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.025, pt_spacing = 0.0254,
 #'                                        dens_threshold = 0.25,
 #'                                        neigh_sizes = c(0.25, 0.15, 0.66),
 #'                                        eigen_threshold = 0.75,
@@ -149,7 +149,7 @@ segment_graph <- function(las, tree.locations, k = 50, distance.threshold = 0.33
 
   ## how many tree objects
   ntree <- nrow(tree.locations)
-  
+
   ## Early return if no trees detected
   if(is.null(tree.locations) || ntree == 0) {
     message("No trees detected. Returning NULL.")
@@ -218,6 +218,12 @@ segment_graph <- function(las, tree.locations, k = 50, distance.threshold = 0.33
   ## get rid of rows in the matrix that have a distance greater than the point_dist_threshold
   weight_matrix <- weight_matrix[(weight_matrix[,3] <= distance.threshold), ]
 
+  ## Convert indices to character format to avoid scientific notation issues
+  ## (cppRouting::makegraph converts to character internally, which can create
+  ## scientific notation strings like '8e+05' for large numbers if scipen is not set)
+  weight_matrix[,1] <- as.character(as.integer(weight_matrix[,1]))
+  weight_matrix[,2] <- as.character(as.integer(weight_matrix[,2]))
+
   ## actually make the graph using this matrix
   graph_obj <- cppRouting::makegraph(weight_matrix,
                                      directed = FALSE) ## a new package
@@ -225,10 +231,12 @@ segment_graph <- function(las, tree.locations, k = 50, distance.threshold = 0.33
   ## ---- IDs for the origin tree locations ----
   # treeloc_ids <- (nrow(working_las@data)+1):(nrow(k_tree$nn.index))
   treeloc_ids <- (nrow(working_las@data)+1):(nrow(k_tree$nn.index))
+  treeloc_ids <- as.character(treeloc_ids)
   treeloc_ids <- treeloc_ids[treeloc_ids %in% c(weight_matrix[,1],weight_matrix[,2])]
 
   ## ---- IDs for the origin tree locations ----
-  remaining_ids <- unique(c(weight_matrix[,1],weight_matrix[,2])[!(c(weight_matrix[,1],weight_matrix[,2]) %in% treeloc_ids)])
+  all_ids <- c(weight_matrix[,1],weight_matrix[,2])
+  remaining_ids <- unique(all_ids[!(all_ids %in% treeloc_ids)])
 
   ## ---- IDs not used in graph ----
   unused_ids <- (1:(nrow(working_las@data)))[!(1:(nrow(working_las@data)) %in% c(weight_matrix[,1],weight_matrix[,2]))]

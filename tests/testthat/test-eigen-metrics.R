@@ -3,7 +3,7 @@ test_that("eigen_metrics basic functionality", {
   skip_on_cran()
   
   # Create a simple test LAS object
-  LASfile <- system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package = "spanner")
+  LASfile <- system.file("extdata", "MLS_Clip.laz", package = "spanner")
   skip_if(!file.exists(LASfile), "Test LAS file not found")
   
   las <- lidR::readLAS(LASfile, select = "xyz")
@@ -39,7 +39,7 @@ test_that("eigen_metrics validates input", {
   skip_on_cran()
   
   # Test with invalid radius
-  LASfile <- system.file("extdata", "TLSSparseCloud_xyzOnly.laz", package = "spanner")
+  LASfile <- system.file("extdata", "MLS_Clip.laz", package = "spanner")
   skip_if(!file.exists(LASfile), "Test LAS file not found")
   
   las <- lidR::readLAS(LASfile, select = "xyz")
@@ -56,3 +56,5 @@ test_that("eigen_metrics validates input", {
   # Invalid ncpu should error
   expect_error(eigen_metrics(las, radius = 1, ncpu = -1), "ncpu must be a positive integer")
 })
+
+
