@@ -29,7 +29,7 @@ getCircularKernel <- function(radius)
 #' @return list A list of processed rasters with names indicating the suitability, gap, and spur parameters used.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Define input parameters
 #' las <- lidR::readLAS(system.file("extdata", "MixedConifer.laz", package="lidR"))
 #' input_raster <- lidR::rasterize_canopy(las, res = 1, lidR::pitfree(c(0,2,5,10,15), c(0, 2)))
@@ -113,7 +113,7 @@ process_rasters_patchmorph <- function(input_raster, suitList, gapList, spurList
 #' @return NULL This function does not return a value. It plots the raster if found.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Define input parameters
 #' las <- lidR::readLAS(system.file("extdata", "MixedConifer.laz", package="lidR"))
 #' input_raster <- lidR::rasterize_canopy(las, res = 1, lidR::pitfree(c(0,2,5,10,15), c(0, 2)))
@@ -146,7 +146,7 @@ plot_raster_by_name <- function(rasters, raster_name) {
 #' @return list A list of summed rasters for each suitability level.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Define input parameters
 #' las <- lidR::readLAS(system.file("extdata", "MixedConifer.laz", package="lidR"))
 #' input_raster <- lidR::rasterize_canopy(las, res = 1, lidR::pitfree(c(0,2,5,10,15), c(0, 2)))
@@ -157,12 +157,11 @@ plot_raster_by_name <- function(rasters, raster_name) {
 #' # Process the rasters
 #' processed_rasters <- process_rasters_patchmorph(input_raster, suitList, gapList, spurList)
 #'
-#'
-#' Sum rasters by suitability level
+#' # Sum rasters by suitability level
 #' summed_rasters <- sum_rasters_by_suitability(processed_rasters, suitList)
-# '
+#'
 #' # Call the plot_raster_by_name function to plot the raster named "suit_2_sum"
-#' plot_raster_by_name(rSumList, "suit_2_sum")
+#' plot_raster_by_name(summed_rasters, "suit_2_sum")
 #' }
 #'
 #' @export

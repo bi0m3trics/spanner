@@ -62,18 +62,18 @@ The total duration determines how long the animation will be.
 Requires the \code{rgl} package and lidR for plotting.
 }
 \examples{
-\dontrun{
+\donttest{
 # Load example LAS file
 LASfile <- system.file("extdata", "ALS_Clip.laz", package="spanner")
 las <- readLAS(LASfile)
 
 # Create basic rotation GIF with attribute coloring
 las_colored <- colorize_las(las, method="attr", attribute_name="Z")
-create_rotation_gif(las_colored, output_path="rotation.gif")
+create_rotation_gif(las_colored, output_path=tempfile(fileext = ".gif"))
 
 # High quality with specific settings
 create_rotation_gif(las_colored,
-                    output_path="highres_rotation.gif",
+                    output_path=tempfile(fileext = ".gif"),
                     duration=15,
                     rpm=10,
                     background="black",
@@ -81,7 +81,7 @@ create_rotation_gif(las_colored,
                     show_legend=FALSE)
 
 # Rotate around X axis for side-to-side view
-create_rotation_gif(las_colored, axis="x")
+create_rotation_gif(las_colored, output_path=tempfile(fileext = ".gif"), axis="x")
 }
 
 }

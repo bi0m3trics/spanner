@@ -42,7 +42,7 @@ Common use cases:
 }
 }
 \examples{
-\dontrun{
+\donttest{
 # Load example LAS file
 LASfile <- system.file("extdata", "ALS_Clip.laz", package="spanner")
 las <- readLAS(LASfile)

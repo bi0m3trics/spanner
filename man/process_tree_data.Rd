@@ -45,7 +45,7 @@ to an individual tree segmentation.
 }
 \examples{
 
-\dontrun{
+\donttest{
 # Set the number of threads to use in lidR
 set_lidr_threads(8)
 

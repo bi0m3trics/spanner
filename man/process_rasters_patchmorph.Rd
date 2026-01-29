@@ -23,7 +23,7 @@ list A list of processed rasters with names indicating the suitability, gap, and
 and then applying gap and spur distance transformations to generate a list of processed rasters.
 }
 \examples{
-\dontrun{
+\donttest{
 # Define input parameters
 las <- lidR::readLAS(system.file("extdata", "MixedConifer.laz", package="lidR"))
 input_raster <- lidR::rasterize_canopy(las, res = 1, lidR::pitfree(c(0,2,5,10,15), c(0, 2)))

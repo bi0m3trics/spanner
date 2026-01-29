@@ -36,7 +36,7 @@ vector of parameters
 Fits a cylinder on a set of 3D points.
 }
 \examples{
-\dontrun{
+\donttest{
 # Define the cylinder attributes
 npts = 500
 cyl_length = 0.5

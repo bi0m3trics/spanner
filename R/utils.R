@@ -44,7 +44,7 @@
 #' @return A labeled data.table of point metrics for each point in the LAS object
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
 #' las <- readLAS(LASfile)
 #' eigen = eigen_metrics(las, radius=2, ncpu=4)
@@ -90,7 +90,7 @@ eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
 #' @return vector of parameters
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Define the cylinder attributes
 #' npts = 500
 #' cyl_length = 0.5
@@ -132,7 +132,7 @@ cylinderFit = function(las, method = 'ransac', n=5, inliers=.9, conf=.95, max_an
 #' @return A numeric matrix with three columns (X, Y, Z) containing the point coordinates
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
 #' las <- readLAS(LASfile)
 #' xyz_matrix <- las2xyz(las)
@@ -152,7 +152,7 @@ las2xyz = function(las){
 #' @return A named character vector of hex color codes
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Get the palette
 #' colors <- spanner_pal()
 #'
@@ -482,17 +482,18 @@ compute_ssao <- function(las, kernel_size = 5, pixel_size = 0.1, num_samples = 1
 #' Requires the \code{rstac} package for STAC API access.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Load example LAS file
 #' LASfile <- system.file("extdata", "ALS_Clip.laz", package="spanner")
 #' las <- readLAS(LASfile)
 #' 
 #' # Download NAIP for a LAS file
-#' naip_path <- download_naip_for_las(las, output_path = "naip_imagery.tif")
+#' naip_path <- download_naip_for_las(las, output_path = tempfile(fileext = ".tif"))
 #'
 #' # Download with buffer and specific year range
-#' naip_path <- download_naip_for_las(las, buffer = 10,
-#'                                    year_range = c("2020-01-01", "2023-12-31"))
+#' naip_path2 <- download_naip_for_las(las, buffer = 10,
+#'                                     output_path = tempfile(fileext = ".tif"),
+#'                                     year_range = c("2020-01-01", "2023-12-31"))
 #'
 #' # Then use with colorize_las
 #' las_colored <- colorize_las(las, method = "rgb", raster_path = naip_path)
@@ -653,7 +654,7 @@ download_naip_for_las <- function(las, output_path = NULL,
 #' }
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Load example LAS file
 #' LASfile <- system.file("extdata", "ALS_Clip.laz", package="spanner")
 #' las <- readLAS(LASfile)
@@ -784,18 +785,18 @@ merge_las_colors <- function(las1, las2, alpha = 0.5, method = "alpha") {
 #' Requires the \code{rgl} package and lidR for plotting.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Load example LAS file
 #' LASfile <- system.file("extdata", "ALS_Clip.laz", package="spanner")
 #' las <- readLAS(LASfile)
 #' 
 #' # Create basic rotation GIF with attribute coloring
 #' las_colored <- colorize_las(las, method="attr", attribute_name="Z")
-#' create_rotation_gif(las_colored, output_path="rotation.gif")
+#' create_rotation_gif(las_colored, output_path=tempfile(fileext = ".gif"))
 #'
 #' # High quality with specific settings
 #' create_rotation_gif(las_colored,
-#'                     output_path="highres_rotation.gif",
+#'                     output_path=tempfile(fileext = ".gif"),
 #'                     duration=15,
 #'                     rpm=10,
 #'                     background="black",
@@ -803,7 +804,7 @@ merge_las_colors <- function(las1, las2, alpha = 0.5, method = "alpha") {
 #'                     show_legend=FALSE)
 #'
 #' # Rotate around X axis for side-to-side view
-#' create_rotation_gif(las_colored, axis="x")
+#' create_rotation_gif(las_colored, output_path=tempfile(fileext = ".gif"), axis="x")
 #' }
 #'
 #' @export

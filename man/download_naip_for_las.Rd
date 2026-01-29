@@ -43,17 +43,18 @@ annually or biannually across the continental United States.
 Requires the \code{rstac} package for STAC API access.
 }
 \examples{
-\dontrun{
+\donttest{
 # Load example LAS file
 LASfile <- system.file("extdata", "ALS_Clip.laz", package="spanner")
 las <- readLAS(LASfile)
 
 # Download NAIP for a LAS file
-naip_path <- download_naip_for_las(las, output_path = "naip_imagery.tif")
+naip_path <- download_naip_for_las(las, output_path = tempfile(fileext = ".tif"))
 
 # Download with buffer and specific year range
-naip_path <- download_naip_for_las(las, buffer = 10,
-                                   year_range = c("2020-01-01", "2023-12-31"))
+naip_path2 <- download_naip_for_las(las, buffer = 10,
+                                    output_path = tempfile(fileext = ".tif"),
+                                    year_range = c("2020-01-01", "2023-12-31"))
 
 # Then use with colorize_las
 las_colored <- colorize_las(las, method = "rgb", raster_path = naip_path)

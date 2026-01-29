@@ -54,7 +54,7 @@ a user-specified radius.
 }
 
 \examples{
-\dontrun{
+\donttest{
 LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
 las <- readLAS(LASfile)
 eigen = eigen_metrics(las, radius=2, ncpu=4)

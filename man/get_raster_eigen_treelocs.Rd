@@ -58,9 +58,11 @@ get_raster_eigen_treelocs(
 
 \item{conf}{numeric confidence level}
 
-\item{max_angle}{numeric maximum tolerated deviation, in degrees, from vertical.
-#' @return sf A sf object containing the following tree seed information: \code{TreeID},
-\code{Radius}, and \code{Error} in the same units as the .las, as well as the point geometry}
+\item{max_angle}{numeric maximum tolerated deviation, in degrees, from vertical.}
+}
+\value{
+sf A sf object containing the following tree seed information: \code{TreeID},
+\code{Radius}, and \code{Error} in the same units as the .las, as well as the point geometry
 }
 \description{
 \code{get_raster_eigen_treelocs} returns a data.frame containing \code{TreeID}, \code{X}, \code{Y}, \code{Z}, \code{Radius}
@@ -80,7 +82,7 @@ to an individual tree segmentation
 }
 \examples{
 
-\dontrun{
+\donttest{
 # Set the number of threads to use in lidR
 set_lidr_threads(8)
 

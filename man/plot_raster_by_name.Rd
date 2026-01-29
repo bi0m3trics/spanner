@@ -18,7 +18,7 @@ NULL This function does not return a value. It plots the raster if found.
 \code{plot_raster_by_name} plots a raster from a list of rasters based on the provided raster name.
 }
 \examples{
-\dontrun{
+\donttest{
 # Define input parameters
 las <- lidR::readLAS(system.file("extdata", "MixedConifer.laz", package="lidR"))
 input_raster <- lidR::rasterize_canopy(las, res = 1, lidR::pitfree(c(0,2,5,10,15), c(0, 2)))

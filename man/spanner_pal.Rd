@@ -14,7 +14,7 @@ Returns a named vector of colors for use in spanner visualizations.
 The palette includes 10 distinct colors suitable for categorical data visualization.
 }
 \examples{
-\dontrun{
+\donttest{
 # Get the palette
 colors <- spanner_pal()
 
