@@ -1,7 +1,9 @@
 # spanner <img src="https://github.com/bi0m3trics/spanner/blob/master/img/spanner_hex_logo.png" width="150" align="right"/>
-![license](https://img.shields.io/badge/Licence-GPL--3-blue.svg) 
 [![](https://www.r-pkg.org/badges/version/spanner)](https://cran.r-project.org/package=spanner)
+![R](https://img.shields.io/badge/R-%3E%3D4.3-blue)
+[![DOI](https://img.shields.io/badge/DOI-10.32614%2FCRAN.package.spanner-blue)](https://doi.org/10.32614/CRAN.package.spanner)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4624277.svg)](https://doi.org/10.5281/zenodo.4624277)
+![license](https://img.shields.io/badge/Licence-GPL--3-blue.svg) 
 
 Definition of spanner
 <br/>1 (chiefly British): WRENCH
