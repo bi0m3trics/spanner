@@ -1,6 +1,9 @@
 # spanner 1.0.2
 
 * Added `screen_size` parameter to `create_rotation_gif()` to allow custom window dimensions (e.g., `c(800, 600)` or `c(1920, 1080)`)
+
+***CRAN Release for v1.0.2 on Feb 3rd, 2026***
+  
 * Added `colorize_las()` function with four coloring methods: `attr` (attribute-based), `rgb` (raster extraction), `pcv` (true 3D ambient occlusion), and `ssao` (fast screen-space ambient occlusion)
 * Added `download_naip_for_las()` function to automatically download NAIP imagery from Microsoft Planetary Computer STAC API
 * Added C++ implementations with OpenMP parallelization for PCV and SSAO ambient occlusion methods
