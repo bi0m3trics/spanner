@@ -1,3 +1,7 @@
+# spanner 1.0.3
+
+* Replaced bare `Rf_error()` call in `src/backports.h` with the parenthesized form `(Rf_error)(...)` to avoid interception by future Rcpp macro wrapping (see RcppCore/Rcpp#1247).
+
 # spanner 1.0.2
 
 * Added `screen_size` parameter to `create_rotation_gif()` to allow custom window dimensions (e.g., `c(800, 600)` or `c(1920, 1080)`)

@@ -1,8 +1,8 @@
 Package: spanner
 Type: Package
 Title: Utilities to Support Lidar Applications at the Landscape, Forest, and Tree Scale
-Version: 1.0.2
-Date: 2026-01-19
+Version: 1.0.3
+Date: 2026-03-25
 Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre", "ctb"), comment = c(ORCID = "0000-0003-4238-8587")),
              person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb"), comment = c(ORCID = "0000-0001-9448-1703")),
              person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb"), comment = c(ORCID = "0000-0002-2952-0865")),
