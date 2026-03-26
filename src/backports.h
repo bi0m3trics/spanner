@@ -63,7 +63,8 @@ static inline R_xlen_t R_maxLength(SEXP x) {
 static inline void R_resizeVector(SEXP x, R_xlen_t newlen) {
     // In older R versions, we cannot safely resize vectors
     // This is a placeholder that should not be called
-    Rf_error("Vector resizing not supported in R < 4.6.0");
+    // Use (Rf_error)(...) to avoid Rcpp macro interception (see RcppCore/Rcpp#1247)
+    (Rf_error)("Vector resizing not supported in R < 4.6.0");
 }
 #endif
 
