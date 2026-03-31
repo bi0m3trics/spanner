@@ -63,19 +63,15 @@ Requires the \code{rgl} package and lidR for plotting.
 }
 \examples{
 \donttest{
-# Load example LAS file
-LASfile <- system.file("extdata", "ALS_Clip.laz", package="spanner")
-las <- readLAS(LASfile)
+# create_rotation_gif requires a live display (rgl). Only run interactively.
+if (interactive()) {
+  LASfile <- system.file("extdata", "ALS_Clip.laz", package="spanner")
+  las <- readLAS(LASfile)
+  las_colored <- colorize_las(las, method="attr", attribute_name="Z")
 
-# create_rotation_gif requires a working rgl display (not available on
-# headless CI). Wrap in tryCatch so examples do not fail in such environments.
-las_colored <- colorize_las(las, method="attr", attribute_name="Z")
-tryCatch({
   create_rotation_gif(las_colored, output_path=tempfile(fileext = ".gif"))
-}, error = function(e) message("Example skipped: ", conditionMessage(e)))
 
-# High quality with specific settings
-tryCatch({
+  # High quality with specific settings
   create_rotation_gif(las_colored,
                       output_path=tempfile(fileext = ".gif"),
                       duration=15,
@@ -83,12 +79,10 @@ tryCatch({
                       background="black",
                       show_axis=FALSE,
                       show_legend=FALSE)
-}, error = function(e) message("Example skipped: ", conditionMessage(e)))
 
-# Rotate around X axis for side-to-side view
-tryCatch({
+  # Rotate around X axis for side-to-side view
   create_rotation_gif(las_colored, output_path=tempfile(fileext = ".gif"), axis="x")
-}, error = function(e) message("Example skipped: ", conditionMessage(e)))
+}
 }
 
 }

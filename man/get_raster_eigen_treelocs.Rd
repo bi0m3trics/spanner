@@ -106,24 +106,21 @@ sf::st_crs(las) <- 26912
 # plot(filter_poi(las, Classification != 2), color = "Z")
 
 # find tree locations and attribute data
-myTreeLocs = tryCatch(
-  get_raster_eigen_treelocs(las = las, res = 0.025, pt_spacing = 0.0254,
-                            dens_threshold = 0.25,
-                            neigh_sizes = c(0.25, 0.15, 0.66),
-                            eigen_threshold = 0.75,
-                            grid_slice_min = 1,
-                            grid_slice_max = 2,
-                            minimum_polygon_area = 0.005,
-                            cylinder_fit_type = "ransac",
-                            max_dia = 1,
-                            SDvert = 0.33,
-                            n_pts = 20,
-                            n_best = 25,
-                            inliers = 0.9,
-                            conf = 0.99,
-                            max_angle = 20),
-  error = function(e) { message("Example skipped: ", conditionMessage(e)); NULL }
-)
+myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.025, pt_spacing = 0.0254,
+                                       dens_threshold = 0.25,
+                                       neigh_sizes = c(0.25, 0.15, 0.66),
+                                       eigen_threshold = 0.75,
+                                       grid_slice_min = 1,
+                                       grid_slice_max = 2,
+                                       minimum_polygon_area = 0.005,
+                                       cylinder_fit_type = "ransac",
+                                       max_dia = 1,
+                                       SDvert = 0.33,
+                                       n_pts = 20,
+                                       n_best = 25,
+                                       inliers = 0.9,
+                                       conf = 0.99,
+                                       max_angle = 20)
 
 # Plot results if trees were found
 if (!is.null(myTreeLocs) && nrow(myTreeLocs) > 0) {
