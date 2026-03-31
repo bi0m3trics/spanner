@@ -10,9 +10,8 @@
 
 Progress::Progress(unsigned int iter_max, std::string prefix)
 {
-  Rcpp::Environment base = Rcpp::Environment::base_env();
-  Rcpp::Function getOption = base["getOption"];
-  
+  Rcpp::Function getOption("getOption");
+
   SEXP prgssSEXP = getOption("lidR.progress");
   this->display = Rcpp::is<bool>(prgssSEXP) && Rcpp::as<bool>(prgssSEXP);
 
