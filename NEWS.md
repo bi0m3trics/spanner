@@ -1,3 +1,8 @@
+# spanner 1.0.4
+
+* Fixed non-API call to R (`R_UnboundValue`) in compiled code (flagged by CRAN r-devel checks on Linux and Windows).
+* Fixed `create_rotation_gif()` example to use `if (interactive())` inside `\donttest{}` so they are skipped on headless CI environments.
+
 # spanner 1.0.3
 
 * Replaced bare `Rf_error()` call in `src/backports.h` with the parenthesized form `(Rf_error)(...)` to avoid interception by future Rcpp macro wrapping (see RcppCore/Rcpp#1247).
