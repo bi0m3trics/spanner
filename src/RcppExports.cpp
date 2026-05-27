@@ -12,16 +12,47 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// C_ransac_bole_slices
+DataFrame C_ransac_bole_slices(NumericVector X, NumericVector Y, NumericVector Z, IntegerVector treeIds, NumericVector tree_X, NumericVector tree_Y, IntegerVector tree_ID_vals, double z_min, double z_max, double dz, double overlap, double search_radius, double inlier_tol, int n_samples, double confidence, double inlier_frac, int n_best, double max_radius, int min_pts, int ncpu);
+RcppExport SEXP _spanner_C_ransac_bole_slices(SEXP XSEXP, SEXP YSEXP, SEXP ZSEXP, SEXP treeIdsSEXP, SEXP tree_XSEXP, SEXP tree_YSEXP, SEXP tree_ID_valsSEXP, SEXP z_minSEXP, SEXP z_maxSEXP, SEXP dzSEXP, SEXP overlapSEXP, SEXP search_radiusSEXP, SEXP inlier_tolSEXP, SEXP n_samplesSEXP, SEXP confidenceSEXP, SEXP inlier_fracSEXP, SEXP n_bestSEXP, SEXP max_radiusSEXP, SEXP min_ptsSEXP, SEXP ncpuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type X(XSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type treeIds(treeIdsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tree_X(tree_XSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tree_Y(tree_YSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type tree_ID_vals(tree_ID_valsSEXP);
+    Rcpp::traits::input_parameter< double >::type z_min(z_minSEXP);
+    Rcpp::traits::input_parameter< double >::type z_max(z_maxSEXP);
+    Rcpp::traits::input_parameter< double >::type dz(dzSEXP);
+    Rcpp::traits::input_parameter< double >::type overlap(overlapSEXP);
+    Rcpp::traits::input_parameter< double >::type search_radius(search_radiusSEXP);
+    Rcpp::traits::input_parameter< double >::type inlier_tol(inlier_tolSEXP);
+    Rcpp::traits::input_parameter< int >::type n_samples(n_samplesSEXP);
+    Rcpp::traits::input_parameter< double >::type confidence(confidenceSEXP);
+    Rcpp::traits::input_parameter< double >::type inlier_frac(inlier_fracSEXP);
+    Rcpp::traits::input_parameter< int >::type n_best(n_bestSEXP);
+    Rcpp::traits::input_parameter< double >::type max_radius(max_radiusSEXP);
+    Rcpp::traits::input_parameter< int >::type min_pts(min_ptsSEXP);
+    Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_ransac_bole_slices(X, Y, Z, treeIds, tree_X, tree_Y, tree_ID_vals, z_min, z_max, dz, overlap, search_radius, inlier_tol, n_samples, confidence, inlier_frac, n_best, max_radius, min_pts, ncpu));
+    return rcpp_result_gen;
+END_RCPP
+}
 // C_eigen_in_sphere
-List C_eigen_in_sphere(S4 las, double radius, int ncpu);
-RcppExport SEXP _spanner_C_eigen_in_sphere(SEXP lasSEXP, SEXP radiusSEXP, SEXP ncpuSEXP) {
+List C_eigen_in_sphere(S4 las, double r, int k, int ncpu);
+RcppExport SEXP _spanner_C_eigen_in_sphere(SEXP lasSEXP, SEXP rSEXP, SEXP kSEXP, SEXP ncpuSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< S4 >::type las(lasSEXP);
-    Rcpp::traits::input_parameter< double >::type radius(radiusSEXP);
+    Rcpp::traits::input_parameter< double >::type r(rSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
     Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
-    rcpp_result_gen = Rcpp::wrap(C_eigen_in_sphere(las, radius, ncpu));
+    rcpp_result_gen = Rcpp::wrap(C_eigen_in_sphere(las, r, k, ncpu));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -51,6 +82,53 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type radius(radiusSEXP);
     Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
     rcpp_result_gen = Rcpp::wrap(C_count_in_sphere(las, radius, ncpu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_knn_majority_vote
+List C_knn_majority_vote(IntegerMatrix nn_idx, LogicalVector labels_in, int n_iter, int ncpu);
+RcppExport SEXP _spanner_C_knn_majority_vote(SEXP nn_idxSEXP, SEXP labels_inSEXP, SEXP n_iterSEXP, SEXP ncpuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerMatrix >::type nn_idx(nn_idxSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type labels_in(labels_inSEXP);
+    Rcpp::traits::input_parameter< int >::type n_iter(n_iterSEXP);
+    Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_knn_majority_vote(nn_idx, labels_in, n_iter, ncpu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_voxelize_pad
+List C_voxelize_pad(NumericVector x, NumericVector y, NumericVector z, double vox_size, int ncpu);
+RcppExport SEXP _spanner_C_voxelize_pad(SEXP xSEXP, SEXP ySEXP, SEXP zSEXP, SEXP vox_sizeSEXP, SEXP ncpuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type z(zSEXP);
+    Rcpp::traits::input_parameter< double >::type vox_size(vox_sizeSEXP);
+    Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_voxelize_pad(x, y, z, vox_size, ncpu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_voxelize_pad_rays
+List C_voxelize_pad_rays(NumericVector x, NumericVector y, NumericVector z, NumericVector sx, NumericVector sy, NumericVector sz, double vox_size, int ncpu);
+RcppExport SEXP _spanner_C_voxelize_pad_rays(SEXP xSEXP, SEXP ySEXP, SEXP zSEXP, SEXP sxSEXP, SEXP sySEXP, SEXP szSEXP, SEXP vox_sizeSEXP, SEXP ncpuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type z(zSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type sx(sxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type sy(sySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type sz(szSEXP);
+    Rcpp::traits::input_parameter< double >::type vox_size(vox_sizeSEXP);
+    Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_voxelize_pad_rays(x, y, z, sx, sy, sz, vox_size, ncpu));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -102,9 +180,13 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_spanner_C_eigen_in_sphere", (DL_FUNC) &_spanner_C_eigen_in_sphere, 3},
+    {"_spanner_C_ransac_bole_slices", (DL_FUNC) &_spanner_C_ransac_bole_slices, 20},
+    {"_spanner_C_eigen_in_sphere", (DL_FUNC) &_spanner_C_eigen_in_sphere, 4},
     {"_spanner_C_count_in_disc", (DL_FUNC) &_spanner_C_count_in_disc, 6},
     {"_spanner_C_count_in_sphere", (DL_FUNC) &_spanner_C_count_in_sphere, 3},
+    {"_spanner_C_knn_majority_vote", (DL_FUNC) &_spanner_C_knn_majority_vote, 4},
+    {"_spanner_C_voxelize_pad", (DL_FUNC) &_spanner_C_voxelize_pad, 5},
+    {"_spanner_C_voxelize_pad_rays", (DL_FUNC) &_spanner_C_voxelize_pad_rays, 8},
     {"_spanner_cppCylinderFit", (DL_FUNC) &_spanner_cppCylinderFit, 7},
     {"_spanner_cppComputePCV", (DL_FUNC) &_spanner_cppComputePCV, 4},
     {"_spanner_cppComputeSSAO", (DL_FUNC) &_spanner_cppComputeSSAO, 5},

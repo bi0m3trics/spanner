@@ -108,7 +108,7 @@ get_raster_eigen_treelocs <- function(las = las, res = 0.05, pt_spacing = 0.0254
   if(lidR::is.empty(slice_extra)) stop("No points in the las object after processing slice! Try increasing the slice min/max.", call. = FALSE)
 
   message("Calculating verticality... (3/14)\n")
-  vert_temp <- eigen_metrics(slice_extra, radius=neigh_sizes[1], ncpu=lidR::get_lidr_threads())
+  vert_temp <- eigen_metrics(slice_extra, r=neigh_sizes[1], ncpu=lidR::get_lidr_threads())
   if(nrow(vert_temp) == 0) stop("Problemn calculating verticality...!", call. = FALSE)
 
   # vert_temp <- spanner::C_vert_in_sphere(slice_extra, radius = neigh_sizes[1], ncpu = lidR::get_lidr_threads())

@@ -7,10 +7,16 @@
 #' Calculates eigen decomposition metrics for fixed neighborhood point cloud data
 #' @description This function calculates twelve (plus the first and second PCA) for
 #' several point geometry-related metrics (listed below) in parallel using C++ for
-#' a user-specified radius.
+#' a user-specified neighborhood. The neighborhood can be defined by a search radius,
+#' a fixed number of nearest neighbors, or both combined.
 #' @param las LAS Normalized las object.
-#' @param radius numeric the radius of the neighborhood
-#' @param ncpu integer the number of cpu's to be used in parallelfor the calculation
+#' @param r numeric. Search radius of the spherical neighborhood. If omitted, a pure
+#'   kNN neighborhood is used and \code{k} must be supplied.
+#' @param k integer. Number of nearest neighbors to use (excluding the query point
+#'   itself). If omitted, a pure spherical neighborhood is used and \code{r} must be
+#'   supplied. When both \code{r} and \code{k} are given, the \code{k} nearest
+#'   neighbors within distance \code{r} are used (i.e. kNN with a radius cap).
+#' @param ncpu integer the number of cpu's to be used in parallel for the calculation
 #'
 #' @section List of available point metrics:
 #' \loadmathjax
@@ -40,6 +46,7 @@
 #'  \item \code{PCA1}: eigenvector projection variance normalized by eigensum, \mjeqn{\sigma_{PC1}^{2} / \sum_{i=1}^{n=3} \lambda_{i}}{ASCII representation}
 #'  \item \code{PCA2}: eigenvector projection variance normalized by eigensum, \mjeqn{\sigma_{PC2}^{2} / \sum_{i=1}^{n=3} \lambda_{i}}{ASCII representation}
 #'  \item \code{NumNeighbors}: number of points in the spherical neighborhood, \mjeqn{k}{ASCII representation}
+#'  \item \code{E1x}, \code{E1y}, \code{E1z}: 3 components of the dominant eigenvector (\mjeqn{\lambda_{1}}{ASCII representation}), i.e. the direction of greatest variance
 #' }
 #' @return A labeled data.table of point metrics for each point in the LAS object
 #'
@@ -47,38 +54,150 @@
 #' \donttest{
 #' LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
 #' las <- readLAS(LASfile)
-#' eigen = eigen_metrics(las, radius=2, ncpu=4)
+#' # Sphere neighborhood
+#' eigen_r  <- eigen_metrics(las, r = 2, ncpu = 4)
+#' # kNN neighborhood (10 neighbors)
+#' eigen_k  <- eigen_metrics(las, k = 10L, ncpu = 4)
+#' # kNN with radius cap
+#' eigen_rk <- eigen_metrics(las, r = 2, k = 10L, ncpu = 4)
 #' }
 #'
 #' @export
-eigen_metrics = function(las = las, radius=0.1, ncpu = 8){
+eigen_metrics = function(las, r, k, ncpu = 8){
+
+  r_missing <- missing(r)
+  k_missing <- missing(k)
+
+  if (r_missing && k_missing)
+    stop("at least one of 'r' (radius) or 'k' (number of neighbors) must be provided")
+
   # Input validation
-  if (!inherits(las, "LAS")) {
+  if (!inherits(las, "LAS"))
     stop("las must be a LAS object")
-  }
-  if (!is.numeric(radius) || length(radius) != 1) {
-    stop("radius must be a single numeric value")
-  }
-  if (radius <= 0) {
-    stop("radius must be positive")
-  }
-  if (!is.numeric(ncpu) || length(ncpu) != 1 || ncpu < 1) {
+  if (!is.numeric(ncpu) || length(ncpu) != 1 || ncpu < 1)
     stop("ncpu must be a positive integer")
+
+  r_val <- 0
+  k_val <- 0L
+
+  if (!r_missing) {
+    if (!is.numeric(r) || length(r) != 1)
+      stop("r must be a single numeric value")
+    if (r <= 0)
+      stop("r must be positive")
+    r_val <- r
   }
 
-  temp = C_eigen_in_sphere(las, radius = radius, ncpu = ncpu)
+  if (!k_missing) {
+    if (!is.numeric(k) || length(k) != 1 || k < 1)
+      stop("k must be a positive integer")
+    k_val <- as.integer(k)
+  }
+
+  temp = C_eigen_in_sphere(las, r = r_val, k = k_val, ncpu = ncpu)
   data.table::setDT(temp)
   cols<-c("eLargest","eMedium","eSmallest","eSum","Curvature","Omnivariance",
           "Anisotropy","Eigentropy","Linearity","Verticality","Planarity",
           "Sphericity", "Nx", "Ny", "Nz", "SurfaceVariation", "ChangeCurvature",
           "SurfaceDensity", "VolumeDensity", "MomentOrder1", "NormalChangeRate",
-          "Roughness", "MeanCurvature", "GaussianCurvature", "PCA1", "PCA2", "NumNeighbors")
+          "Roughness", "MeanCurvature", "GaussianCurvature", "PCA1", "PCA2", "NumNeighbors",
+          "E1x", "E1y", "E1z")
   data.table::setnames(temp, cols)
   return(temp)
 }
 
 
-#' Point cloud cylinder fitting as per de Conto et al. 2017 as implemented here: https://github.com/tiagodc/TreeLS
+#' Score and flag branch-candidate points from eigen metrics
+#'
+#' `branch_metrics` takes the data.table returned by [eigen_metrics()] (which
+#' must include the `E1x`, `E1y`, `E1z` columns added in spanner >= 1.1.0) and
+#' returns it with three additional columns:
+#'
+#' * `AxisAngle` — acute angle (°) between the dominant local axis (eigenvector
+#'   of λ1) and the vertical.  0° = perfectly vertical (bole-like); 90° =
+#'   horizontal branch.
+#' * `BranchScore` — min–max scaled 0–1 composite score:
+#'   `Linearity × Anisotropy × (1 − Sphericity) × sqrt(E1x² + E1y²)`.
+#'   The horizontal-component term `sqrt(E1x² + E1y²)` encodes orientation
+#'   directly in the score rather than relying on a hard angle filter alone;
+#'   it is high when the principal branch axis is oblique or horizontal and
+#'   near zero for upright bole-like features.
+#' * `IsBranchCandidate` — logical flag: `BranchScore >= score_quantile` **and**
+#'   `AxisAngle` within `[min_angle, max_angle]` (and optionally `Zref > 1.37`
+#'   if a `Zref` column is present).
+#'
+#' @param em data.table returned by [eigen_metrics()].  Must contain columns
+#'   `Linearity`, `Anisotropy`, `Sphericity`, `E1x`, `E1y`, `E1z`.
+#'   Optionally `Zref` (height above ground, m) for the DBH-height filter.
+#' @param min_angle numeric.  Minimum axis-angle-from-vertical (°) for a branch
+#'   candidate.  Default `45`.
+#' @param max_angle numeric.  Maximum axis-angle-from-vertical (°).  Default
+#'   `90` (horizontal).
+#' @param score_quantile numeric \[0, 1\].  Quantile of `BranchScore` used as
+#'   the binary threshold for `IsBranchCandidate`.  Default `0.75`.
+#'
+#' @return The input data.table with three new columns appended in-place:
+#'   `AxisAngle`, `BranchScore`, `IsBranchCandidate`.
+#'
+#' @seealso [eigen_metrics()]
+#'
+#' @export
+branch_metrics <- function(em,
+                           min_angle      = 45,
+                           max_angle      = 90,
+                           score_quantile = 0.75) {
+
+  required <- c("Linearity", "Anisotropy", "Sphericity", "E1x", "E1y", "E1z")
+  missing_cols <- setdiff(required, names(em))
+  if (length(missing_cols) > 0L)
+    stop("'em' is missing required columns: ",
+         paste(missing_cols, collapse = ", "),
+         "\nRun eigen_metrics() with a version of spanner that returns E1x/E1y/E1z.")
+
+  # Angle between dominant local axis and vertical (Z).
+  # abs() because eigenvector direction is arbitrary (+v and -v are both valid).
+  data.table::set(em, j = "AxisAngle",
+                  value = acos(pmin(1.0, abs(em$E1z))) * 180.0 / pi)
+
+  # Branch score:
+  #   Linearity        — high when neighbourhood is long and narrow (key signal)
+  #   Anisotropy       — high when one direction dominates
+  #   (1 - Sphericity) — penalise blob-like foliage clusters
+  #   sqrt(E1x²+E1y²) — horizontal component of the principal axis; encodes
+  #                      orientation continuously (≈1 for horizontal branches,
+  #                      ≈0 for upright boles).  Using e1 (largest eigenvector)
+  #                      is correct here — Verticality uses e3 (the normal).
+  raw_score <- em$Linearity *
+               em$Anisotropy *
+               (1 - em$Sphericity) *
+               sqrt(em$E1x^2 + em$E1y^2)
+  raw_score[is.na(raw_score)] <- 0.0
+
+  rng <- range(raw_score, na.rm = TRUE)
+  data.table::set(em, j = "BranchScore",
+                  value = if (diff(rng) < .Machine$double.eps) 0.0
+                          else (raw_score - rng[1L]) / diff(rng))
+
+  # Binary flag: high score AND axis angle in the expected branch range.
+  # 45–90° captures branches from diagonal to horizontal; upright boles sit
+  # near 0° and are excluded regardless of score.
+  score_thr <- quantile(em$BranchScore, score_quantile, na.rm = TRUE)
+
+  flag <- em$BranchScore >= score_thr &
+          em$AxisAngle   >= min_angle  &
+          em$AxisAngle   <= max_angle
+
+  # Optional height filter (DBH height convention: > 1.37 m)
+  if ("Zref" %in% names(em))
+    flag <- flag & !is.na(em$Zref) & em$Zref > 1.37
+
+  data.table::set(em, j = "IsBranchCandidate", value = flag)
+
+  invisible(em)
+}
+
+
+#' Fit a cylinder to a 3D point cloud
 #' @description Fits a cylinder on a set of 3D points.
 #' @param las LAS normalized and segmented las object.
 #' @param method method for estimating the cylinder parameters. Currently available: \code{"nm"}, \code{"irls"}, \code{"ransac"} and \code{"bf"}.
@@ -267,8 +386,17 @@ colorize_las <- function(las, method = "attr", attribute_name = NULL, palette = 
 
     # Extract and normalize attribute values
     attribute_values <- las@data[[attribute_name]]
-    normalized_values <- (attribute_values - min(attribute_values, na.rm = TRUE)) /
-      (max(attribute_values, na.rm = TRUE) - min(attribute_values, na.rm = TRUE))
+    attr_min <- min(attribute_values, na.rm = TRUE)
+    attr_max <- max(attribute_values, na.rm = TRUE)
+    if (!is.finite(attr_min) || !is.finite(attr_max) || attr_max == attr_min) {
+      # All values identical (or all NA) — map everything to first palette colour
+      solid_rgb <- grDevices::col2rgb(palette[1L])
+      las@data$R <- rep(as.integer(solid_rgb[1L]), nrow(las@data))
+      las@data$G <- rep(as.integer(solid_rgb[2L]), nrow(las@data))
+      las@data$B <- rep(as.integer(solid_rgb[3L]), nrow(las@data))
+      return(las)
+    }
+    normalized_values <- (attribute_values - attr_min) / (attr_max - attr_min)
 
     # Map to colors
     colors <- grDevices::colorRampPalette(palette)(256)

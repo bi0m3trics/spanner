@@ -5,3 +5,12 @@
 .DS_Store
 /jones
 /.vscode
+ignoreme/diag_out.txt
+ignoreme/lowell.laz
+ignoreme/lowell_livetree.laz
+ignoreme/lowell_livetree2.laz
+ignoreme/lowell_snag.laz
+ignoreme/normalized_tiles_1.laz
+ignoreme/normalized_tiles_2.laz
+ignoreme/Strawberry_20260428_452000_3809000.laz
+ignoreme/Strawberry_20260428_452000_3809000_fixed_preprocessed.laz

@@ -1,8 +1,8 @@
 Package: spanner
 Type: Package
 Title: Utilities to Support Lidar Applications at the Landscape, Forest, and Tree Scale
-Version: 1.0.4
-Date: 2026-03-31
+Version: 1.1.0
+Date: 2026-05-25
 Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre", "ctb"), comment = c(ORCID = "0000-0003-4238-8587")),
              person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb"), comment = c(ORCID = "0000-0001-9448-1703")),
              person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb"), comment = c(ORCID = "0000-0002-2952-0865")),
@@ -17,14 +17,22 @@ Description: Implements algorithms for terrestrial, mobile, and airborne lidar p
     verticality) combined with RANSAC cylinder fitting to locate tree boles and estimate 
     diameter at breast height. Tree segmentation applies graph-theory approaches inspired 
     by Tao et al. (2015) <doi:10.1016/j.isprsjprs.2015.08.007> with cylinder fitting 
-    methods from de Conto et al. (2017) <doi:10.1016/j.compag.2017.07.019>. PatchMorph 
-    delineates habitat patches across spatial scales using organism-specific thresholds. 
-    Built on 'lidR' (Roussel et al., 2020) <doi:10.1016/j.rse.2020.112061>.
+    methods from de Conto et al. (2017) <doi:10.1016/j.compag.2017.07.019>. A second 
+    pipeline (classify_stem_points, segment_bole, compute_bole_volume, assess_tree_quality, 
+    refit_trees) provides RANSAC- and Hough-based bole segmentation, outside-bark volume
+    estimation, allometric quality assessment, and iterative refit via DBSCAN or mean-shift
+    cluster isolation for challenging trees. A canopy structure pipeline
+    (compute_lai, compute_pad_voxels) estimates leaf area index (LAI) via the
+    MacArthur-Horn gap-fraction method and 3-D plant area density (PAD) via
+    Beer-Lambert voxel tracing following Grau et al. (2017)
+    <doi:10.1016/j.rse.2017.01.032> and Tenny et al. (2025)
+    <doi:10.1071/WF24221>. PatchMorph delineates habitat patches across
+    spatial scales using organism-specific thresholds. Built on 'lidR' (Roussel et al.,
+    2020) <doi:10.1016/j.rse.2020.112061>.
 URL: https://github.com/bi0m3trics/spanner
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 RdMacros: mathjaxr
 LinkingTo:
     lidR,
@@ -35,10 +43,12 @@ LinkingTo:
 Imports: 
     Rcpp (>= 1.0.13),
     conicfit,
+    dbscan,
     FNN,
     RANN,
     cppRouting,
     sf,
+    stats,
     terra,
     sfheaders,
     Rfast,
@@ -50,8 +60,10 @@ Depends:
     R (>= 4.0.0),
     lidR (>= 4.2.0),
 Suggests: 
+    houghPrimitives,
     testthat (>= 3.0.0),
     magick,
     rgl,
     rstac
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

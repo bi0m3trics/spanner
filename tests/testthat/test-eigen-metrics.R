@@ -13,32 +13,31 @@ test_that("eigen_metrics basic functionality", {
                                min(las$X), min(las$Y),
                                min(las$X) + 2, min(las$Y) + 2)
   
-  # Calculate eigen metrics
-  result <- eigen_metrics(las, radius = 0.5, ncpu = 1)
-  
-  # Test that result is a data.table
-  expect_s3_class(result, "data.table")
-  
-  # Test that it has expected columns (at least some key ones)
   expected_cols <- c("Linearity", "Planarity", "Sphericity", "Verticality")
-  expect_true(any(expected_cols %in% names(result)))
-  
-  # Test that number of rows matches input
-  expect_equal(nrow(result), nrow(las@data))
-  
-  # Test that values are numeric
-  for (col in names(result)) {
-    if (col %in% expected_cols) {
-      expect_type(result[[col]], "double")
-    }
-  }
+
+  # --- sphere-only mode ---
+  result_r <- eigen_metrics(las, r = 0.5, ncpu = 1)
+  expect_s3_class(result_r, "data.table")
+  expect_true(any(expected_cols %in% names(result_r)))
+  expect_equal(nrow(result_r), nrow(las@data))
+  for (col in intersect(names(result_r), expected_cols))
+    expect_type(result_r[[col]], "double")
+
+  # --- knn-only mode ---
+  result_k <- eigen_metrics(las, k = 10L, ncpu = 1)
+  expect_s3_class(result_k, "data.table")
+  expect_equal(nrow(result_k), nrow(las@data))
+
+  # --- knn + radius cap mode ---
+  result_rk <- eigen_metrics(las, r = 0.5, k = 10L, ncpu = 1)
+  expect_s3_class(result_rk, "data.table")
+  expect_equal(nrow(result_rk), nrow(las@data))
 })
 
 test_that("eigen_metrics validates input", {
   skip_if_not_installed("lidR")
   skip_on_cran()
   
-  # Test with invalid radius
   LASfile <- system.file("extdata", "MLS_Clip.laz", package = "spanner")
   skip_if(!file.exists(LASfile), "Test LAS file not found")
   
@@ -47,14 +46,20 @@ test_that("eigen_metrics validates input", {
                                min(las$X), min(las$Y),
                                min(las$X) + 1, min(las$Y) + 1)
   
+  # Must supply at least one of r or k
+  expect_error(eigen_metrics(las, ncpu = 1), "at least one of")
+
   # Negative radius should error
-  expect_error(eigen_metrics(las, radius = -1, ncpu = 1), "radius must be positive")
+  expect_error(eigen_metrics(las, r = -1, ncpu = 1), "r must be positive")
   
   # Zero radius should error
-  expect_error(eigen_metrics(las, radius = 0, ncpu = 1), "radius must be positive")
+  expect_error(eigen_metrics(las, r = 0, ncpu = 1), "r must be positive")
+
+  # Non-positive k should error
+  expect_error(eigen_metrics(las, k = 0L, ncpu = 1), "k must be a positive integer")
   
   # Invalid ncpu should error
-  expect_error(eigen_metrics(las, radius = 1, ncpu = -1), "ncpu must be a positive integer")
+  expect_error(eigen_metrics(las, r = 1, ncpu = -1), "ncpu must be a positive integer")
 })
 
 

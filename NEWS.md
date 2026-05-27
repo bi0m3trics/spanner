@@ -1,3 +1,57 @@
+# spanner 1.1.0
+
+## New functions
+
+* `compute_lai()` – estimates leaf area index (LAI) and leaf area density
+  (LAD) per grid cell from any height-normalized lidar point cloud using the
+  MacArthur-Horn gap-fraction Beer-Lambert inversion ([`lidR::LAD()`] under
+  the hood). Accepts a single `LAS` or a `LAScatalog` (parallelised over
+  chunks). Returns a three-layer `SpatRaster`: `LAI`, `LAD_mean`, `LAD_max`.
+
+* `compute_pad_voxels()` – estimates 3-D plant area density (PAD, m²/m³)
+  by tracing lidar pulses downward through a regular voxel grid and applying
+  the Beer-Lambert inversion following Grau et al. (2017) and the voxelmon
+  framework (Tenny et al. 2025). For each voxel the function reports
+  `directed`, `transmitted`, `intercepted`, `occluded`, `PAD`, and a
+  `VoxelClass` label (`"foliage"`, `"wood"`, `"empty"`, `"occluded"`). LAI
+  per column and vertical height profiles can be derived directly from the
+  returned `data.table`.
+
+* `compute_transmittance_raster()` – converts the per-voxel PAD table from
+  `compute_pad_voxels()` into a 2-D `SpatRaster` of Beer-Lambert canopy
+  transmittance (τ ∈ [0, 1]) for each (X, Y) column:
+  τ = exp(−G × Σ min(PAD_i, max_pad) × vox_size). Per-voxel PAD is capped
+  at `max_pad` before summation (same default as `compute_pad_voxels()`) to
+  prevent numerically extreme wood-voxel values from collapsing transmittance
+  to zero. The returned raster can be multiplied directly against a vostokR
+  `solar_potential` surface to estimate below-canopy irradiance.
+
+* `branch_metrics()` – scores and flags branch-candidate points from the
+  output of `eigen_metrics()`. Adds `AxisAngle` (°, angle of the dominant
+  local axis from vertical), `BranchScore` (min–max scaled composite), and
+  `IsBranchCandidate` (logical) to the input `data.table` in-place.
+
+* `classify_lw_points()` – combined leaf-wood classifier (bole + branch +
+  other in a single two-scale eigen pass). Adds `Bole`, `BoleProb`,
+  `Branch`, `BranchProb`, and `Other` columns to the returned LAS.
+
+* `segment_bole()` – fits RANSAC circles to bole points per tree and returns
+  a per-tree segment table with diameter, height, and fit-quality statistics.
+  Accepts a `ncpu` parameter to parallelise fitting over trees via OpenMP.
+  Prefers the `Bole` column produced by `classify_lw_points()` over the
+  legacy `Stem` column from `classify_stem_points()` when both are present.
+
+* `refit_trees()` – re-runs `segment_bole()` with relaxed or tightened
+  parameters for trees flagged as `"bad"` or `"marginal"` by
+  `assess_tree_quality()`. Handles `NA` tree IDs in the segmented point
+  cloud without crashing.
+
+## New features in existing functions
+
+* `eigen_metrics()` – now returns three additional columns: `E1x`, `E1y`,
+  `E1z` (components of the dominant eigenvector λ₁). Required by
+  `branch_metrics()` and available for any orientation-based analysis.
+
 # spanner 1.0.4
 
 * Fixed non-API call to R (`R_UnboundValue`) in compiled code (flagged by CRAN r-devel checks on Linux and Windows).

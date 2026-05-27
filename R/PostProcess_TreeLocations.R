@@ -67,6 +67,18 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #' `X`, `Y`, `Z`, `Radius`, and `Error`, output from the `get_raster_eigen_treelocs` function.
 #' @param segmentedLAS A LAS object that is the output from `segment_graph`.
 #' @param return_sf logical: If TRUE, returns an `sf` object representing the convex hulls for each tree.
+#' @param seg_table `data.frame` or `NULL`. Optional output of [segment_bole()].
+#'   When supplied, per-tree bole volume is merged into the result via
+#'   [compute_bole_volume()] (unless `vol_table` is also provided). Required
+#'   columns: `TreeID`, `Segment`, `Z_low`, `Z_high`, `Radius`, `Valid`.
+#' @param vol_table `data.frame` or `NULL`. Optional output of
+#'   [compute_bole_volume()]. When supplied alongside `seg_table`, volume
+#'   columns are merged directly without recomputing. Required columns:
+#'   `TreeID`, `Volume_m3`.
+#' @param qual_table `data.frame` / `sf` or `NULL`. Optional output of
+#'   [assess_tree_quality()]. Quality columns (`quality_class`, `fit_score`,
+#'   etc.) are merged into the result. Required columns: `TreeID`,
+#'   `quality_class`, `fit_score`.
 #' @return sf object An updated `sf` object with the original columns plus:
 #'   \describe{
 #'     \item{height}{numeric: Height of the highest point for each TreeID.}
@@ -156,90 +168,160 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #' }
 #'
 #' @export
-process_tree_data <- function(treeData, segmentedLAS, return_sf = FALSE) {
-  # Filter out NA TreeIDs from segmented data before comparison
-  segmented_tree_ids <- unique(segmentedLAS$treeID[!is.na(segmentedLAS$treeID)])
+process_tree_data <- function(treeData,
+                              segmentedLAS,
+                              return_sf  = FALSE,
+                              seg_table  = NULL,
+                              vol_table  = NULL,
+                              qual_table = NULL) {
+
+  # ---- Input validation -----------------------------------------------------
+  if (!inherits(segmentedLAS, "LAS"))
+    stop("'segmentedLAS' must be a LAS object — run segment_graph() first.")
+  if (!"treeID" %in% names(segmentedLAS@data))
+    stop("'segmentedLAS' must contain a 'treeID' column — run segment_graph() first.")
+  if (!inherits(treeData, "sf") && !is.data.frame(treeData))
+    stop("'treeData' must be an sf object from get_raster_eigen_treelocs().")
+  if (!"TreeID" %in% names(treeData))
+    stop("'treeData' must have a 'TreeID' column.")
+
+  if (!is.null(seg_table)) {
+    if (!is.data.frame(seg_table))
+      stop("'seg_table' must be a data.frame from segment_bole().")
+    req_seg <- c("TreeID", "Segment", "Z_low", "Z_high", "Radius", "Valid")
+    miss    <- setdiff(req_seg, names(seg_table))
+    if (length(miss) > 0)
+      stop("'seg_table' is missing columns: ", paste(miss, collapse = ", "),
+           "\nRun segment_bole() before process_tree_data().")
+  }
+
+  if (!is.null(vol_table)) {
+    if (!is.data.frame(vol_table))
+      stop("'vol_table' must be a data.frame from compute_bole_volume().")
+    req_vol <- c("TreeID", "Volume_m3")
+    miss    <- setdiff(req_vol, names(vol_table))
+    if (length(miss) > 0)
+      stop("'vol_table' is missing columns: ", paste(miss, collapse = ", "),
+           "\nRun compute_bole_volume() before process_tree_data().")
+  }
+
+  if (!is.null(qual_table)) {
+    qual_df_check <- if (inherits(qual_table, "sf"))
+      sf::st_drop_geometry(qual_table) else qual_table
+    if (!is.data.frame(qual_df_check))
+      stop("'qual_table' must be an sf or data.frame from assess_tree_quality().")
+    req_qual <- c("TreeID", "quality_class", "fit_score")
+    miss     <- setdiff(req_qual, names(qual_df_check))
+    if (length(miss) > 0)
+      stop("'qual_table' is missing columns: ", paste(miss, collapse = ", "),
+           "\nRun assess_tree_quality() before process_tree_data().")
+  }
+
+  # ---- TreeID diagnostics --------------------------------------------------
+  segmented_tree_ids <- unique(segmentedLAS@data$treeID[
+    !is.na(segmentedLAS@data$treeID)])
   tree_data_ids <- unique(treeData$TreeID)
 
-  # Print diagnostic information
   missing_in_segmented <- setdiff(tree_data_ids, segmented_tree_ids)
-  missing_in_treedata <- setdiff(segmented_tree_ids, tree_data_ids)
+  missing_in_treedata  <- setdiff(segmented_tree_ids, tree_data_ids)
 
-  message("TreeIDs in treeData but not in segmentedLAS:")
-  if (length(missing_in_segmented) == 0) {
-    message("  None - all treeData TreeIDs found in segmentedLAS")
-  } else {
-    message(paste0("  ", paste(missing_in_segmented, collapse = ", ")))
-  }
-
-  message("TreeIDs in segmentedLAS but not in treeData:")
-  if (length(missing_in_treedata) == 0) {
-    message("  None - all segmentedLAS TreeIDs found in treeData")
-  } else {
-    message(paste0("  ", paste(missing_in_treedata, collapse = ", ")))
-  }
-
-  if (!all(treeData$TreeID %in% segmented_tree_ids) || length(tree_data_ids) != length(segmented_tree_ids)) {
+  if (length(missing_in_segmented) > 0)
+    message("TreeIDs in treeData but not in segmentedLAS: ",
+            paste(missing_in_segmented, collapse = ", "))
+  if (length(missing_in_treedata) > 0)
+    message("TreeIDs in segmentedLAS but not in treeData: ",
+            paste(missing_in_treedata, collapse = ", "))
+  if (!all(treeData$TreeID %in% segmented_tree_ids) ||
+      length(tree_data_ids) != length(segmented_tree_ids))
     warning("TreeIDs do not match between treeData and segmentedLAS.")
-  }
 
   unique_tree_ids <- unique(treeData$TreeID)
+  n_trees <- length(unique_tree_ids)
 
-  highest_points <- data.frame(TreeID = integer(), X = numeric(), Y = numeric(), Z = numeric(), Radius = numeric(), Error = numeric())
-  convex_hulls <- list()
-  crown_areas <- numeric()
-  crown_base_heights <- numeric()
-  crown_volumes <- numeric()
+  # ---- Pre-split LAS data.table once (avoids repeated filter_poi scans) ----
+  las_dt    <- segmentedLAS@data
+  tid_split <- split(seq_len(nrow(las_dt)),
+                     las_dt$treeID,
+                     drop = FALSE)
 
-  for (tree_id in unique_tree_ids) {
-    tree_data <- subset(treeData, TreeID == tree_id)
-    tree_las <- lidR::filter_poi(segmentedLAS, treeID == tree_id)
+  # ---- Per-tree geometry metrics -------------------------------------------
+  heights            <- numeric(n_trees)
+  crown_areas        <- numeric(n_trees)
+  crown_base_heights <- numeric(n_trees)
+  crown_volumes      <- numeric(n_trees)
+  convex_hulls       <- vector("list", n_trees)
 
-    highest_point <- tree_las[which.max(tree_las$Z), ]
-    highest_point_df <- data.frame(TreeID = tree_id, X = highest_point$X, Y = highest_point$Y, Z = highest_point$Z, Radius = NA, Error = NA)
-    highest_points <- rbind(highest_points, highest_point_df)
+  for (i in seq_along(unique_tree_ids)) {
+    tree_id <- unique_tree_ids[i]
+    row_idx <- tid_split[[as.character(tree_id)]]
 
-    tree_coords <- data.frame(X = tree_las$X, Y = tree_las$Y)
-    if (nrow(tree_coords) > 2) {
-      convex_hull <- sf::st_convex_hull(sf::st_union(sf::st_sfc(sf::st_multipoint(as.matrix(tree_coords)))))
-      convex_hulls[[as.character(tree_id)]] <- convex_hull
-      crown_area <- sf::st_area(convex_hull)
-      crown_areas <- c(crown_areas, crown_area)
-    } else {
-      convex_hulls[[as.character(tree_id)]] <- NULL
-      crown_areas <- c(crown_areas, NA)
+    if (is.null(row_idx) || length(row_idx) == 0L) {
+      heights[i] <- crown_areas[i] <- crown_base_heights[i] <-
+        crown_volumes[i] <- NA_real_
+      next
     }
 
-    crown_base_height <- estimate_crown_base_height(tree_las$Z)
-    crown_base_heights <- c(crown_base_heights, crown_base_height)
+    tX <- las_dt$X[row_idx]
+    tY <- las_dt$Y[row_idx]
+    tZ <- las_dt$Z[row_idx]
 
-    crown_volume <- fit_convex_hull_and_volume(tree_las$X, tree_las$Y, tree_las$Z)
-    crown_volumes <- c(crown_volumes, crown_volume)
+    heights[i] <- max(tZ, na.rm = TRUE)
+
+    if (length(tX) > 2L) {
+      convex_hull       <- sf::st_convex_hull(
+        sf::st_union(sf::st_sfc(sf::st_multipoint(cbind(tX, tY)))))
+      convex_hulls[[i]] <- convex_hull
+      crown_areas[i]    <- as.numeric(sf::st_area(convex_hull))
+    } else {
+      crown_areas[i] <- NA_real_
+    }
+
+    crown_base_heights[i] <- estimate_crown_base_height(tZ)
+    crown_volumes[i]      <- fit_convex_hull_and_volume(tX, tY, tZ)
   }
 
-  treeData$height <- NA
-  treeData$crown_area <- NA
-  treeData$diameter <- treeData$Radius * 2
-  treeData$crown_base_height <- NA
-  treeData$crown_volume <- NA
+  treeData$height            <- heights
+  treeData$crown_area        <- crown_areas
+  treeData$diameter          <- treeData$Radius * 2
+  treeData$crown_base_height <- crown_base_heights
+  treeData$crown_volume      <- crown_volumes
 
-  for (tree_id in unique_tree_ids) {
-    treeData[treeData$TreeID == tree_id, "height"] <- highest_points[highest_points$TreeID == tree_id, "Z"]
-    treeData[treeData$TreeID == tree_id, "crown_area"] <- crown_areas[unique_tree_ids == tree_id]
-    treeData[treeData$TreeID == tree_id, "crown_base_height"] <- crown_base_heights[unique_tree_ids == tree_id]
-    treeData[treeData$TreeID == tree_id, "crown_volume"] <- crown_volumes[unique_tree_ids == tree_id]
+  # ---- Merge optional pipeline-2 tables ------------------------------------
+  if (!is.null(vol_table)) {
+    keep_vol <- intersect(
+      names(vol_table),
+      c("TreeID", "Volume_m3", "N_segments", "Mean_radius",
+        "Height_modeled", "Basal_area_m2", "Mean_RANSAC_err"))
+    vol_merge <- vol_table[, keep_vol, drop = FALSE]
+    treeData  <- merge(treeData, vol_merge,
+                       by = "TreeID", all.x = TRUE, sort = FALSE)
   }
 
+  if (!is.null(qual_table)) {
+    qual_plain <- if (inherits(qual_table, "sf"))
+      sf::st_drop_geometry(qual_table) else qual_table
+    # Exclude geometry and any columns already present in treeData
+    keep_qual <- setdiff(names(qual_plain),
+                         c("geometry", setdiff(names(treeData), "TreeID")))
+    keep_qual <- union("TreeID", keep_qual)
+    treeData  <- merge(treeData, qual_plain[, keep_qual, drop = FALSE],
+                       by = "TreeID", all.x = TRUE, sort = FALSE)
+  }
+
+  # ---- Build return object --------------------------------------------------
   if (return_sf) {
-    hulls_sf <- do.call(rbind, lapply(names(convex_hulls), function(tree_id) {
-      if (!is.null(convex_hulls[[tree_id]])) {
-        sf::st_sf(TreeID = as.integer(tree_id), geometry = convex_hulls[[tree_id]])
-      }
+    named_hulls <- stats::setNames(convex_hulls, as.character(unique_tree_ids))
+    hulls_sf <- do.call(rbind, lapply(seq_along(unique_tree_ids), function(i) {
+      tid <- unique_tree_ids[i]
+      if (!is.null(named_hulls[[as.character(tid)]]))
+        sf::st_sf(TreeID = tid,
+                  geometry = named_hulls[[as.character(tid)]])
     }))
-    result <- sf::st_sf(treeData)
+    result          <- sf::st_sf(treeData)
     result$geometry <- hulls_sf$geometry
   } else {
-    result <- sf::st_as_sf(treeData, coords = c("X", "Y"), crs = sf::st_crs(segmentedLAS))
+    result <- sf::st_as_sf(treeData, coords = c("X", "Y"),
+                           crs = sf::st_crs(segmentedLAS))
   }
 
   return(result)

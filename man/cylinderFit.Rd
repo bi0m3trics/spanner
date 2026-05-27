@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{cylinderFit}
 \alias{cylinderFit}
-\title{Point cloud cylinder fitting as per de Conto et al. 2017 as implemented here: https://github.com/tiagodc/TreeLS}
+\title{Fit a cylinder to a 3D point cloud}
 \usage{
 cylinderFit(
   las,

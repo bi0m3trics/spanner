@@ -147,6 +147,99 @@ vector<double> eigenCircle(vector<vector<double> >& cloud){
   return bestFit;
 }
 
+// ---------------------------------------------------------------------------
+// Thread-safe RANSAC circle: identical logic to ransacCircle() but uses a
+// caller-supplied std::mt19937 instead of R::runif() so it is safe to call
+// from multiple OpenMP threads simultaneously.
+// ---------------------------------------------------------------------------
+vector<double> ransacCircleTs(vector<vector<double> >& cloud,
+                              unsigned int nSamples,
+                              double pConfidence,
+                              double pInliers,
+                              unsigned int nBest,
+                              std::mt19937& rng) {
+
+  unsigned int n   = (unsigned int)cloud[0].size();
+  unsigned int kTimes      = nBest + 5;
+  unsigned int kIterations = kTimes * (unsigned int)std::ceil(
+      std::log(1.0 - pConfidence) / std::log(1.0 - std::pow(pInliers, nSamples)));
+
+  std::uniform_int_distribution<unsigned int> dist(0u, n - 1u);
+
+  vector<vector<double>> allCircles(4, vector<double>(kIterations));
+  unsigned int best = 0;
+  if (kIterations < nBest) nBest = 0;
+
+  Eigen::Matrix<double, Eigen::Dynamic, 3> tempMatrix;
+  tempMatrix.resize(nSamples, 3);
+  Eigen::Matrix<double, Eigen::Dynamic, 1> rhsVector;
+  rhsVector.resize(nSamples, 3);
+
+  for (unsigned int k = 0; k < kIterations; ++k) {
+    // Sample nSamples unique indices
+    vector<unsigned int> random(nSamples);
+    for (unsigned int i = 0; i < nSamples; ++i) {
+      unsigned int idx;
+      bool exists;
+      do {
+        idx = dist(rng);
+        exists = std::find(random.begin(), random.begin() + i, idx) != random.begin() + i;
+      } while (exists);
+      random[i] = idx;
+      tempMatrix(i, 0) = cloud[0][idx];
+      tempMatrix(i, 1) = cloud[1][idx];
+      tempMatrix(i, 2) = 1;
+      rhsVector(i, 0)  = tempMatrix(i, 0) * tempMatrix(i, 0) +
+                         tempMatrix(i, 1) * tempMatrix(i, 1);
+    }
+
+    Eigen::Matrix<double, 3, 1> qr =
+        tempMatrix.colPivHouseholderQr().solve(rhsVector);
+
+    double cx  = qr(0, 0) / 2.0;
+    double cy  = qr(1, 0) / 2.0;
+    double r   = std::sqrt((qr(0,0)*qr(0,0) + qr(1,0)*qr(1,0)) / 4.0 + qr(2,0));
+
+    double ss = 0.0;
+    for (auto idx : random) {
+      double dx = cloud[0][idx] - cx;
+      double dy = cloud[1][idx] - cy;
+      double d  = std::sqrt(dx*dx + dy*dy) - r;
+      ss += d * d;
+    }
+    double err = std::sqrt(ss / (double)n);
+
+    allCircles[0][k] = cx;
+    allCircles[1][k] = cy;
+    allCircles[2][k] = r;
+    allCircles[3][k] = err;
+    if (err < allCircles[3][best]) best = k;
+  }
+
+  vector<double> bestFit;
+  if (nBest > 0) {
+    vector<double> vx, vy, vr, ve;
+    unsigned int counter = 0;
+    for (auto& k : sortIndexes(allCircles[3])) {
+      vx.push_back(allCircles[0][k]);
+      vy.push_back(allCircles[1][k]);
+      vr.push_back(allCircles[2][k]);
+      ve.push_back(allCircles[3][k]);
+      if (++counter >= nBest) break;
+    }
+    auto med = [](vector<double>& v) {
+      size_t n2 = v.size() / 2;
+      std::nth_element(v.begin(), v.begin() + n2, v.end());
+      return v[n2];
+    };
+    bestFit = { med(vx), med(vy), med(vr), med(ve) };
+  } else {
+    bestFit = { allCircles[0][best], allCircles[1][best],
+                allCircles[2][best], allCircles[3][best] };
+  }
+  return bestFit;
+}
+
 vector<double> ransacCircle(vector<vector<double> >& cloud, unsigned int nSamples, double pConfidence, double pInliers, unsigned int nBest){
 
   unsigned int kTimes = nBest + 5;

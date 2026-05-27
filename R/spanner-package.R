@@ -1,6 +1,7 @@
 ## usethis namespace: start
 #' @useDynLib spanner, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
+#' @import data.table
 #' @importFrom stats complete.cases density dist na.omit princomp quantile
 #' @importFrom sf st_as_sf st_coordinates
 #' @importFrom terra classify focal ifel rast res values<-

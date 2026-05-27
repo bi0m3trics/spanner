@@ -4,14 +4,20 @@
 \alias{eigen_metrics}
 \title{Calculates eigen decomposition metrics for fixed neighborhood point cloud data}
 \usage{
-eigen_metrics(las = las, radius = 0.1, ncpu = 8)
+eigen_metrics(las, r, k, ncpu = 8)
 }
 \arguments{
 \item{las}{LAS Normalized las object.}
 
-\item{radius}{numeric the radius of the neighborhood}
+\item{r}{numeric. Search radius of the spherical neighborhood. If omitted, a pure
+kNN neighborhood is used and \code{k} must be supplied.}
 
-\item{ncpu}{integer the number of cpu's to be used in parallelfor the calculation}
+\item{k}{integer. Number of nearest neighbors to use (excluding the query point
+itself). If omitted, a pure spherical neighborhood is used and \code{r} must be
+supplied. When both \code{r} and \code{k} are given, the \code{k} nearest
+neighbors within distance \code{r} are used (i.e. kNN with a radius cap).}
+
+\item{ncpu}{integer the number of cpu's to be used in parallel for the calculation}
 }
 \value{
 A labeled data.table of point metrics for each point in the LAS object
@@ -19,7 +25,8 @@ A labeled data.table of point metrics for each point in the LAS object
 \description{
 This function calculates twelve (plus the first and second PCA) for
 several point geometry-related metrics (listed below) in parallel using C++ for
-a user-specified radius.
+a user-specified neighborhood. The neighborhood can be defined by a search radius,
+a fixed number of nearest neighbors, or both combined.
 }
 \section{List of available point metrics}{
 
@@ -50,6 +57,7 @@ a user-specified radius.
 \item \code{PCA1}: eigenvector projection variance normalized by eigensum, \mjeqn{\sigma_{PC1}^{2} / \sum_{i=1}^{n=3} \lambda_{i}}{ASCII representation}
 \item \code{PCA2}: eigenvector projection variance normalized by eigensum, \mjeqn{\sigma_{PC2}^{2} / \sum_{i=1}^{n=3} \lambda_{i}}{ASCII representation}
 \item \code{NumNeighbors}: number of points in the spherical neighborhood, \mjeqn{k}{ASCII representation}
+\item \code{E1x}, \code{E1y}, \code{E1z}: 3 components of the dominant eigenvector (\mjeqn{\lambda_{1}}{ASCII representation}), i.e. the direction of greatest variance
 }
 }
 
@@ -57,7 +65,12 @@ a user-specified radius.
 \donttest{
 LASfile <- system.file("extdata", "MixedConifer.laz", package="lidR")
 las <- readLAS(LASfile)
-eigen = eigen_metrics(las, radius=2, ncpu=4)
+# Sphere neighborhood
+eigen_r  <- eigen_metrics(las, r = 2, ncpu = 4)
+# kNN neighborhood (10 neighbors)
+eigen_k  <- eigen_metrics(las, k = 10L, ncpu = 4)
+# kNN with radius cap
+eigen_rk <- eigen_metrics(las, r = 2, k = 10L, ncpu = 4)
 }
 
 }

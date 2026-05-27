@@ -50,6 +50,15 @@ vector<double> nmCylinderInit(vector<vector<double> >& las);
 
 vector<double> ransacCircle(vector<vector<double> >& cloud, unsigned int nSamples = 5, double pConfidence = 0.99, double pInliers = 0.8, unsigned int nBest = 0);
 
+// Thread-safe variant: caller supplies the RNG (no R::runif → safe inside OpenMP)
+#include <random>
+vector<double> ransacCircleTs(vector<vector<double> >& cloud,
+                              unsigned int nSamples,
+                              double pConfidence,
+                              double pInliers,
+                              unsigned int nBest,
+                              std::mt19937& rng);
+
 vector<double> ransacCylinder(vector<vector<double> >& las, unsigned int nSamples=10, double pConfidence=0.99, double pInliers=0.8);
 
 Eigen::Matrix<double, Eigen::Dynamic, 3> stl2eigenmat(vector<vector<double> >& xyz);

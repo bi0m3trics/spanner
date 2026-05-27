@@ -4,7 +4,14 @@
 \alias{process_tree_data}
 \title{Obtain tree information by processing point cloud data}
 \usage{
-process_tree_data(treeData, segmentedLAS, return_sf = FALSE)
+process_tree_data(
+  treeData,
+  segmentedLAS,
+  return_sf = FALSE,
+  seg_table = NULL,
+  vol_table = NULL,
+  qual_table = NULL
+)
 }
 \arguments{
 \item{treeData}{An \code{sf} object containing the following tree information: \code{TreeID},
@@ -13,6 +20,21 @@ process_tree_data(treeData, segmentedLAS, return_sf = FALSE)
 \item{segmentedLAS}{A LAS object that is the output from \code{segment_graph}.}
 
 \item{return_sf}{logical: If TRUE, returns an \code{sf} object representing the convex hulls for each tree.}
+
+\item{seg_table}{\code{data.frame} or \code{NULL}. Optional output of \code{\link[=segment_bole]{segment_bole()}}.
+When supplied, per-tree bole volume is merged into the result via
+\code{\link[=compute_bole_volume]{compute_bole_volume()}} (unless \code{vol_table} is also provided). Required
+columns: \code{TreeID}, \code{Segment}, \code{Z_low}, \code{Z_high}, \code{Radius}, \code{Valid}.}
+
+\item{vol_table}{\code{data.frame} or \code{NULL}. Optional output of
+\code{\link[=compute_bole_volume]{compute_bole_volume()}}. When supplied alongside \code{seg_table}, volume
+columns are merged directly without recomputing. Required columns:
+\code{TreeID}, \code{Volume_m3}.}
+
+\item{qual_table}{\code{data.frame} / \code{sf} or \code{NULL}. Optional output of
+\code{\link[=assess_tree_quality]{assess_tree_quality()}}. Quality columns (\code{quality_class}, \code{fit_score},
+etc.) are merged into the result. Required columns: \code{TreeID},
+\code{quality_class}, \code{fit_score}.}
 }
 \value{
 sf object An updated \code{sf} object with the original columns plus:

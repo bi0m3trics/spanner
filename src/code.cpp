@@ -18,14 +18,17 @@ using namespace lidR;
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-List C_eigen_in_sphere(S4 las, double radius, int ncpu)
+List C_eigen_in_sphere(S4 las, double r, int k, int ncpu)
 {
+  // r = 0  → not provided (knn-only mode)
+  // k = 0  → not provided (sphere-only mode)
+  // both   → knn with max search radius r
   DataFrame data = as<DataFrame>(las.slot("data"));
   NumericVector X = data["X"];
   NumericVector Y = data["Y"];
   NumericVector Z = data["Z"];
   int n = X.size();
-  int n_metrics = 27;  // Increased to include all CloudCompare metrics
+  int n_metrics = 30;  // Increased to include all CloudCompare metrics
 
   //https://ethz.ch/content/dam/ethz/special-interest/baug/igp/photogrammetry-remote-sensing-dam/documents/pdf/timo-jan-cvpr2016.pdf
   NumericVector eigenlar_sph(n);
@@ -43,6 +46,9 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   NumericVector nx_sph(n);
   NumericVector ny_sph(n);
   NumericVector nz_sph(n);
+  NumericVector e1x_sph(n);
+  NumericVector e1y_sph(n);
+  NumericVector e1z_sph(n);
   
   // Additional CloudCompare metrics
   NumericVector surface_variation_sph(n);
@@ -63,7 +69,7 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   List out(n_metrics);
 
   // One copy for the index. The index automatically detects the TLS tag in the LAS object
-  lidR::GridPartition tree(las);
+  lidR::SpatialIndex tree(las);
 
   // Initiate the progress bar
   Progress pb(n, "Calculating eigen metrics in sphere: ");
@@ -78,11 +84,31 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
     if (pb.check_interrupt()) abort = true;
     pb.increment();
 
-    std::vector<PointXYZ> sphpts;                   // creation of an STL container of points for the sphere neighborhood object
-    Sphere sphere(X[i], Y[i], Z[i], radius);        // creation of a sphere object
-    tree.lookup(sphere, sphpts);                    // lookup the points in the sphere neighborhood
+    std::vector<PointXYZ> sphpts;   // neighborhood points
 
-    int k = sphpts.size();  // Determine the neighborhood size of the sphere
+    if (k == 0) {
+      // Sphere-only mode
+      Sphere sphere(X[i], Y[i], Z[i], r);
+      tree.lookup(sphere, sphpts);
+    } else {
+      // KNN mode (with optional radius cap)
+      PointXYZ query(X[i], Y[i], Z[i]);
+      unsigned int kp1 = static_cast<unsigned int>(k) + 1u;  // +1 to include self
+      if (r <= 0.0) {
+        tree.knn(query, kp1, sphpts);
+      } else {
+        tree.knn(query, kp1, r, sphpts);
+      }
+      // Remove the query point itself (distance == 0)
+      sphpts.erase(
+        std::remove_if(sphpts.begin(), sphpts.end(),
+          [&](const PointXYZ& p) {
+            return p.x == X[i] && p.y == Y[i] && p.z == Z[i];
+          }),
+        sphpts.end());
+    }
+
+    int npts = sphpts.size();  // number of neighbors (excluding self)
 
     // Initialize default values for edge cases
     double eigen_largest = 0.0, eigen_medium = 0.0, eigen_smallest = 0.0;
@@ -90,6 +116,7 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
     double anisotropy = 0.0, eigentropy = 0.0, linearity = 0.0;
     double verticality = 0.0, planarity = 0.0, sphericity = 0.0;
     double nx = 0.0, ny = 0.0, nz = 0.0;
+    double e1x = 0.0, e1y = 0.0, e1z = 0.0;
     
     // Additional CloudCompare metrics initialization
     double surface_variation = 0.0, change_curvature = 0.0;
@@ -97,21 +124,34 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
     double moment_order1 = 0.0, normal_change_rate = 0.0;
     double roughness = 0.0, mean_curvature = 0.0, gaussian_curvature = 0.0;
     double pca1 = 0.0, pca2 = 0.0;
-    int num_neighbors = k;
+    int num_neighbors = npts;
+
+    // Compute effective radius for density metrics
+    double r_eff = r;  // use fixed radius if given
+    if (k > 0 && r <= 0.0 && npts > 0) {
+      // KNN-only mode: effective radius = distance to farthest neighbor
+      for (int j = 0; j < npts; ++j) {
+        double dx = sphpts[j].x - X[i];
+        double dy = sphpts[j].y - Y[i];
+        double dz = sphpts[j].z - Z[i];
+        double dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+        if (dist > r_eff) r_eff = dist;
+      }
+    }
     
     // Compute centroid for all points (needed for some metrics)
     double cx = 0.0, cy = 0.0, cz = 0.0;
-    if (k > 0) {
+    if (npts > 0) {
       for (unsigned int j = 0; j < sphpts.size(); j++) {
         cx += sphpts[j].x;
         cy += sphpts[j].y;
         cz += sphpts[j].z;
       }
-      cx /= k; cy /= k; cz /= k;
+      cx /= npts; cy /= npts; cz /= npts;
     }
 
     // Only perform eigenvalue decomposition if we have enough points
-    if (k >= 3) {
+    if (npts >= 3) {
       // Compute covariance matrix manually (like CloudCompare)
       arma::mat cov_matrix(3, 3, arma::fill::zeros);
       for (unsigned int j = 0; j < sphpts.size(); j++) {
@@ -130,8 +170,8 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
         cov_matrix(2,2) += dz * dz;
       }
       
-      // Normalize covariance matrix by k (not k-1) to match CloudCompare
-      cov_matrix /= k;
+      // Normalize covariance matrix by npts (not npts-1) to match CloudCompare
+      cov_matrix /= npts;
       
       // Compute eigenvalues and eigenvectors
       arma::vec eigenvalues;
@@ -181,6 +221,12 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   ny = normal[1];
   nz = normal[2];
   
+  // Dominant-axis eigenvector (largest eigenvalue = principal direction)
+  arma::vec e1_vec = eigenvectors.col(sorted_indices[0]);
+  e1x = e1_vec[0];
+  e1y = e1_vec[1];
+  e1z = e1_vec[2];
+  
   // Additional CloudCompare metrics calculations
   
   // Surface variation (change of curvature) - λ3 / (λ1 + λ2 + λ3)
@@ -191,12 +237,12 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   
   // Surface density - CloudCompare uses DENSITY_2D: divides by circle area (πR²), not sphere surface area
   // From GeometricalAnalysisTools.cpp line 143: dimensionalCoef = M_PI * pow(kernelRadius, 2.0)
-  double circle_area = M_PI * radius * radius;
-  surface_density = k / circle_area;
-  
-  // Volume density - number of neighbors per unit volume  
-  double sphere_volume = (4.0/3.0) * M_PI * radius * radius * radius;
-  volume_density = k / sphere_volume;
+  if (r_eff > 0.0) {
+    double circle_area = M_PI * r_eff * r_eff;
+    surface_density = npts / circle_area;
+    double sphere_volume = (4.0/3.0) * M_PI * r_eff * r_eff * r_eff;
+    volume_density = npts / sphere_volume;
+  }
   
   // 1st order moment - CloudCompare formula from Neighbourhood.cpp line 726-757
   // Uses projection onto 2nd eigenvector from QUERY POINT (not centroid)
@@ -228,7 +274,7 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   // Mean and Gaussian curvature - CloudCompare quadric surface fitting
   // From CCCoreLib/Neighbourhood.cpp lines 298-468 and 886-940
   // Fits a 2.5D quadric: Z = a + b*X + c*Y + d*X^2 + e*X*Y + f*Y^2
-  if (k >= 5) {  // Need at least 5 points for quadric fitting
+  if (npts >= 5) {  // Need at least 5 points for quadric fitting
     // Step 1: Create local coordinate system where LS plane normal becomes Z axis
     // We already have the normal vector and eigenvectors
     arma::vec N = normal;  // Smallest eigenvector (normal to plane)
@@ -258,12 +304,12 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
       // Step 2: Build the least squares system for quadric fitting
       // We solve: A*h = b where h = [a, b, c, d, e, f]^T
       // Each point contributes: [1, x, y, x^2, x*y, y^2] * h = z
-      arma::mat A(k, 6, arma::fill::zeros);
-      arma::vec b(k);
+      arma::mat A(npts, 6, arma::fill::zeros);
+      arma::vec b(npts);
       
       double max_dim_sq = 0.0;  // Track max squared dimension for numerical stability
       
-      for (unsigned int j = 0; j < k; ++j) {
+      for (unsigned int j = 0; j < npts; ++j) {
         // Transform point to local coordinate system
         double dx = sphpts[j].x - cx;
         double dy = sphpts[j].y - cy;
@@ -365,7 +411,7 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
     
     // Project all points onto PC1 and PC2 and compute variance of projections
     double var_pc1 = 0.0, var_pc2 = 0.0;
-    for (unsigned int j = 0; j < k; ++j) {
+    for (unsigned int j = 0; j < npts; ++j) {
       double dx = sphpts[j].x - cx;
       double dy = sphpts[j].y - cy;
       double dz = sphpts[j].z - cz;
@@ -379,8 +425,8 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
     }
     
     // Normalize by number of points (variance of projections)
-    var_pc1 /= k;
-    var_pc2 /= k;
+    var_pc1 /= npts;
+    var_pc2 /= npts;
     
     // PCA1 and PCA2 as normalized projection variances
     pca1 = var_pc1 / eigensum;
@@ -390,7 +436,7 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
     pca2 = 0.0;
   }
 }
-    } // end if k >= 3
+    } // end if npts >= 3
     
 #pragma omp critical
 {
@@ -426,6 +472,9 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   pca1_sph[i] = pca1;
   pca2_sph[i] = pca2;
   num_neighbors_sph[i] = num_neighbors;
+  e1x_sph[i] = e1x;
+  e1y_sph[i] = e1y;
+  e1z_sph[i] = e1z;
 
 }
   }
@@ -459,6 +508,9 @@ List C_eigen_in_sphere(S4 las, double radius, int ncpu)
   out[24] = pca1_sph;
   out[25] = pca2_sph;
   out[26] = num_neighbors_sph;
+  out[27] = e1x_sph;
+  out[28] = e1y_sph;
+  out[29] = e1z_sph;
 
   return out;
 }
