@@ -81,14 +81,13 @@
 #'   Grid cells with no returns return `NA`.
 #'
 #' @references
-#' MacArthur, R. H., & Wilson, E. O. (1967). *The Theory of Island
-#' Biogeography*. Princeton University Press.
+#' MacArthur, R.H. & Horn, J.W. (1969). Foliage profiles by vertical 
+#' measurements. Ecology 50(5): 802–804. https://doi.org/10.2307/1933693
 #'
-#' Roussel, J.-R., Auty, D., Coops, N. C., Tompalski, P., Goodbody, T. R. H.,
-#' Meador, A. S., Bourdon, J.-F., de Boissieu, F., & Achim, A. (2020). lidR:
-#' An R package for analysis of Airborne Laser Scanning (ALS) data.
-#' *Remote Sensing of Environment*, 251, 112061.
-#' \doi{10.1016/j.rse.2020.112061}
+#' Tenny JT, Sankey TT, Munson SM, Sánchez Meador AJ, Goetz SJ. (2025).
+#' Canopy and surface fuels measurement using terrestrial lidar single-scan
+#' approach in the Mogollon Highlands of Arizona. International Journal 
+#' of Wildland Fire 34, WF24221. https://doi.org/10.1071/WF24221
 #'
 #' @seealso [compute_pad_voxels()], [lidR::LAD()]
 #'
@@ -352,11 +351,10 @@ compute_lai <- function(las,
 #' parameters. *Remote Sensing of Environment*, 191, 373–388.
 #' \doi{10.1016/j.rse.2017.01.032}
 #'
-#' Tenny, J. T., Sankey, T. T., Munson, S. M., Sanchez Meador, A. J., &
-#' Goetz, S. J. (2025). Canopy and surface fuels measurement using
-#' terrestrial lidar single-scan approach in the Mogollon Highlands of
-#' Arizona. *International Journal of Wildland Fire*, 34, WF24221.
-#' \doi{10.1071/WF24221}
+#' Tenny JT, Sankey TT, Munson SM, Sánchez Meador AJ, Goetz SJ. (2025).
+#' Canopy and surface fuels measurement using terrestrial lidar single-scan
+#' approach in the Mogollon Highlands of Arizona. International Journal 
+#' of Wildland Fire 34, WF24221. https://doi.org/10.1071/WF24221
 #'
 #' @seealso [compute_lai()], [lidR::LAD()]
 #'
