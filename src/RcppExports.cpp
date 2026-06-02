@@ -179,6 +179,10 @@ BEGIN_RCPP
 END_RCPP
 }
 
+RcppExport SEXP cpp_allometric_li_geodesic(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+RcppExport SEXP cpp_allometric_random_walker(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+RcppExport SEXP cpp_allometric_supervoxel_segment(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+
 static const R_CallMethodDef CallEntries[] = {
     {"_spanner_C_ransac_bole_slices", (DL_FUNC) &_spanner_C_ransac_bole_slices, 20},
     {"_spanner_C_eigen_in_sphere", (DL_FUNC) &_spanner_C_eigen_in_sphere, 4},
@@ -190,6 +194,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_spanner_cppCylinderFit", (DL_FUNC) &_spanner_cppCylinderFit, 7},
     {"_spanner_cppComputePCV", (DL_FUNC) &_spanner_cppComputePCV, 4},
     {"_spanner_cppComputeSSAO", (DL_FUNC) &_spanner_cppComputeSSAO, 5},
+    {"cpp_allometric_li_geodesic",        (DL_FUNC) &cpp_allometric_li_geodesic,        20},
+    {"cpp_allometric_random_walker",      (DL_FUNC) &cpp_allometric_random_walker,      21},
+    {"cpp_allometric_supervoxel_segment", (DL_FUNC) &cpp_allometric_supervoxel_segment, 19},
     {NULL, NULL, 0}
 };
 

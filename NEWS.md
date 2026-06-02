@@ -2,6 +2,18 @@
 
 ## New functions
 
+* `allometric_li_geodesic()` - builds a `lidR::segment_trees()`-compatible
+  point-cloud segmentation algorithm inspired by Li et al. (2012), with
+  allometric crown envelopes and geodesic growing on a local kNN graph.
+
+* `allometric_random_walker()` - builds a seeded, diffusion-style
+  segmentation algorithm for `lidR::segment_trees()` using sparse local
+  candidate scoring and allometric penalties.
+
+* `allometric_supervoxel_segment()` - builds a supervoxel-graph segmentation
+  algorithm for `lidR::segment_trees()` with backfilling and small-island
+  cleanup to reduce unclassified crown speckle.
+
 * `compute_lai()` – estimates leaf area index (LAI) and leaf area density
   (LAD) per grid cell from any height-normalized lidar point cloud using the
   MacArthur-Horn gap-fraction Beer-Lambert inversion ([`lidR::LAD()`] under
