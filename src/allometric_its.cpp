@@ -228,6 +228,60 @@ std::vector<int> map_seeds_to_points(const NumericVector& x,
   return idx;
 }
 
+// Grid-based nearest-neighbor mapping from seeds to a pre-filtered point set.
+// x, y contain only the above-hmin points; returned indices are in [0, x.size()).
+// O(s * cells_checked) instead of O(n * s).
+std::vector<int> map_seeds_to_points_grid(const NumericVector& x,
+                                          const NumericVector& y,
+                                          const NumericVector& seed_x,
+                                          const NumericVector& seed_y) {
+  const int nh = x.size();
+  const int s  = seed_x.size();
+  std::vector<int> idx(static_cast<size_t>(s), -1);
+  if (nh == 0) return idx;
+
+  // Coarse grid for fast proximity lookup.
+  const double cell = 10.0;
+  std::unordered_map<long long, std::vector<int> > bins;
+  bins.reserve(static_cast<size_t>(nh / 2 + 1));
+  for (int j = 0; j < nh; ++j) {
+    int ix = static_cast<int>(std::floor(x[j] / cell));
+    int iy = static_cast<int>(std::floor(y[j] / cell));
+    bins[key2d(ix, iy)].push_back(j);
+  }
+
+  for (int i = 0; i < s; ++i) {
+    double best = std::numeric_limits<double>::infinity();
+    int   best_j = -1;
+    const int ix0 = static_cast<int>(std::floor(seed_x[i] / cell));
+    const int iy0 = static_cast<int>(std::floor(seed_y[i] / cell));
+
+    for (int span = 0; span <= 100; ++span) {
+      // Points in the next ring (span+1) are at Euclidean distance >= span*cell.
+      // If we already hold a closer candidate, no further ring can beat it.
+      const double next_min = static_cast<double>(span) * cell;
+      if (best_j >= 0 && next_min * next_min >= best) break;
+
+      for (int dx = -span; dx <= span; ++dx) {
+        for (int dy = -span; dy <= span; ++dy) {
+          // Visit only the border cells of the current ring.
+          if (span > 0 && std::abs(dx) < span && std::abs(dy) < span) continue;
+          const auto it = bins.find(key2d(ix0 + dx, iy0 + dy));
+          if (it == bins.end()) continue;
+          const std::vector<int>& pts = it->second;
+          for (size_t t = 0; t < pts.size(); ++t) {
+            const int jj = pts[t];
+            const double d2 = sqr(x[jj] - seed_x[i]) + sqr(y[jj] - seed_y[i]);
+            if (d2 < best) { best = d2; best_j = jj; }
+          }
+        }
+      }
+    }
+    idx[static_cast<size_t>(i)] = best_j;
+  }
+  return idx;
+}
+
 std::vector<int> connected_components_points(const std::vector< std::vector<int> >& neigh,
                                              const NumericVector& x,
                                              const NumericVector& y,
@@ -380,9 +434,6 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
   }
 
   if (n == 0) return IntegerVector();
-  if (n > 10000000) {
-    stop("Point cloud too large for this implementation. Process smaller tiles.");
-  }
 
   const double hmin = as<double>(hminSEXP);
   const int k = std::max(2, as<int>(kSEXP));
@@ -410,19 +461,44 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
     }
   }
 
-  std::vector< std::vector<int> > neigh = build_knn(x, y, k, max_jump, max_jump * 2.0, 5);
-  std::vector<int> density = local_density(x, y, density_radius, density_radius);
-  std::vector<int> comp;
-  if (use_connected_components) {
-    comp = connected_components_points(neigh, x, y, z, hmin, max_jump);
-  } else {
-    comp.assign(static_cast<size_t>(n), 0);
+  // --- Height filter: build compact subset (z >= hmin) for KNN and propagation ---
+  // This dramatically reduces memory for the KNN graph and avoids iterating over
+  // ground/low points that would receive NA anyway.
+  std::vector<int> hi_idx;
+  hi_idx.reserve(static_cast<size_t>(n));
+  for (int i = 0; i < n; ++i) {
+    if (z[i] >= hmin) hi_idx.push_back(i);
+  }
+  const int nh = static_cast<int>(hi_idx.size());
+
+  if (nh == 0) return IntegerVector(n, NA_INTEGER);
+
+  NumericVector hx(static_cast<size_t>(nh));
+  NumericVector hy(static_cast<size_t>(nh));
+  NumericVector hz(static_cast<size_t>(nh));
+  for (int i = 0; i < nh; ++i) {
+    const int j = hi_idx[static_cast<size_t>(i)];
+    hx[i] = x[j];
+    hy[i] = y[j];
+    hz[i] = z[j];
   }
 
-  std::vector<int> seed_idx = map_seeds_to_points(x, y, z, seed_x, seed_y, hmin);
+  // Build KNN, density, and connected components on the compact subset only.
+  std::vector< std::vector<int> > neigh = build_knn(hx, hy, k, max_jump, max_jump * 2.0, 5);
+  std::vector<int> density = local_density(hx, hy, density_radius, density_radius);
+  std::vector<int> comp;
+  if (use_connected_components) {
+    // All hz values are >= hmin, so the hmin guard inside never fires.
+    comp = connected_components_points(neigh, hx, hy, hz, hmin, max_jump);
+  } else {
+    comp.assign(static_cast<size_t>(nh), 0);
+  }
 
-  std::vector<int> label(static_cast<size_t>(n), 0);
-  std::vector<double> dist(static_cast<size_t>(n), std::numeric_limits<double>::infinity());
+  // Grid-based seed-to-point mapping — O(s) instead of O(n*s).
+  std::vector<int> seed_idx = map_seeds_to_points_grid(hx, hy, seed_x, seed_y);
+
+  std::vector<int> label(static_cast<size_t>(nh), 0);
+  std::vector<double> dist(static_cast<size_t>(nh), std::numeric_limits<double>::infinity());
 
   std::vector<double> center_x(seed_x.begin(), seed_x.end());
   std::vector<double> center_y(seed_y.begin(), seed_y.end());
@@ -444,7 +520,7 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
 
   for (int i = 0; i < s; ++i) {
     int idx = seed_idx[static_cast<size_t>(i)];
-    if (idx < 0 || idx >= n) continue;
+    if (idx < 0 || idx >= nh) continue;
     int lid = i + 1;
 
     if (dist[static_cast<size_t>(idx)] > 0.0) {
@@ -471,23 +547,23 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
     const std::vector<int>& nu = neigh[static_cast<size_t>(u)];
     for (size_t it = 0; it < nu.size(); ++it) {
       int v = nu[it];
-      if (z[v] < hmin) continue;
-      if (z[v] > z[u] + 1.5 * bin_height) continue;
+      // All hx/hy/hz points are already >= hmin; only skip excessive height jumps.
+      if (hz[v] > hz[u] + 1.5 * bin_height) continue;
 
       double H = seed_h[static_cast<size_t>(sid)];
-      if (!std::isfinite(H) || H <= hmin) H = std::max(seed_z[static_cast<size_t>(sid)], z[u]);
+      if (!std::isfinite(H) || H <= hmin) H = std::max(seed_z[static_cast<size_t>(sid)], hz[u]);
       if (H <= 0) continue;
 
-      double r_allowed = allometry_radius(z[v], H, crown_a, crown_b, max_crown_radius, profile_id);
+      double r_allowed = allometry_radius(hz[v], H, crown_a, crown_b, max_crown_radius, profile_id);
       double base_radius = std::max(0.0, crown_a * std::pow(H, crown_b));
       // Avoid over-constraining growth in broad crowns when profile taper is sharp.
       r_allowed = std::max(r_allowed, 0.65 * base_radius);
-      double d_center = std::sqrt(sqr(x[v] - center_x[static_cast<size_t>(sid)]) +
-                                  sqr(y[v] - center_y[static_cast<size_t>(sid)]));
+      double d_center = std::sqrt(sqr(hx[v] - center_x[static_cast<size_t>(sid)]) +
+                                  sqr(hy[v] - center_y[static_cast<size_t>(sid)]));
 
       if (d_center > r_allowed + center_drift) continue;
 
-      double dxy = std::sqrt(sqr(x[v] - x[u]) + sqr(y[v] - y[u]));
+      double dxy = std::sqrt(sqr(hx[v] - hx[u]) + sqr(hy[v] - hy[u]));
       if (dxy > max_jump * 2.5) continue;
 
       double dens_pen = 0.0;
@@ -508,7 +584,7 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
         cc_pen = gap_penalty * 0.5;
       }
 
-      double edge_cost = dxy + 0.35 * std::abs(z[u] - z[v]) + dens_pen + allom_pen + cc_pen;
+      double edge_cost = dxy + 0.35 * std::abs(hz[u] - hz[v]) + dens_pen + allom_pen + cc_pen;
       double new_cost = cur_cost + edge_cost;
 
       // The threshold controls local crown continuity, not full seed-to-point
@@ -522,8 +598,8 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
         if (previous_label != lid) {
           int cnt = ++assigned_count[static_cast<size_t>(sid)];
           double alpha = 1.0 / static_cast<double>(std::max(2, cnt));
-          double nx = center_x[static_cast<size_t>(sid)] + alpha * (x[v] - center_x[static_cast<size_t>(sid)]);
-          double ny = center_y[static_cast<size_t>(sid)] + alpha * (y[v] - center_y[static_cast<size_t>(sid)]);
+          double nx = center_x[static_cast<size_t>(sid)] + alpha * (hx[v] - center_x[static_cast<size_t>(sid)]);
+          double ny = center_y[static_cast<size_t>(sid)] + alpha * (hy[v] - center_y[static_cast<size_t>(sid)]);
 
           double shift = std::sqrt(sqr(nx - center_x[static_cast<size_t>(sid)]) +
                                    sqr(ny - center_y[static_cast<size_t>(sid)]));
@@ -541,9 +617,9 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
     }
   }
 
-  // Remove tiny disconnected fragments within each tree label.
-  std::vector<int> visited(static_cast<size_t>(n), 0);
-  for (int i = 0; i < n; ++i) {
+  // Remove tiny disconnected fragments within each tree label (subset space).
+  std::vector<int> visited(static_cast<size_t>(nh), 0);
+  for (int i = 0; i < nh; ++i) {
     if (label[static_cast<size_t>(i)] <= 0 || visited[static_cast<size_t>(i)] == 1) continue;
 
     int lid = label[static_cast<size_t>(i)];
@@ -573,9 +649,9 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
     }
   }
 
-  // Fast local fill: one lightweight pass over kNN neighbors.
-  for (int i = 0; i < n; ++i) {
-    if (z[i] < hmin || label[static_cast<size_t>(i)] > 0) continue;
+  // Fast local fill: one lightweight pass over kNN neighbors (subset space).
+  for (int i = 0; i < nh; ++i) {
+    if (label[static_cast<size_t>(i)] > 0) continue;
 
     int best_label = 0;
     double best_cost = std::numeric_limits<double>::infinity();
@@ -586,8 +662,8 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
       int lj = label[static_cast<size_t>(j)];
       if (lj <= 0) continue;
 
-      double dxy = std::sqrt(sqr(x[i] - x[j]) + sqr(y[i] - y[j]));
-      double dz = std::abs(z[i] - z[j]);
+      double dxy = std::sqrt(sqr(hx[i] - hx[j]) + sqr(hy[i] - hy[j]));
+      double dz = std::abs(hz[i] - hz[j]);
       double cost = dxy + 0.30 * dz;
       if (cost < best_cost) {
         best_cost = cost;
@@ -600,19 +676,25 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
     }
   }
 
+  // Map subset labels back to the full point cloud before the broader fill.
+  std::vector<int> full_label(static_cast<size_t>(n), 0);
+  for (int i = 0; i < nh; ++i) {
+    full_label[static_cast<size_t>(hi_idx[static_cast<size_t>(i)])] = label[static_cast<size_t>(i)];
+  }
+
   // Broader fill for remaining canopy holes, but only against currently
   // labeled canopy points to keep runtime bounded.
   std::vector<double> lx;
   std::vector<double> ly;
   std::vector<int> llabel;
-  lx.reserve(static_cast<size_t>(n));
-  ly.reserve(static_cast<size_t>(n));
-  llabel.reserve(static_cast<size_t>(n));
+  lx.reserve(static_cast<size_t>(nh));
+  ly.reserve(static_cast<size_t>(nh));
+  llabel.reserve(static_cast<size_t>(nh));
 
-  for (int i = 0; i < n; ++i) {
-    if (z[i] >= hmin && label[static_cast<size_t>(i)] > 0) {
-      lx.push_back(x[i]);
-      ly.push_back(y[i]);
+  for (int i = 0; i < nh; ++i) {
+    if (label[static_cast<size_t>(i)] > 0) {
+      lx.push_back(hx[i]);
+      ly.push_back(hy[i]);
       llabel.push_back(label[static_cast<size_t>(i)]);
     }
   }
@@ -627,7 +709,7 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
     const double fill_limit = std::max(geodesic_threshold * 2.0, max_jump * 3.5);
 
     for (int i = 0; i < n; ++i) {
-      if (z[i] < hmin || label[static_cast<size_t>(i)] > 0) continue;
+      if (z[i] < hmin || full_label[static_cast<size_t>(i)] > 0) continue;
 
       int best_label = 0;
       double best_cost = std::numeric_limits<double>::infinity();
@@ -648,12 +730,12 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
       }
 
       if (best_label > 0 && best_cost <= fill_limit) {
-        label[static_cast<size_t>(i)] = best_label;
+        full_label[static_cast<size_t>(i)] = best_label;
       }
     }
   }
 
-  return labels_to_integer_ids(label, z, hmin);
+  return labels_to_integer_ids(full_label, z, hmin);
 }
 
 extern "C" SEXP cpp_allometric_random_walker(SEXP xSEXP,

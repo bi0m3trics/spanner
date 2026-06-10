@@ -184,11 +184,10 @@ Laser Scanning data using voxels. A sensitivity analysis of influencing
 parameters. \emph{Remote Sensing of Environment}, 191, 373–388.
 \doi{10.1016/j.rse.2017.01.032}
 
-Tenny, J. T., Sankey, T. T., Munson, S. M., Sanchez Meador, A. J., &
-Goetz, S. J. (2025). Canopy and surface fuels measurement using
-terrestrial lidar single-scan approach in the Mogollon Highlands of
-Arizona. \emph{International Journal of Wildland Fire}, 34, WF24221.
-\doi{10.1071/WF24221}
+Tenny JT, Sankey TT, Munson SM, Sánchez Meador AJ, Goetz SJ. (2025).
+Canopy and surface fuels measurement using terrestrial lidar single-scan
+approach in the Mogollon Highlands of Arizona. International Journal
+of Wildland Fire 34, WF24221. https://doi.org/10.1071/WF24221
 }
 \seealso{
 \code{\link[=compute_lai]{compute_lai()}}, \code{\link[lidR:LAD]{lidR::LAD()}}

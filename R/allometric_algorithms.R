@@ -292,15 +292,6 @@ allometric_li_geodesic <- function(
       stop("Point cloud contains non-finite coordinates; clean input before allometric_li_geodesic().", call. = FALSE)
     }
 
-    # Soft guard for extremely large clouds to reduce OOM risk.
-    if (n > 10000000L) {
-      stop(
-        "allometric_li_geodesic() input is too large for stable execution in current implementation; ",
-        "tile or thin the cloud first.",
-        call. = FALSE
-      )
-    }
-
     seeds_df <- .coerce_seed_xyz(seeds, las, hmin = hmin)
 
     if (nrow(seeds_df) == 0L) {

@@ -71,14 +71,13 @@ terra::plot(lai[["LAD_mean"]], main = "Mean LAD (m2/m3)")
 
 }
 \references{
-MacArthur, R. H., & Wilson, E. O. (1967). \emph{The Theory of Island
-Biogeography}. Princeton University Press.
+MacArthur, R.H. & Horn, J.W. (1969). Foliage profiles by vertical
+measurements. Ecology 50(5): 802–804. https://doi.org/10.2307/1933693
 
-Roussel, J.-R., Auty, D., Coops, N. C., Tompalski, P., Goodbody, T. R. H.,
-Meador, A. S., Bourdon, J.-F., de Boissieu, F., & Achim, A. (2020). lidR:
-An R package for analysis of Airborne Laser Scanning (ALS) data.
-\emph{Remote Sensing of Environment}, 251, 112061.
-\doi{10.1016/j.rse.2020.112061}
+Tenny JT, Sankey TT, Munson SM, Sánchez Meador AJ, Goetz SJ. (2025).
+Canopy and surface fuels measurement using terrestrial lidar single-scan
+approach in the Mogollon Highlands of Arizona. International Journal
+of Wildland Fire 34, WF24221. https://doi.org/10.1071/WF24221
 }
 \seealso{
 \code{\link[=compute_pad_voxels]{compute_pad_voxels()}}, \code{\link[lidR:LAD]{lidR::LAD()}}

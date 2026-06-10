@@ -1,0 +1,5 @@
+For las_geodesic():
+Removed the size guards (both R-level and C++ level) — no more stop or warning.
+Height-filter before KNN — only points with z ≥ hmin are included in the KNN graph, density, connected-components, and Dijkstra. For a typical forest ALS cloud at hmin=2 this cuts the effective point count by 40–60%, dramatically reducing the ~1.3GB KNN memory footprint.
+Grid-based seed mapping — replaced the O(n × s) brute-force search (10.2M × 11,271 ≈ 115 billion iterations) with an expanding grid search that resolves each seed in a handful of cell lookups — effectively O(s).
+Labels mapped back — after Dijkstra on the filtered subset, labels are mapped back to the full n-point array before the broader hole-fill pass.
