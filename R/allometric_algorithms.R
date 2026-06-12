@@ -339,27 +339,25 @@ allometric_li_geodesic <- function(
 
 #' Allometric Random-Walker Segmentation
 #'
-#' Builds a seeded graph-diffusion style algorithm object for
-#' [lidR::segment_trees()]. Treetops are fixed labels, while unlabeled points
-#' iteratively propagate labels using weighted neighborhood support and
-#' allometric penalties. The implementation uses a sparse local-candidate loop
-#' to keep runtime practical on larger point clouds.
+#' Builds a seeded priority-queue graph segmentation algorithm for
+#' [lidR::segment_trees()]. Seeds are expanded via a Dijkstra-style wavefront
+#' using multi-feature weighted edge costs — XY distance, vertical separation,
+#' local eigenfeature contrast, density-gap, and allometric exceedance — combined
+#' with a hard allometric crown-size cutoff. The single-pass O(n log n) design
+#' is substantially faster than the old iterative label-propagation approach and
+#' assigns every reachable point above `hmin`, eliminating unlabeled-point
+#' artefacts without requiring a probability threshold.
 #'
 #' @inheritParams allometric_li_geodesic
-#' @param alpha Distance weight.
-#' @param beta Vertical-separation weight.
-#' @param gamma Eigenfeature-difference weight.
-#' @param delta Allometry penalty weight.
-#' @param eta Density-gap weight.
-#' @param eigen_radius Radius for local eigenfeature estimation.
-#' @param probability_threshold Minimum winning label confidence required to
-#'   assign a point.
-#' @param max_iterations Maximum number of label-propagation iterations.
-#' @param tolerance Relative convergence tolerance.
-#'
-#' For faster runs, reduce `max_iterations` and/or increase `tolerance`.
-#' For denser data, smaller `k` values often trade a little quality for a
-#' meaningful speedup.
+#' @param alpha XY-distance edge-cost weight.
+#' @param beta Vertical-separation edge-cost weight.
+#' @param gamma Eigenfeature-contrast edge-cost weight.
+#' @param delta Allometric-exceedance soft-penalty weight (additive to edge
+#'   cost once a point falls outside the allometric crown radius).
+#' @param eta Density-gap edge-cost weight (penalises propagation through
+#'   locally sparse / air-gap regions).
+#' @param eigen_radius Radius (m) for local 3-D eigenfeature estimation
+#'   (anisotropy and verticality).
 #'
 #' @return A `PointCloudBased` `IndividualTreeSegmentation` algorithm object.
 #' @export
@@ -374,7 +372,7 @@ allometric_li_geodesic <- function(
 #'   allometric_random_walker(
 #'     seeds = NULL,
 #'     hmin = 2,
-#'     k = 12,
+#'     k = 15,
 #'     alpha = 1,
 #'     beta = 0.5,
 #'     gamma = 0.5,
@@ -384,9 +382,6 @@ allometric_li_geodesic <- function(
 #'     crown_b = 0.65,
 #'     eigen_radius = 1,
 #'     density_radius = 1,
-#'     probability_threshold = 0.35,
-#'     max_iterations = 150,
-#'     tolerance = 1e-05,
 #'     crown_profile = c("beta", "parabolic", "cone"),
 #'     verbose = FALSE
 #'   )
@@ -395,19 +390,16 @@ allometric_li_geodesic <- function(
 allometric_random_walker <- function(
   seeds = NULL,
   hmin = 2,
-  k = 12,
+  k = 15,
   alpha = 1,
   beta = 0.5,
   gamma = 0.5,
-  delta = 2,
+  delta = 1.5,
   eta = 1,
   crown_a = 0.35,
   crown_b = 0.65,
   eigen_radius = 1.0,
   density_radius = 1.0,
-  probability_threshold = 0.5,
-  max_iterations = 500,
-  tolerance = 1e-5,
   crown_profile = c("beta", "parabolic", "cone"),
   verbose = FALSE
 ) {
@@ -422,12 +414,6 @@ allometric_random_walker <- function(
   .assert_scalar_numeric(crown_b, "crown_b", lower = 0, lower_open = TRUE)
   .assert_scalar_numeric(eigen_radius, "eigen_radius", lower = 0, lower_open = TRUE)
   .assert_scalar_numeric(density_radius, "density_radius", lower = 0, lower_open = TRUE)
-  .assert_scalar_numeric(probability_threshold, "probability_threshold", lower = 0)
-  if (probability_threshold > 1) {
-    stop("'probability_threshold' must be in [0, 1].", call. = FALSE)
-  }
-  .assert_scalar_integerish(max_iterations, "max_iterations", lower = 1)
-  .assert_scalar_numeric(tolerance, "tolerance", lower = 0)
   if (!is.logical(verbose) || length(verbose) != 1L) {
     stop("'verbose' must be TRUE/FALSE.", call. = FALSE)
   }
@@ -473,9 +459,6 @@ allometric_random_walker <- function(
       as.numeric(crown_b),
       as.numeric(eigen_radius),
       as.numeric(density_radius),
-      as.numeric(probability_threshold),
-      as.integer(max_iterations),
-      as.numeric(tolerance),
       as.integer(profile_id),
       PACKAGE = "spanner"
     )

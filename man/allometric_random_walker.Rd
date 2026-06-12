@@ -7,19 +7,16 @@
 allometric_random_walker(
   seeds = NULL,
   hmin = 2,
-  k = 12,
+  k = 15,
   alpha = 1,
   beta = 0.5,
   gamma = 0.5,
-  delta = 2,
+  delta = 1.5,
   eta = 1,
   crown_a = 0.35,
   crown_b = 0.65,
   eigen_radius = 1,
   density_radius = 1,
-  probability_threshold = 0.5,
-  max_iterations = 500,
-  tolerance = 1e-05,
   crown_profile = c("beta", "parabolic", "cone"),
   verbose = FALSE
 )
@@ -32,34 +29,26 @@ allometric_random_walker(
 
 \item{k}{Number of graph neighbors per point.}
 
-\item{alpha}{Distance weight.}
+\item{alpha}{XY-distance edge-cost weight.}
 
-\item{beta}{Vertical-separation weight.}
+\item{beta}{Vertical-separation edge-cost weight.}
 
-\item{gamma}{Eigenfeature-difference weight.}
+\item{gamma}{Eigenfeature-contrast edge-cost weight.}
 
-\item{delta}{Allometry penalty weight.}
+\item{delta}{Allometric-exceedance soft-penalty weight (additive to edge
+cost once a point falls outside the allometric crown radius).}
 
-\item{eta}{Density-gap weight.}
+\item{eta}{Density-gap edge-cost weight (penalises propagation through
+locally sparse / air-gap regions).}
 
 \item{crown_a}{Allometric coefficient in crown radius envelope.}
 
 \item{crown_b}{Allometric exponent in crown radius envelope.}
 
-\item{eigen_radius}{Radius for local eigenfeature estimation.}
+\item{eigen_radius}{Radius (m) for local 3-D eigenfeature estimation
+(anisotropy and verticality).}
 
 \item{density_radius}{Radius used to estimate local density gaps.}
-
-\item{probability_threshold}{Minimum winning label confidence required to
-assign a point.}
-
-\item{max_iterations}{Maximum number of label-propagation iterations.}
-
-\item{tolerance}{Relative convergence tolerance.
-
-For faster runs, reduce \code{max_iterations} and/or increase \code{tolerance}.
-For denser data, smaller \code{k} values often trade a little quality for a
-meaningful speedup.}
 
 \item{crown_profile}{Named allometric profile (\code{"beta"}, \code{"parabolic"},
 \code{"cone"}) or a custom function.}
@@ -70,11 +59,14 @@ meaningful speedup.}
 A \code{PointCloudBased} \code{IndividualTreeSegmentation} algorithm object.
 }
 \description{
-Builds a seeded graph-diffusion style algorithm object for
-\code{\link[lidR:segment_trees]{lidR::segment_trees()}}. Treetops are fixed labels, while unlabeled points
-iteratively propagate labels using weighted neighborhood support and
-allometric penalties. The implementation uses a sparse local-candidate loop
-to keep runtime practical on larger point clouds.
+Builds a seeded priority-queue graph segmentation algorithm for
+\code{\link[lidR:segment_trees]{lidR::segment_trees()}}. Seeds are expanded via a Dijkstra-style wavefront
+using multi-feature weighted edge costs — XY distance, vertical separation,
+local eigenfeature contrast, density-gap, and allometric exceedance — combined
+with a hard allometric crown-size cutoff. The single-pass O(n log n) design
+is substantially faster than the old iterative label-propagation approach and
+assigns every reachable point above \code{hmin}, eliminating unlabeled-point
+artefacts without requiring a probability threshold.
 }
 \examples{
 LASfile <- system.file("extdata", "ALS_Clip.laz", package = "spanner")
@@ -87,7 +79,7 @@ las_rw <- lidR::segment_trees(
   allometric_random_walker(
     seeds = NULL,
     hmin = 2,
-    k = 12,
+    k = 15,
     alpha = 1,
     beta = 0.5,
     gamma = 0.5,
@@ -97,9 +89,6 @@ las_rw <- lidR::segment_trees(
     crown_b = 0.65,
     eigen_radius = 1,
     density_radius = 1,
-    probability_threshold = 0.35,
-    max_iterations = 150,
-    tolerance = 1e-05,
     crown_profile = c("beta", "parabolic", "cone"),
     verbose = FALSE
   )

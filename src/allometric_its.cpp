@@ -738,6 +738,16 @@ extern "C" SEXP cpp_allometric_li_geodesic(SEXP xSEXP,
   return labels_to_integer_ids(full_label, z, hmin);
 }
 
+// Allometric Random-Walker Segmentation — Dijkstra priority-queue expansion.
+//
+// Replaces the old iterative label-propagation loop with a single-pass
+// Dijkstra-style wavefront seeded at tree tops.  Each edge is weighted by a
+// multi-feature cost (XY distance, vertical separation, eigenfeature contrast,
+// density-gap, and allometric exceedance).  A hard allometric radius cutoff
+// prevents runaway crown growth.  The single-pass design is O(n log n),
+// assigns every reachable point above hmin, and eliminates the three
+// parameters (probability_threshold, max_iterations, tolerance) that only
+// existed to control the iterative design.
 extern "C" SEXP cpp_allometric_random_walker(SEXP xSEXP,
                                                SEXP ySEXP,
                                                SEXP zSEXP,
@@ -755,9 +765,6 @@ extern "C" SEXP cpp_allometric_random_walker(SEXP xSEXP,
                                                SEXP crownBSEXP,
                                                SEXP eigenRadiusSEXP,
                                                SEXP densityRadiusSEXP,
-                                               SEXP probThresholdSEXP,
-                                               SEXP maxIterationsSEXP,
-                                               SEXP toleranceSEXP,
                                                SEXP profileIdSEXP) {
   NumericVector x(xSEXP), y(ySEXP), z(zSEXP);
   NumericVector seed_x(seedXSEXP), seed_y(seedYSEXP), seed_z(seedZSEXP);
@@ -768,155 +775,243 @@ extern "C" SEXP cpp_allometric_random_walker(SEXP xSEXP,
   }
   if (n == 0) return IntegerVector();
 
-  const double hmin = as<double>(hminSEXP);
-  const int k = std::max(2, as<int>(kSEXP));
-  const double alpha = std::max(0.0, as<double>(alphaSEXP));
-  const double beta = std::max(0.0, as<double>(betaSEXP));
-  const double gamma = std::max(0.0, as<double>(gammaSEXP));
-  const double delta = std::max(0.0, as<double>(deltaSEXP));
-  const double eta = std::max(0.0, as<double>(etaSEXP));
-  const double crown_a = as<double>(crownASEXP);
-  const double crown_b = as<double>(crownBSEXP);
-  const double eigen_radius = std::max(1e-6, as<double>(eigenRadiusSEXP));
+  const double hmin           = as<double>(hminSEXP);
+  const int    k              = std::max(2, as<int>(kSEXP));
+  const double alpha          = std::max(0.0, as<double>(alphaSEXP));
+  const double beta           = std::max(0.0, as<double>(betaSEXP));
+  const double gamma_w        = std::max(0.0, as<double>(gammaSEXP));
+  const double delta          = std::max(0.0, as<double>(deltaSEXP));
+  const double eta            = std::max(0.0, as<double>(etaSEXP));
+  const double crown_a        = as<double>(crownASEXP);
+  const double crown_b        = as<double>(crownBSEXP);
+  const double eigen_radius   = std::max(1e-6, as<double>(eigenRadiusSEXP));
   const double density_radius = std::max(1e-6, as<double>(densityRadiusSEXP));
-  const double prob_threshold = std::min(1.0, std::max(0.0, as<double>(probThresholdSEXP)));
-  const int max_iterations = std::max(1, as<int>(maxIterationsSEXP));
-  const double tolerance = std::max(0.0, as<double>(toleranceSEXP));
-  const int profile_id = as<int>(profileIdSEXP);
+  const int    profile_id     = as<int>(profileIdSEXP);
 
   const int s = seed_x.size();
   if (seed_y.size() != s || seed_z.size() != s || s == 0) {
     return IntegerVector(n, NA_INTEGER);
   }
 
-  double base_radius = std::max(eigen_radius, density_radius);
-  std::vector< std::vector<int> > neigh = build_knn(x, y, k, base_radius, base_radius * 2.5, 5);
-  std::vector<int> density = local_density(x, y, density_radius, density_radius);
+  // --------------------------------------------------------------------------
+  // 1. Height-filtered compact subset — avoids KNN / eigenfeature work on
+  //    ground points and halves memory for the priority queue.
+  // --------------------------------------------------------------------------
+  std::vector<int> hi_idx;
+  hi_idx.reserve(static_cast<size_t>(n));
+  for (int i = 0; i < n; ++i) {
+    if (z[i] >= hmin) hi_idx.push_back(i);
+  }
+  const int nh = static_cast<int>(hi_idx.size());
+  if (nh == 0) return IntegerVector(n, NA_INTEGER);
+
+  NumericVector hx(static_cast<size_t>(nh));
+  NumericVector hy(static_cast<size_t>(nh));
+  NumericVector hz(static_cast<size_t>(nh));
+  for (int i = 0; i < nh; ++i) {
+    int j = hi_idx[static_cast<size_t>(i)];
+    hx[i] = x[j];
+    hy[i] = y[j];
+    hz[i] = z[j];
+  }
+
+  // --------------------------------------------------------------------------
+  // 2. KNN graph, local density, and 3-D eigenfeatures on the compact subset.
+  // --------------------------------------------------------------------------
+  const double base_radius = std::max(eigen_radius, density_radius);
+  std::vector< std::vector<int> > neigh =
+    build_knn(hx, hy, k, base_radius, base_radius * 2.5, 5);
+  std::vector<int> density_cnt = local_density(hx, hy, density_radius, density_radius);
 
   std::vector<double> anisotropy, verticality;
-  compute_local_eigenfeatures(x, y, z, eigen_radius, anisotropy, verticality);
+  compute_local_eigenfeatures(hx, hy, hz, eigen_radius, anisotropy, verticality);
 
-  std::vector<int> seed_idx = map_seeds_to_points(x, y, z, seed_x, seed_y, hmin);
+  // --------------------------------------------------------------------------
+  // 3. Map seeds to the nearest above-hmin point (grid-accelerated).
+  // --------------------------------------------------------------------------
+  std::vector<int> seed_idx = map_seeds_to_points_grid(hx, hy, seed_x, seed_y);
 
-  std::vector<int> labels(static_cast<size_t>(n), 0);
-  std::vector<double> confidence(static_cast<size_t>(n), 0.0);
-  std::vector<int> is_seed(static_cast<size_t>(n), 0);
-  std::vector<double> seed_height(static_cast<size_t>(s), hmin + 0.1);
-
-  for (int sid = 0; sid < s; ++sid) {
-    double H = seed_z[static_cast<size_t>(sid)];
+  std::vector<double> seed_height(static_cast<size_t>(s));
+  for (int i = 0; i < s; ++i) {
+    double H = seed_z[static_cast<size_t>(i)];
     if (!std::isfinite(H) || H <= hmin) H = hmin + 0.1;
-    seed_height[static_cast<size_t>(sid)] = H;
+    seed_height[static_cast<size_t>(i)] = H;
   }
+
+  // --------------------------------------------------------------------------
+  // 4. Dijkstra priority-queue expansion.
+  //
+  //    Each edge i->v carries cost:
+  //      alpha  * dxy          (XY distance)
+  //      beta   * dz           (vertical separation)
+  //      gamma  * deigen       (eigenfeature contrast)
+  //      eta    * dens_gap     (density-gap penalty for sparse regions)
+  //      delta  * allom_pen    (soft penalty for exceeding allometric radius)
+  //
+  //    A hard cutoff (r_allowed + margin) prevents runaway crown expansion.
+  //    Every reachable point gets a label — no probability threshold needed.
+  // --------------------------------------------------------------------------
+  std::vector<int>    label(static_cast<size_t>(nh), 0);
+  std::vector<double> dist(static_cast<size_t>(nh),
+                           std::numeric_limits<double>::infinity());
+
+  typedef std::tuple<double, int, int> Node; // (cost, point_idx, label_1based)
+  struct MinCmp {
+    bool operator()(const Node& a, const Node& b) const {
+      return std::get<0>(a) > std::get<0>(b);
+    }
+  };
+  std::priority_queue<Node, std::vector<Node>, MinCmp> pq;
 
   for (int i = 0; i < s; ++i) {
     int idx = seed_idx[static_cast<size_t>(i)];
-    if (idx < 0 || idx >= n) continue;
-    labels[static_cast<size_t>(idx)] = i + 1;
-    confidence[static_cast<size_t>(idx)] = 1.0;
-    is_seed[static_cast<size_t>(idx)] = 1;
+    if (idx < 0 || idx >= nh) continue;
+    int lid = i + 1;
+    if (dist[static_cast<size_t>(idx)] > 0.0) {
+      dist[static_cast<size_t>(idx)] = 0.0;
+      label[static_cast<size_t>(idx)] = lid;
+      pq.push(std::make_tuple(0.0, idx, lid));
+    }
   }
 
-  std::vector<int> next_labels = labels;
-  std::vector<double> next_conf = confidence;
+  while (!pq.empty()) {
+    Node top = pq.top();
+    pq.pop();
 
-  for (int iter = 0; iter < max_iterations; ++iter) {
-    int changed = 0;
+    double cur_cost = std::get<0>(top);
+    int u   = std::get<1>(top);
+    int lid = std::get<2>(top);
+    int sid = lid - 1;
+
+    // Stale entry check (lazy deletion).
+    if (label[static_cast<size_t>(u)] != lid) continue;
+    if (cur_cost > dist[static_cast<size_t>(u)] + 1e-9) continue;
+
+    double H      = seed_height[static_cast<size_t>(sid)];
+    double base_r = crown_a * std::pow(H, crown_b);
+    // Allow slight allometric exceedance to soften the boundary; cap at 2 m.
+    double margin = std::min(2.0, 0.4 * base_r);
+
+    const std::vector<int>& nu = neigh[static_cast<size_t>(u)];
+    for (size_t t = 0; t < nu.size(); ++t) {
+      int v = nu[t];
+
+      // Hard allometry cutoff: skip if v is outside crown envelope + margin.
+      double d_center = std::sqrt(sqr(hx[v] - seed_x[static_cast<size_t>(sid)]) +
+                                   sqr(hy[v] - seed_y[static_cast<size_t>(sid)]));
+      double r_allowed = allometry_radius(hz[v], H, crown_a, crown_b,
+                                           std::numeric_limits<double>::infinity(),
+                                           profile_id);
+      if (d_center > r_allowed + margin) continue;
+
+      // Multi-feature edge cost.
+      double dxy      = std::sqrt(sqr(hx[v] - hx[u]) + sqr(hy[v] - hy[u]));
+      double dz_edge  = std::abs(hz[v] - hz[u]);
+      double deigen   = std::abs(anisotropy[static_cast<size_t>(v)] -
+                                  anisotropy[static_cast<size_t>(u)]) +
+                        std::abs(verticality[static_cast<size_t>(v)] -
+                                  verticality[static_cast<size_t>(u)]);
+      int dmin = std::min(density_cnt[static_cast<size_t>(u)],
+                          density_cnt[static_cast<size_t>(v)]);
+      double dens_gap  = std::max(0.0, 2.0 - static_cast<double>(dmin));
+      double allom_pen = std::max(0.0, d_center - r_allowed);
+
+      double edge_cost = alpha * dxy + beta * dz_edge + gamma_w * deigen +
+                         eta * dens_gap + delta * allom_pen;
+      double new_cost  = cur_cost + edge_cost;
+
+      if (new_cost < dist[static_cast<size_t>(v)]) {
+        dist[static_cast<size_t>(v)]  = new_cost;
+        label[static_cast<size_t>(v)] = lid;
+        pq.push(std::make_tuple(new_cost, v, lid));
+      }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 5. Local neighbor fill: one lightweight pass for any remaining unlabeled
+  //    points (e.g., isolated canopy zones beyond seed reach).
+  // --------------------------------------------------------------------------
+  for (int i = 0; i < nh; ++i) {
+    if (label[static_cast<size_t>(i)] > 0) continue;
+
+    int    best_label = 0;
+    double best_cost  = std::numeric_limits<double>::infinity();
+    const std::vector<int>& ni = neigh[static_cast<size_t>(i)];
+
+    for (size_t t = 0; t < ni.size(); ++t) {
+      int j  = ni[t];
+      int lj = label[static_cast<size_t>(j)];
+      if (lj <= 0) continue;
+      double dxy  = std::sqrt(sqr(hx[i] - hx[j]) + sqr(hy[i] - hy[j]));
+      double dz_e = std::abs(hz[i] - hz[j]);
+      double cost = alpha * dxy + beta * dz_e;
+      if (cost < best_cost) {
+        best_cost  = cost;
+        best_label = lj;
+      }
+    }
+    if (best_label > 0) label[static_cast<size_t>(i)] = best_label;
+  }
+
+  // --------------------------------------------------------------------------
+  // 6. Map subset labels back to the full point cloud.
+  // --------------------------------------------------------------------------
+  std::vector<int> full_label(static_cast<size_t>(n), 0);
+  for (int i = 0; i < nh; ++i) {
+    full_label[static_cast<size_t>(hi_idx[static_cast<size_t>(i)])] =
+      label[static_cast<size_t>(i)];
+  }
+
+  // Broader grid-based fill for any remaining above-hmin holes (same approach
+  // as allometric_li_geodesic).
+  std::vector<double> lx_vec, ly_vec;
+  std::vector<int>    ll_vec;
+  lx_vec.reserve(static_cast<size_t>(nh));
+  ly_vec.reserve(static_cast<size_t>(nh));
+  ll_vec.reserve(static_cast<size_t>(nh));
+  for (int i = 0; i < nh; ++i) {
+    if (label[static_cast<size_t>(i)] > 0) {
+      lx_vec.push_back(hx[i]);
+      ly_vec.push_back(hy[i]);
+      ll_vec.push_back(label[static_cast<size_t>(i)]);
+    }
+  }
+
+  if (!lx_vec.empty()) {
+    NumericVector lxn(lx_vec.begin(), lx_vec.end());
+    NumericVector lyn(ly_vec.begin(), ly_vec.end());
+    Grid2D labeled_grid(lxn, lyn, std::max(1.0, base_radius * 1.5));
+    const double r0 = base_radius * 2.0;
+    const double r1 = base_radius * 3.5;
 
     for (int i = 0; i < n; ++i) {
-      if (z[i] < hmin) {
-        next_labels[static_cast<size_t>(i)] = 0;
-        next_conf[static_cast<size_t>(i)] = 0.0;
-        continue;
-      }
-      if (is_seed[static_cast<size_t>(i)] == 1) continue;
+      if (z[i] < hmin || full_label[static_cast<size_t>(i)] > 0) continue;
 
-      // Only labels present in local neighbors can contribute, so keep this sparse.
-      std::vector<int> cand_labels;
-      std::vector<double> cand_scores;
-      cand_labels.reserve(16);
-      cand_scores.reserve(16);
-      double total = 0.0;
+      int    best_label = 0;
+      double best_cost  = std::numeric_limits<double>::infinity();
 
-      const std::vector<int>& ni = neigh[static_cast<size_t>(i)];
-      for (size_t t = 0; t < ni.size(); ++t) {
-        int j = ni[t];
-        int lj = labels[static_cast<size_t>(j)];
-        if (lj <= 0) continue;
-
-        double dij = std::sqrt(sqr(x[i] - x[j]) + sqr(y[i] - y[j]));
-        double dz = std::abs(z[i] - z[j]);
-        double deigen = std::abs(anisotropy[static_cast<size_t>(i)] - anisotropy[static_cast<size_t>(j)]) +
-                        std::abs(verticality[static_cast<size_t>(i)] - verticality[static_cast<size_t>(j)]);
-
-        int dmin = std::min(density[static_cast<size_t>(i)], density[static_cast<size_t>(j)]);
-        double dens_gap = std::max(0.0, 2.0 - static_cast<double>(dmin));
-
-        double expo = alpha * dij + beta * dz + gamma * deigen + eta * dens_gap;
-        double w = std::exp(-expo);
-
-        bool found = false;
-        for (size_t k2 = 0; k2 < cand_labels.size(); ++k2) {
-          if (cand_labels[k2] == lj) {
-            cand_scores[k2] += w;
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          cand_labels.push_back(lj);
-          cand_scores.push_back(w);
-        }
-
-        total += w;
+      std::vector<int> cand = labeled_grid.query_radius(lxn, lyn, x[i], y[i], r0);
+      if (cand.empty()) {
+        cand = labeled_grid.query_radius(lxn, lyn, x[i], y[i], r1);
       }
 
-      int best_label = 0;
-      double best_score = 0.0;
-
-      if (total > 0.0 && !cand_labels.empty()) {
-        // Apply allometry penalty once per candidate label instead of once per neighbor.
-        for (size_t c = 0; c < cand_labels.size(); ++c) {
-          int lj = cand_labels[c];
-          int sid = lj - 1;
-
-          double dseed = std::sqrt(sqr(x[i] - seed_x[static_cast<size_t>(sid)]) +
-                                   sqr(y[i] - seed_y[static_cast<size_t>(sid)]));
-          double rall = allometry_radius(z[i], seed_height[static_cast<size_t>(sid)],
-                                         crown_a, crown_b,
-                                         std::numeric_limits<double>::infinity(),
-                                         profile_id);
-          double allom_pen = dseed > rall ? (dseed - rall) : 0.0;
-
-          double sc = cand_scores[c] * std::exp(-delta * allom_pen);
-          if (sc > best_score) {
-            best_score = sc;
-            best_label = lj;
-          }
+      for (size_t t = 0; t < cand.size(); ++t) {
+        int j    = cand[t];
+        double dxy = std::sqrt(sqr(lxn[j] - x[i]) + sqr(lyn[j] - y[i]));
+        if (dxy < best_cost) {
+          best_cost  = dxy;
+          best_label = ll_vec[static_cast<size_t>(j)];
         }
       }
 
-      double p = total > 0.0 ? (best_score / total) : 0.0;
-      if (p < prob_threshold) best_label = 0;
-
-      if (best_label != labels[static_cast<size_t>(i)] ||
-          std::abs(p - confidence[static_cast<size_t>(i)]) > tolerance) {
-        ++changed;
+      if (best_label > 0 && best_cost <= r1) {
+        full_label[static_cast<size_t>(i)] = best_label;
       }
-
-      next_labels[static_cast<size_t>(i)] = best_label;
-      next_conf[static_cast<size_t>(i)] = p;
-    }
-
-    labels.swap(next_labels);
-    confidence.swap(next_conf);
-
-    if (changed <= static_cast<int>(tolerance * std::max(1, n))) {
-      break;
     }
   }
 
-  return labels_to_integer_ids(labels, z, hmin);
+  return labels_to_integer_ids(full_label, z, hmin);
 }
 
 extern "C" SEXP cpp_allometric_supervoxel_segment(SEXP xSEXP,
