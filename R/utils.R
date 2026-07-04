@@ -114,14 +114,14 @@ eigen_metrics = function(las, r, k, ncpu = 8){
 #' returns it with three additional columns:
 #'
 #' * `AxisAngle` — acute angle (°) between the dominant local axis (eigenvector
-#'   of λ1) and the vertical.  0° = perfectly vertical (bole-like); 90° =
+#'   of λ1) and the vertical.  0° = perfectly vertical (stem-like); 90° =
 #'   horizontal branch.
 #' * `BranchScore` — min–max scaled 0–1 composite score:
 #'   `Linearity × Anisotropy × (1 − Sphericity) × sqrt(E1x² + E1y²)`.
 #'   The horizontal-component term `sqrt(E1x² + E1y²)` encodes orientation
 #'   directly in the score rather than relying on a hard angle filter alone;
 #'   it is high when the principal branch axis is oblique or horizontal and
-#'   near zero for upright bole-like features.
+#'   near zero for upright stem-like features.
 #' * `IsBranchCandidate` — logical flag: `BranchScore >= score_quantile` **and**
 #'   `AxisAngle` within `[min_angle, max_angle]` (and optionally `Zref > 1.37`
 #'   if a `Zref` column is present).
@@ -165,7 +165,7 @@ branch_metrics <- function(em,
   #   (1 - Sphericity) — penalise blob-like foliage clusters
   #   sqrt(E1x²+E1y²) — horizontal component of the principal axis; encodes
   #                      orientation continuously (≈1 for horizontal branches,
-  #                      ≈0 for upright boles).  Using e1 (largest eigenvector)
+  #                      ≈0 for upright stems).  Using e1 (largest eigenvector)
   #                      is correct here — Verticality uses e3 (the normal).
   raw_score <- em$Linearity *
                em$Anisotropy *
@@ -179,7 +179,7 @@ branch_metrics <- function(em,
                           else (raw_score - rng[1L]) / diff(rng))
 
   # Binary flag: high score AND axis angle in the expected branch range.
-  # 45–90° captures branches from diagonal to horizontal; upright boles sit
+  # 45–90° captures branches from diagonal to horizontal; upright stems sit
   # near 0° and are excluded regardless of score.
   score_thr <- quantile(em$BranchScore, score_quantile, na.rm = TRUE)
 

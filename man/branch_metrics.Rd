@@ -32,14 +32,14 @@ returns it with three additional columns:
 \details{
 \itemize{
 \item \code{AxisAngle} — acute angle (°) between the dominant local axis (eigenvector
-of λ1) and the vertical.  0° = perfectly vertical (bole-like); 90° =
+of λ1) and the vertical.  0° = perfectly vertical (stem-like); 90° =
 horizontal branch.
 \item \code{BranchScore} — min–max scaled 0–1 composite score:
 \verb{Linearity × Anisotropy × (1 − Sphericity) × sqrt(E1x² + E1y²)}.
 The horizontal-component term \verb{sqrt(E1x² + E1y²)} encodes orientation
 directly in the score rather than relying on a hard angle filter alone;
 it is high when the principal branch axis is oblique or horizontal and
-near zero for upright bole-like features.
+near zero for upright stem-like features.
 \item \code{IsBranchCandidate} — logical flag: \code{BranchScore >= score_quantile} \strong{and}
 \code{AxisAngle} within \verb{[min_angle, max_angle]} (and optionally \code{Zref > 1.37}
 if a \code{Zref} column is present).

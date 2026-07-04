@@ -11,22 +11,22 @@
 #' and create unique polygons from the resulting classified raster. These point-density and
 #' verticality polygons were selected by their intersection with one another, resulting in a
 #' final set of polygons which were used to clip out regions of the point cloud that were most
-#' likely to represent tree boles. A RANSAC cylinder fitting algorithm was then used to estimate
-#' the fit of a cylinder to individual bole points. Cylinder centers and radius were used as inputs
+#' likely to represent tree stems. A RANSAC cylinder fitting algorithm was then used to estimate
+#' the fit of a cylinder to individual stem points. Cylinder centers and radius were used as inputs
 #' to an individual tree segmentation
 #'
 #' @param las LAS Normalized las object.
 #' @param res numeric Pixel width of rasterized point cloud metrics.
 #' @param pt_spacing numeric Subsample spacing for graph connections.
-#' @param dens_threshold numeric Minimum point density in raster cell to be considered as potential tree bole.
+#' @param dens_threshold numeric Minimum point density in raster cell to be considered as potential tree stem.
 #' @param neigh_sizes numeric Vector for verticality and relative density (small and large neighborhoods) calculations
-#' @param eigen_threshold numeric Minimum average verticality in raster cell to be considered as potential tree bole.
+#' @param eigen_threshold numeric Minimum average verticality in raster cell to be considered as potential tree stem.
 #' @param grid_slice_min numeric Lower bound of point cloud slice in normalized point cloud.
 #' @param grid_slice_max numeric Upper bound of point cloud slice in normalized point cloud.
-#' @param minimum_polygon_area numeric Smallest allowable polygon area of potential tree boles.
+#' @param minimum_polygon_area numeric Smallest allowable polygon area of potential tree stems.
 #' @param cylinder_fit_type  character Choose "ransac" or "irls" cylinder fitting.
 #' @param max_dia numeric The max diameter (in m) of a resulting tree (use to eliminate commission errors).
-#' @param SDvert numeric The standard deviation threshold below which polygons will be considered as tree boles.
+#' @param SDvert numeric The standard deviation threshold below which polygons will be considered as tree stems.
 #' @param n_best integer number of "best" ransac fits to keep when evaluating the best fit.
 #' @param n_pts integer number of point to be selected per ransac iteraiton for fitting.
 #' @param inliers integer expected proportion of inliers among cylinder points

@@ -5,7 +5,7 @@
 //   Iterates LeWoS-style majority-vote label propagation over a pre-built kNN
 //   index (as returned by FNN::knn.index) entirely in C++, updating labels
 //   in-place across iterations.  Returns the converged labels and per-point
-//   vote fractions (BoleProb) from the final round — all in a single pass
+//   vote fractions (StemProb) from the final round — all in a single pass
 //   without allocating any intermediate R objects.
 //
 // Why: the equivalent R loop creates an n × k logical matrix on every
@@ -32,14 +32,14 @@ using namespace Rcpp;
 // Parameters
 //   nn_idx    – n × k integer matrix of 1-based kNN indices (FNN::knn.index).
 //               Row i holds the k nearest neighbour indices for point i.
-//   labels_in – length-n logical vector: initial bole label per point.
+//   labels_in – length-n logical vector: initial stem label per point.
 //   n_iter    – number of majority-vote propagation iterations.
 //   ncpu      – OpenMP thread count for the vote-counting inner loop.
 //
 // Returns a named list:
-//   $labels    – length-n logical: converged bole labels after n_iter rounds.
+//   $labels    – length-n logical: converged stem labels after n_iter rounds.
 //   $vote_frac – length-n double in [0,1]: fraction of k neighbours that
-//                voted TRUE in the final round (BoleProb).
+//                voted TRUE in the final round (StemProb).
 // ---------------------------------------------------------------------------
 // [[Rcpp::export]]
 List C_knn_majority_vote(IntegerMatrix nn_idx,
@@ -62,7 +62,7 @@ List C_knn_majority_vote(IntegerMatrix nn_idx,
     // ------------------------------------------------------------------
     for (int iter = 0; iter < n_iter; ++iter) {
 
-        // Count bole-labelled neighbours for every point
+        // Count stem-labelled neighbours for every point
 #ifdef _OPENMP
         #pragma omp parallel for schedule(static) num_threads(ncpu)
 #endif
@@ -81,7 +81,7 @@ List C_knn_majority_vote(IntegerMatrix nn_idx,
     }
 
     // ------------------------------------------------------------------
-    // Final vote fractions (BoleProb) — one more count pass, no new labels
+    // Final vote fractions (StemProb) — one more count pass, no new labels
     // ------------------------------------------------------------------
     NumericVector vote_frac(n);
 

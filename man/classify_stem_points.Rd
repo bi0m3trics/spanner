@@ -2,7 +2,7 @@
 % Please edit documentation in R/Stem_Classification.R
 \name{classify_stem_points}
 \alias{classify_stem_points}
-\title{Classify stem (bole) points within a segmented TLS point cloud}
+\title{Classify stem points within a segmented TLS point cloud}
 \usage{
 classify_stem_points(
   las,
@@ -33,13 +33,13 @@ classify_stem_points(
 \item{method}{character. One of \code{"combined"} (default), \code{"eigen"},
 \code{"lewos"}, or \code{"hough"}.}
 
-\item{z_min}{numeric. Lower Z bound (m above ground) of the bole search
+\item{z_min}{numeric. Lower Z bound (m above ground) of the stem search
 window. Default \code{0.1}.}
 
 \item{z_max}{numeric. Upper Z bound (m). Default \code{8.0}.}
 
 \item{search_radius}{numeric. Maximum XY distance (m) from tree seed XY to
-include a point as a bole candidate. Defaults to \code{max(tree_locs$Radius) * 3} when \code{NULL}.}
+include a point as a stem candidate. Defaults to \code{max(tree_locs$Radius) * 3} when \code{NULL}.}
 
 \item{neigh_k}{integer. Number of nearest neighbours (excluding the query
 point itself) for the local PCA neighbourhood used in \code{"eigen"} /
@@ -77,16 +77,19 @@ Default \code{NULL} (no thinning).}
 \value{
 A LAS object identical to \code{las} with two extra columns:
 \describe{
-\item{\code{Stem}}{logical — \code{TRUE} for bole-classified points.}
+\item{\code{Stem}}{logical — \code{TRUE} for stem-classified points.}
 \item{\code{WoodProb}}{numeric [0, 1] — classification confidence.}
 }
 }
 \description{
+\strong{Deprecated in spanner v2.0 — use \code{\link[=stem_eigen]{stem_eigen()}} or \code{\link[=stem_hough]{stem_hough()}} inside
+\code{\link[=stem_points]{stem_points()}} instead.}
+
 \code{classify_stem_points} labels every point in a segmented LAS object as
-stem (wood bole) or non-stem and attaches two new columns—\code{Stem} (logical)
+stem (wood stem) or non-stem and attaches two new columns—\code{Stem} (logical)
 and \code{WoodProb} (numeric, 0–1)—to the returned LAS. It is designed to
 operate on the output of \code{\link[=segment_graph]{segment_graph()}} and feeds directly into
-\code{\link[=segment_bole]{segment_bole()}}.
+\code{\link[=segment_stem]{segment_stem()}}.
 }
 \details{
 Four classification methods are available:
@@ -135,9 +138,9 @@ las_seg <- segment_graph(las, tree_locs, k = 50,
                          ptcloud_slice_min = 0.5, ptcloud_slice_max = 2.5,
                          subsample.graph = 0.1, return.dense = TRUE)
 
-# Classify bole points (eigen method — no houghPrimitives needed)
-las_bole <- classify_stem_points(las_seg, tree_locs, method = "eigen")
-plot(las_bole, color = "Stem")
+# Classify stem points (eigen method — no houghPrimitives needed)
+las_stem <- classify_stem_points(las_seg, tree_locs, method = "eigen")
+plot(las_stem, color = "Stem")
 }
 
 }
@@ -154,5 +157,5 @@ trees. \emph{Computers and Electronics in Agriculture}, 140, 249–255.
 \doi{10.1016/j.compag.2017.07.019}
 }
 \seealso{
-\code{\link[=segment_graph]{segment_graph()}}, \code{\link[=segment_bole]{segment_bole()}}, \code{\link[=get_raster_eigen_treelocs]{get_raster_eigen_treelocs()}}
+\code{\link[=segment_graph]{segment_graph()}}, \code{\link[=segment_stem]{segment_stem()}}, \code{\link[=get_raster_eigen_treelocs]{get_raster_eigen_treelocs()}}
 }

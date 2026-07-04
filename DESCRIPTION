@@ -1,22 +1,30 @@
 Package: spanner
 Type: Package
 Title: Utilities to Support Lidar Applications at the Landscape, Forest, and Tree Scale
-Version: 1.1.0
-Date: 2026-06-01
+Version: 2.0.0
+Date: 2026-07-04
 Authors@R: c(person("Andrew", "Sanchez Meador", email = "Andrew.SanchezMeador@nau.edu", role = c("aut", "cre", "ctb"), comment = c(ORCID = "0000-0003-4238-8587")),
              person("Jonathon", "Donager", email = "Jonathon.Donager@gmail.com", role = c("aut", "ctb"), comment = c(ORCID = "0000-0001-9448-1703")),
              person("Blackburn", "Ryan", email = "rcblackburn@cornell.edu", role = c("aut", "ctb"), comment = c(ORCID = "0000-0002-2952-0865")),
              person("Cannon", "Jeffery", email = "Jeffery.Cannon@jonesctr.org", role = c("ctb"), comment = c(ORCID = "0000-0002-8436-8712")),
              person("Tiago", "de Conto", role = c("ctb", "cph"), comment = "Author of included TreeLS code"),
              person("Keith", "O'Hara", role = c("ctb", "cph"), comment = "Author of included OptimLib code"))
-Description: Implements algorithms for terrestrial, mobile, and airborne lidar processing, tree detection, 
-      segmentation, and attribute estimation (Donager et al., 2021) <doi:10.3390/rs13122297>, and hierarchical habitat
-      patch delineation using 'PatchMorph' (Girvetz & Greco, 2007) <doi:10.1007/s10980-007-9104-8>. Tree detection
-      combines point-cloud density, geometric metrics, and cylinder fitting to identify stems and estimate tree
-      attributes. Segmentation methods include graph-based, allometric, geodesic, random-walker, and supervoxel 
-      approaches for individual tree delineation from terrestrial and airborne lidar data. Additional tools support
-      stem classification, bole segmentation, volume estimation, tree quality assessment, canopy structure analysis
-      (LAI and PAD), and iterative model refinement. Built on 'lidR' (Roussel et al., 2020) <doi:10.1016/j.rse.2020.112061>.
+Description: Implements algorithms for terrestrial, mobile, and airborne lidar processing, tree detection,
+      segmentation, and attribute estimation (Donager et al., 2021) <doi:10.3390/rs13122297>, and hierarchical
+      habitat patch delineation using 'PatchMorph' (Girvetz & Greco, 2007) <doi:10.1007/s10980-007-9104-8>.
+      Version 2.0 introduces an explicit staged TLS/MLS workflow: find_trees() -> tree_points() -> stem_points()
+      -> stem_segments() -> tree_inventory(). Each stage accepts interchangeable method objects, including
+      use_raster_eigen(), use_hough(), assign_voronoi(), assign_crop(), assign_graph(), stem_eigen(),
+      stem_hough(), seg_ransac_cylinder(), seg_irls_cylinder(), and seg_bf_cylinder(), so detection,
+      assignment, classification, and stem-fitting strategies can be swapped without changing the surrounding
+      workflow. Additional tools estimate leaf area index, leaf area density, plant area density, canopy
+      transmittance, branch and leaf-wood classes, stem volume, tree quality, and targeted stem refits.
+      Airborne lidar individual-tree segmentation is supported through 'lidR'-compatible allometric geodesic,
+      random-walker, and supervoxel algorithms. Compiled C++ back ends provide Hough stem detection,
+      fast nearest-tree assignment, batch cylinder fitting, voxel PAD calculations, and point-cloud geometry
+      metrics. Earlier functions such as get_raster_eigen_treelocs(), segment_graph(), classify_stem_points(),
+      and segment_stem() remain available for backward compatibility. Built on 'lidR'
+      (Roussel et al., 2020) <doi:10.1016/j.rse.2020.112061>.
 URL: https://github.com/bi0m3trics/spanner
 License: GPL-3
 Encoding: UTF-8

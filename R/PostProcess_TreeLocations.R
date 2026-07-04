@@ -59,20 +59,21 @@ fit_convex_hull_and_volume <- function(x, y, z) {
 #' and create unique polygons from the resulting classified raster. These point-density and
 #' verticality polygons were selected by their intersection with one another, resulting in a
 #' final set of polygons which were used to clip out regions of the point cloud that were most
-#' likely to represent tree boles. A RANSAC cylinder fitting algorithm was then used to estimate
-#' the fit of a cylinder to individual bole points. Cylinder centers and radius were used as inputs
+#' likely to represent tree stems. A RANSAC cylinder fitting algorithm was then used to estimate
+#' the fit of a cylinder to individual stem points. Cylinder centers and radius were used as inputs
 #' to an individual tree segmentation.
 #'
 #' @param treeData An `sf` object containing the following tree information: `TreeID`,
 #' `X`, `Y`, `Z`, `Radius`, and `Error`, output from the `get_raster_eigen_treelocs` function.
 #' @param segmentedLAS A LAS object that is the output from `segment_graph`.
 #' @param return_sf logical: If TRUE, returns an `sf` object representing the convex hulls for each tree.
-#' @param seg_table `data.frame` or `NULL`. Optional output of [segment_bole()].
-#'   When supplied, per-tree bole volume is merged into the result via
-#'   [compute_bole_volume()] (unless `vol_table` is also provided). Required
-#'   columns: `TreeID`, `Segment`, `Z_low`, `Z_high`, `Radius`, `Valid`.
+#' @param seg_table `data.frame` or `NULL`. Optional output of [stem_segments()]
+#'   or the legacy [segment_stem()]. When supplied and `vol_table` is `NULL`,
+#'   per-tree stem volume is computed automatically via [compute_stem_volume()]
+#'   and merged into the result. Required columns: `TreeID`, `Segment`,
+#'   `Z_low`, `Z_high`, `Radius`, `Valid`.
 #' @param vol_table `data.frame` or `NULL`. Optional output of
-#'   [compute_bole_volume()]. When supplied alongside `seg_table`, volume
+#'   [compute_stem_volume()]. When supplied alongside `seg_table`, volume
 #'   columns are merged directly without recomputing. Required columns:
 #'   `TreeID`, `Volume_m3`.
 #' @param qual_table `data.frame` / `sf` or `NULL`. Optional output of
@@ -187,22 +188,22 @@ process_tree_data <- function(treeData,
 
   if (!is.null(seg_table)) {
     if (!is.data.frame(seg_table))
-      stop("'seg_table' must be a data.frame from segment_bole().")
+      stop("'seg_table' must be a data.frame from stem_segments() or segment_stem().")
     req_seg <- c("TreeID", "Segment", "Z_low", "Z_high", "Radius", "Valid")
     miss    <- setdiff(req_seg, names(seg_table))
     if (length(miss) > 0)
       stop("'seg_table' is missing columns: ", paste(miss, collapse = ", "),
-           "\nRun segment_bole() before process_tree_data().")
+           "\nRun stem_segments() or segment_stem() before process_tree_data().")
   }
 
   if (!is.null(vol_table)) {
     if (!is.data.frame(vol_table))
-      stop("'vol_table' must be a data.frame from compute_bole_volume().")
+      stop("'vol_table' must be a data.frame from compute_stem_volume().")
     req_vol <- c("TreeID", "Volume_m3")
     miss    <- setdiff(req_vol, names(vol_table))
     if (length(miss) > 0)
       stop("'vol_table' is missing columns: ", paste(miss, collapse = ", "),
-           "\nRun compute_bole_volume() before process_tree_data().")
+           "\nRun compute_stem_volume() before process_tree_data().")
   }
 
   if (!is.null(qual_table)) {
@@ -286,7 +287,11 @@ process_tree_data <- function(treeData,
   treeData$crown_base_height <- crown_base_heights
   treeData$crown_volume      <- crown_volumes
 
-  # ---- Merge optional pipeline-2 tables ------------------------------------
+  # ---- Merge optional pipeline tables -------------------------------------
+  # Auto-compute volume from seg_table if vol_table not pre-supplied
+  if (!is.null(seg_table) && is.null(vol_table))
+    vol_table <- compute_stem_volume(seg_table)
+
   if (!is.null(vol_table)) {
     keep_vol <- intersect(
       names(vol_table),
@@ -311,14 +316,18 @@ process_tree_data <- function(treeData,
   # ---- Build return object --------------------------------------------------
   if (return_sf) {
     named_hulls <- stats::setNames(convex_hulls, as.character(unique_tree_ids))
-    hulls_sf <- do.call(rbind, lapply(seq_along(unique_tree_ids), function(i) {
-      tid <- unique_tree_ids[i]
-      if (!is.null(named_hulls[[as.character(tid)]]))
-        sf::st_sf(TreeID = tid,
-                  geometry = named_hulls[[as.character(tid)]])
-    }))
-    result          <- sf::st_sf(treeData)
-    result$geometry <- hulls_sf$geometry
+    crs_out <- sf::st_crs(segmentedLAS)
+    empty_geom <- sf::st_geometrycollection()
+    row_geoms <- lapply(treeData$TreeID, function(tid) {
+      hull <- named_hulls[[as.character(tid)]]
+      if (!is.null(hull) && length(hull) > 0L) {
+        sf::st_geometry(hull)[[1]]
+      } else {
+        empty_geom
+      }
+    })
+    result <- sf::st_sf(treeData)
+    sf::st_geometry(result) <- sf::st_sfc(row_geoms, crs = crs_out)
   } else {
     result <- sf::st_as_sf(treeData, coords = c("X", "Y"),
                            crs = sf::st_crs(segmentedLAS))

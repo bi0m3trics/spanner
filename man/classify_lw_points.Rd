@@ -11,6 +11,9 @@ classify_lw_points(
   z_min = 0.1,
   z_max = 50,
   search_radius = NULL,
+  axis_refine_stems = TRUE,
+  axis_search_radius = NULL,
+  axis_min_points = 10L,
   neigh_k = 20L,
   linearity_threshold = 0.1,
   verticality_threshold = 0.75,
@@ -23,7 +26,10 @@ classify_lw_points(
   branch_r = NULL,
   coarse_r = NULL,
   branch_lin_threshold = 0.35,
-  branch_cc_min_size = 10L
+  branch_cc_min_size = 10L,
+  rescue_missing_stems = FALSE,
+  min_stem_points = 20L,
+  rescue_search_radius = NULL
 )
 }
 \arguments{
@@ -37,22 +43,34 @@ classify_lw_points(
 propagation after the initial Linearity/Verticality threshold filter.
 \code{"eigen"} applies the threshold only.}
 
-\item{z_min}{numeric. Lower Z bound (m above ground) of the bole search
+\item{z_min}{numeric. Lower Z bound (m above ground) of the stem search
 window.  Default \code{0.1}.}
 
 \item{z_max}{numeric. Upper Z bound (m).  Default \code{50.0}.}
 
 \item{search_radius}{numeric. Maximum XY distance (m) from the tree seed XY
-centroid for bole candidacy.  \code{NULL} → \code{max(tree_locs$Radius) * 3}
+centroid for stem candidacy.  \code{NULL} → \code{max(tree_locs$Radius) * 3}
 (floor 0.20 m).}
 
-\item{neigh_k}{integer. Number of nearest neighbours for \strong{all} eigen
-metric computations (bole and branch share this value).  Default \code{20L}.}
+\item{axis_refine_stems}{logical. If \code{TRUE}, stem candidates are first found
+from Linearity/Verticality within each assigned \code{treeID}, then filtered
+around local per-tree stem axes inferred from those candidates. Default
+\code{TRUE}.}
 
-\item{linearity_threshold}{numeric [0, 1]. Minimum Linearity for bole
+\item{axis_search_radius}{numeric or \code{NULL}. Radius around inferred local
+stem axes. \code{NULL} uses \code{search_radius}. Default \code{NULL}.}
+
+\item{axis_min_points}{integer. Minimum candidate points needed to infer
+local stem axes. Trees below this use the seed-centred fallback. Default
+\code{10L}.}
+
+\item{neigh_k}{integer. Number of nearest neighbours for \strong{all} eigen
+metric computations (stem and branch share this value).  Default \code{20L}.}
+
+\item{linearity_threshold}{numeric [0, 1]. Minimum Linearity for stem
 candidacy.  Default \code{0.10}.}
 
-\item{verticality_threshold}{numeric [0, 1]. Minimum Verticality for bole
+\item{verticality_threshold}{numeric [0, 1]. Minimum Verticality for stem
 candidacy.  Default \code{0.75}.}
 
 \item{n_propagation}{integer. LeWoS propagation iterations.  Default \code{3L}.}
@@ -85,7 +103,7 @@ threshold approach is used instead.}
 
 \item{coarse_r}{numeric or \code{NULL}.  When non-NULL and \code{branch_r} is also
 non-NULL, activates \strong{two-scale mode}.  \code{\link[=eigen_metrics]{eigen_metrics()}} is called at
-\code{branch_r} (fine scale) and \code{coarse_r} (coarse scale).  Bole candidates
+\code{branch_r} (fine scale) and \code{coarse_r} (coarse scale).  Stem candidates
 must be vertical at \strong{both} scales (\code{Vert_fine >= verticality_threshold} \strong{and} \code{Vert_coarse >= verticality_threshold}).
 Branch candidates must be linear at both scales (\code{Lin_fine >= branch_lin_threshold} \strong{and} \code{Lin_coarse >= branch_lin_threshold}), with
 \code{BranchProb = Lin_fine * Lin_coarse * (1 - Vert_coarse)} peaking for
@@ -93,22 +111,33 @@ horizontal structural branches.  Recommended: \code{coarse_r ~ 0.25} when
 \code{branch_r ~ 0.05}.  Default \code{NULL}.}
 
 \item{branch_lin_threshold}{numeric [0, 1].  Minimum Linearity at
-\code{branch_r} for a non-bole, non-ground point to be a branch candidate.
+\code{branch_r} for a non-stem, non-ground point to be a branch candidate.
 Only used when \code{branch_r} is non-NULL.  Default \code{0.35}.}
 
 \item{branch_cc_min_size}{integer.  Minimum connected-component size (number
 of points within \code{branch_r} of at least one neighbour) to accept a
 candidate cluster as a branch.  Smaller clusters are treated as noise and
 left as Other.  Only used when \code{branch_r} is non-NULL.  Default \code{10L}.}
+
+\item{rescue_missing_stems}{logical. If \code{TRUE}, trees with too few stem
+points after the seed-centred pass are rechecked using their assigned
+\code{treeID} points. This helps MLS cases where the detected seed is offset
+from a visibly vertical stem. Default \code{FALSE}.}
+
+\item{min_stem_points}{integer. Minimum stem points per tree before the
+rescue pass is skipped. Default \code{20L}.}
+
+\item{rescue_search_radius}{numeric or \code{NULL}. Radius around the rescued
+local stem axis. \code{NULL} uses \code{search_radius}. Default \code{NULL}.}
 }
 \value{
 A LAS object identical to \code{las} with these extra columns:
 \describe{
-\item{\code{Bole}}{logical — main stem points.}
-\item{\code{BoleProb}}{numeric [0, 1] — bole confidence.  For the \code{"lewos"}
-method this is the fraction of k_propagation neighbours that voted bole
+\item{\code{Stem}}{logical — main stem points.}
+\item{\code{StemProb}}{numeric [0, 1] — stem confidence.  For the \code{"lewos"}
+method this is the fraction of k_propagation neighbours that voted stem
 in the final propagation round; for \code{"eigen"} it is 0 or 1.}
-\item{\code{Branch}}{logical — structural branch points (not bole, not ground).
+\item{\code{Branch}}{logical — structural branch points (not stem, not ground).
 Two-scale: \code{Lin_fine >= branch_lin_threshold} \strong{and} \code{Lin_coarse >= branch_lin_threshold}, filtered by connected components.  Single-scale:
 \code{Lin_fine >= branch_lin_threshold}, filtered by connected components.
 Default: Curvature < \code{curvature_threshold} \strong{and} Sphericity <
@@ -116,26 +145,26 @@ Default: Curvature < \code{curvature_threshold} \strong{and} Sphericity <
 \item{\code{BranchProb}}{numeric [0, 1] — branch affinity score.  Two-scale:
 \code{Lin_fine * Lin_coarse * (1 - Vert_coarse)}.  Single-scale: \code{Lin_fine}.
 Default: mean of normalised Curvature and Sphericity scores.}
-\item{\code{Other}}{logical — points that are neither \code{Bole} nor \code{Branch}.}
+\item{\code{Other}}{logical — points that are neither \code{Stem} nor \code{Branch}.}
 }
 }
 \description{
-\code{classify_lw_points} labels every point as \strong{Bole}, \strong{Branch}, or
-\strong{Other} and attaches five new columns — \code{Bole}, \code{BoleProb}, \code{Branch},
+\code{classify_lw_points} labels every point as \strong{Stem}, \strong{Branch}, or
+\strong{Other} and attaches five new columns — \code{Stem}, \code{StemProb}, \code{Branch},
 \code{BranchProb}, \code{Other} — to the returned LAS.
 }
 \details{
 A single call to \code{\link[=eigen_metrics]{eigen_metrics()}} is made at \code{neigh_k} neighbours.  The
-resulting metrics drive \strong{both} bole detection (Linearity ≥
+resulting metrics drive \strong{both} stem detection (Linearity ≥
 \code{linearity_threshold} \strong{AND} Verticality ≥ \code{verticality_threshold},
 followed by optional LeWoS kNN label propagation) \strong{and} branch detection
 (Curvature < \code{curvature_threshold} \strong{AND} Sphericity <
-\code{sphericity_threshold} on non-bole points).
+\code{sphericity_threshold} on non-stem points).
 
-Bole detection logic mirrors \code{\link[=classify_stem_points]{classify_stem_points()}} with \code{method = "lewos"}.
+Stem detection logic mirrors \code{\link[=classify_stem_points]{classify_stem_points()}} with \code{method = "lewos"}.
 
 Branch probability (\code{BranchProb}) is a continuous 0–1 affinity score for
-all non-bole, non-ground points:
+all non-stem, non-ground points:
 \deqn{\text{BranchProb} = \frac{1}{2}\left[\max\!\left(0,\,1 -
   \frac{\text{Curvature}}{\text{curvature\_threshold}}\right) +
   \max\!\left(0,\,1 -
@@ -166,7 +195,7 @@ las_seg <- segment_graph(las, tree_locs, k = 50,
                          subsample.graph = 0.1, return.dense = TRUE)
 
 las_lw <- classify_lw_points(las_seg, tree_locs)
-plot(las_lw, color = "BoleProb")
+plot(las_lw, color = "StemProb")
 plot(las_lw, color = "BranchProb")
 }
 
@@ -178,5 +207,5 @@ tropical trees using terrestrial LiDAR. \emph{Methods in Ecology and Evolution},
 11(3), 376–389. \doi{10.1111/2041-210X.13342}
 }
 \seealso{
-\code{\link[=classify_stem_points]{classify_stem_points()}}, \code{\link[=eigen_metrics]{eigen_metrics()}}, \code{\link[=segment_bole]{segment_bole()}}
+\code{\link[=classify_stem_points]{classify_stem_points()}}, \code{\link[=eigen_metrics]{eigen_metrics()}}, \code{\link[=segment_stem]{segment_stem()}}
 }

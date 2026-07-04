@@ -12,36 +12,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// C_ransac_bole_slices
-DataFrame C_ransac_bole_slices(NumericVector X, NumericVector Y, NumericVector Z, IntegerVector treeIds, NumericVector tree_X, NumericVector tree_Y, IntegerVector tree_ID_vals, double z_min, double z_max, double dz, double overlap, double search_radius, double inlier_tol, int n_samples, double confidence, double inlier_frac, int n_best, double max_radius, int min_pts, int ncpu);
-RcppExport SEXP _spanner_C_ransac_bole_slices(SEXP XSEXP, SEXP YSEXP, SEXP ZSEXP, SEXP treeIdsSEXP, SEXP tree_XSEXP, SEXP tree_YSEXP, SEXP tree_ID_valsSEXP, SEXP z_minSEXP, SEXP z_maxSEXP, SEXP dzSEXP, SEXP overlapSEXP, SEXP search_radiusSEXP, SEXP inlier_tolSEXP, SEXP n_samplesSEXP, SEXP confidenceSEXP, SEXP inlier_fracSEXP, SEXP n_bestSEXP, SEXP max_radiusSEXP, SEXP min_ptsSEXP, SEXP ncpuSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type X(XSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type Z(ZSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type treeIds(treeIdsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type tree_X(tree_XSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type tree_Y(tree_YSEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type tree_ID_vals(tree_ID_valsSEXP);
-    Rcpp::traits::input_parameter< double >::type z_min(z_minSEXP);
-    Rcpp::traits::input_parameter< double >::type z_max(z_maxSEXP);
-    Rcpp::traits::input_parameter< double >::type dz(dzSEXP);
-    Rcpp::traits::input_parameter< double >::type overlap(overlapSEXP);
-    Rcpp::traits::input_parameter< double >::type search_radius(search_radiusSEXP);
-    Rcpp::traits::input_parameter< double >::type inlier_tol(inlier_tolSEXP);
-    Rcpp::traits::input_parameter< int >::type n_samples(n_samplesSEXP);
-    Rcpp::traits::input_parameter< double >::type confidence(confidenceSEXP);
-    Rcpp::traits::input_parameter< double >::type inlier_frac(inlier_fracSEXP);
-    Rcpp::traits::input_parameter< int >::type n_best(n_bestSEXP);
-    Rcpp::traits::input_parameter< double >::type max_radius(max_radiusSEXP);
-    Rcpp::traits::input_parameter< int >::type min_pts(min_ptsSEXP);
-    Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
-    rcpp_result_gen = Rcpp::wrap(C_ransac_bole_slices(X, Y, Z, treeIds, tree_X, tree_Y, tree_ID_vals, z_min, z_max, dz, overlap, search_radius, inlier_tol, n_samples, confidence, inlier_frac, n_best, max_radius, min_pts, ncpu));
-    return rcpp_result_gen;
-END_RCPP
-}
 // C_eigen_in_sphere
 List C_eigen_in_sphere(S4 las, double r, int k, int ncpu);
 RcppExport SEXP _spanner_C_eigen_in_sphere(SEXP lasSEXP, SEXP rSEXP, SEXP kSEXP, SEXP ncpuSEXP) {
@@ -178,13 +148,164 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// C_stack_map
+List C_stack_map(NumericMatrix las, double h_min, double h_max, double h_step, double pixel_size, double max_radius, double min_density, unsigned int min_votes);
+RcppExport SEXP _spanner_C_stack_map(SEXP lasSEXP, SEXP h_minSEXP, SEXP h_maxSEXP, SEXP h_stepSEXP, SEXP pixel_sizeSEXP, SEXP max_radiusSEXP, SEXP min_densitySEXP, SEXP min_votesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type las(lasSEXP);
+    Rcpp::traits::input_parameter< double >::type h_min(h_minSEXP);
+    Rcpp::traits::input_parameter< double >::type h_max(h_maxSEXP);
+    Rcpp::traits::input_parameter< double >::type h_step(h_stepSEXP);
+    Rcpp::traits::input_parameter< double >::type pixel_size(pixel_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type max_radius(max_radiusSEXP);
+    Rcpp::traits::input_parameter< double >::type min_density(min_densitySEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type min_votes(min_votesSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_stack_map(las, h_min, h_max, h_step, pixel_size, max_radius, min_density, min_votes));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_hough_stem_points
+List C_hough_stem_points(NumericMatrix las, double h_base_lo, double h_base_hi, double h_step, double max_radius, double pixel_size, double min_density, unsigned int min_votes);
+RcppExport SEXP _spanner_C_hough_stem_points(SEXP lasSEXP, SEXP h_base_loSEXP, SEXP h_base_hiSEXP, SEXP h_stepSEXP, SEXP max_radiusSEXP, SEXP pixel_sizeSEXP, SEXP min_densitySEXP, SEXP min_votesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type las(lasSEXP);
+    Rcpp::traits::input_parameter< double >::type h_base_lo(h_base_loSEXP);
+    Rcpp::traits::input_parameter< double >::type h_base_hi(h_base_hiSEXP);
+    Rcpp::traits::input_parameter< double >::type h_step(h_stepSEXP);
+    Rcpp::traits::input_parameter< double >::type max_radius(max_radiusSEXP);
+    Rcpp::traits::input_parameter< double >::type pixel_size(pixel_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type min_density(min_densitySEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type min_votes(min_votesSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_hough_stem_points(las, h_base_lo, h_base_hi, h_step, max_radius, pixel_size, min_density, min_votes));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_hough_stem_plot
+List C_hough_stem_plot(NumericMatrix las, IntegerVector tree_ids, double h_base_lo, double h_base_hi, double h_step, double max_radius, double pixel_size, double min_density, unsigned int min_votes);
+RcppExport SEXP _spanner_C_hough_stem_plot(SEXP lasSEXP, SEXP tree_idsSEXP, SEXP h_base_loSEXP, SEXP h_base_hiSEXP, SEXP h_stepSEXP, SEXP max_radiusSEXP, SEXP pixel_sizeSEXP, SEXP min_densitySEXP, SEXP min_votesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type las(lasSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type tree_ids(tree_idsSEXP);
+    Rcpp::traits::input_parameter< double >::type h_base_lo(h_base_loSEXP);
+    Rcpp::traits::input_parameter< double >::type h_base_hi(h_base_hiSEXP);
+    Rcpp::traits::input_parameter< double >::type h_step(h_stepSEXP);
+    Rcpp::traits::input_parameter< double >::type max_radius(max_radiusSEXP);
+    Rcpp::traits::input_parameter< double >::type pixel_size(pixel_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type min_density(min_densitySEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type min_votes(min_votesSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_hough_stem_plot(las, tree_ids, h_base_lo, h_base_hi, h_step, max_radius, pixel_size, min_density, min_votes));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_tree_ids_voronoi
+IntegerVector C_tree_ids_voronoi(NumericVector pt_x, NumericVector pt_y, NumericVector tree_x, NumericVector tree_y, IntegerVector tree_ids, double max_dist);
+RcppExport SEXP _spanner_C_tree_ids_voronoi(SEXP pt_xSEXP, SEXP pt_ySEXP, SEXP tree_xSEXP, SEXP tree_ySEXP, SEXP tree_idsSEXP, SEXP max_distSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type pt_x(pt_xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type pt_y(pt_ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tree_x(tree_xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tree_y(tree_ySEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type tree_ids(tree_idsSEXP);
+    Rcpp::traits::input_parameter< double >::type max_dist(max_distSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_tree_ids_voronoi(pt_x, pt_y, tree_x, tree_y, tree_ids, max_dist));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_tree_ids_crop
+IntegerVector C_tree_ids_crop(NumericVector pt_x, NumericVector pt_y, NumericVector tree_x, NumericVector tree_y, IntegerVector tree_ids, double length, bool circle);
+RcppExport SEXP _spanner_C_tree_ids_crop(SEXP pt_xSEXP, SEXP pt_ySEXP, SEXP tree_xSEXP, SEXP tree_ySEXP, SEXP tree_idsSEXP, SEXP lengthSEXP, SEXP circleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type pt_x(pt_xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type pt_y(pt_ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tree_x(tree_xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tree_y(tree_ySEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type tree_ids(tree_idsSEXP);
+    Rcpp::traits::input_parameter< double >::type length(lengthSEXP);
+    Rcpp::traits::input_parameter< bool >::type circle(circleSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_tree_ids_crop(pt_x, pt_y, tree_x, tree_y, tree_ids, length, circle));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_ransac_plot_cylinders
+List C_ransac_plot_cylinders(NumericMatrix las, NumericVector tId, NumericVector segs, NumericVector rads, unsigned int n_samples, double conf, double inlier_frac, double tol);
+RcppExport SEXP _spanner_C_ransac_plot_cylinders(SEXP lasSEXP, SEXP tIdSEXP, SEXP segsSEXP, SEXP radsSEXP, SEXP n_samplesSEXP, SEXP confSEXP, SEXP inlier_fracSEXP, SEXP tolSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type las(lasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tId(tIdSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type segs(segsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type rads(radsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type n_samples(n_samplesSEXP);
+    Rcpp::traits::input_parameter< double >::type conf(confSEXP);
+    Rcpp::traits::input_parameter< double >::type inlier_frac(inlier_fracSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_ransac_plot_cylinders(las, tId, segs, rads, n_samples, conf, inlier_frac, tol));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_irls_plot_cylinders
+List C_irls_plot_cylinders(NumericMatrix las, NumericVector tId, NumericVector segs, NumericVector rads, unsigned int n_points, double tol);
+RcppExport SEXP _spanner_C_irls_plot_cylinders(SEXP lasSEXP, SEXP tIdSEXP, SEXP segsSEXP, SEXP radsSEXP, SEXP n_pointsSEXP, SEXP tolSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type las(lasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tId(tIdSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type segs(segsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type rads(radsSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type n_points(n_pointsSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_irls_plot_cylinders(las, tId, segs, rads, n_points, tol));
+    return rcpp_result_gen;
+END_RCPP
+}
+// C_ransac_stem_slices
+DataFrame C_ransac_stem_slices(NumericVector X, NumericVector Y, NumericVector Z, IntegerVector treeIds, NumericVector tree_X, NumericVector tree_Y, IntegerVector tree_ID_vals, double z_min, double z_max, double dz, double overlap, double search_radius, double inlier_tol, int n_samples, double confidence, double inlier_frac, int n_best, double max_radius, int min_pts, int ncpu);
+RcppExport SEXP _spanner_C_ransac_stem_slices(SEXP XSEXP, SEXP YSEXP, SEXP ZSEXP, SEXP treeIdsSEXP, SEXP tree_XSEXP, SEXP tree_YSEXP, SEXP tree_ID_valsSEXP, SEXP z_minSEXP, SEXP z_maxSEXP, SEXP dzSEXP, SEXP overlapSEXP, SEXP search_radiusSEXP, SEXP inlier_tolSEXP, SEXP n_samplesSEXP, SEXP confidenceSEXP, SEXP inlier_fracSEXP, SEXP n_bestSEXP, SEXP max_radiusSEXP, SEXP min_ptsSEXP, SEXP ncpuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type X(XSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type treeIds(treeIdsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tree_X(tree_XSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tree_Y(tree_YSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type tree_ID_vals(tree_ID_valsSEXP);
+    Rcpp::traits::input_parameter< double >::type z_min(z_minSEXP);
+    Rcpp::traits::input_parameter< double >::type z_max(z_maxSEXP);
+    Rcpp::traits::input_parameter< double >::type dz(dzSEXP);
+    Rcpp::traits::input_parameter< double >::type overlap(overlapSEXP);
+    Rcpp::traits::input_parameter< double >::type search_radius(search_radiusSEXP);
+    Rcpp::traits::input_parameter< double >::type inlier_tol(inlier_tolSEXP);
+    Rcpp::traits::input_parameter< int >::type n_samples(n_samplesSEXP);
+    Rcpp::traits::input_parameter< double >::type confidence(confidenceSEXP);
+    Rcpp::traits::input_parameter< double >::type inlier_frac(inlier_fracSEXP);
+    Rcpp::traits::input_parameter< int >::type n_best(n_bestSEXP);
+    Rcpp::traits::input_parameter< double >::type max_radius(max_radiusSEXP);
+    Rcpp::traits::input_parameter< int >::type min_pts(min_ptsSEXP);
+    Rcpp::traits::input_parameter< int >::type ncpu(ncpuSEXP);
+    rcpp_result_gen = Rcpp::wrap(C_ransac_stem_slices(X, Y, Z, treeIds, tree_X, tree_Y, tree_ID_vals, z_min, z_max, dz, overlap, search_radius, inlier_tol, n_samples, confidence, inlier_frac, n_best, max_radius, min_pts, ncpu));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 RcppExport SEXP cpp_allometric_li_geodesic(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 RcppExport SEXP cpp_allometric_random_walker(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 RcppExport SEXP cpp_allometric_supervoxel_segment(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_spanner_C_ransac_bole_slices", (DL_FUNC) &_spanner_C_ransac_bole_slices, 20},
     {"_spanner_C_eigen_in_sphere", (DL_FUNC) &_spanner_C_eigen_in_sphere, 4},
     {"_spanner_C_count_in_disc", (DL_FUNC) &_spanner_C_count_in_disc, 6},
     {"_spanner_C_count_in_sphere", (DL_FUNC) &_spanner_C_count_in_sphere, 3},
@@ -194,6 +315,14 @@ static const R_CallMethodDef CallEntries[] = {
     {"_spanner_cppCylinderFit", (DL_FUNC) &_spanner_cppCylinderFit, 7},
     {"_spanner_cppComputePCV", (DL_FUNC) &_spanner_cppComputePCV, 4},
     {"_spanner_cppComputeSSAO", (DL_FUNC) &_spanner_cppComputeSSAO, 5},
+    {"_spanner_C_stack_map", (DL_FUNC) &_spanner_C_stack_map, 8},
+    {"_spanner_C_hough_stem_points", (DL_FUNC) &_spanner_C_hough_stem_points, 8},
+    {"_spanner_C_hough_stem_plot", (DL_FUNC) &_spanner_C_hough_stem_plot, 9},
+    {"_spanner_C_tree_ids_voronoi", (DL_FUNC) &_spanner_C_tree_ids_voronoi, 6},
+    {"_spanner_C_tree_ids_crop", (DL_FUNC) &_spanner_C_tree_ids_crop, 7},
+    {"_spanner_C_ransac_plot_cylinders", (DL_FUNC) &_spanner_C_ransac_plot_cylinders, 8},
+    {"_spanner_C_irls_plot_cylinders", (DL_FUNC) &_spanner_C_irls_plot_cylinders, 6},
+    {"_spanner_C_ransac_stem_slices", (DL_FUNC) &_spanner_C_ransac_stem_slices, 20},
     {"cpp_allometric_li_geodesic",        (DL_FUNC) &cpp_allometric_li_geodesic,        20},
     {"cpp_allometric_random_walker",      (DL_FUNC) &cpp_allometric_random_walker,      18},
     {"cpp_allometric_supervoxel_segment", (DL_FUNC) &cpp_allometric_supervoxel_segment, 19},

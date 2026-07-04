@@ -1,8 +1,8 @@
 # ============================================================================
 # spanner – Stem_Classification.R
 #
-# Bole-point classification for individually segmented trees.
-# This is the first step in the bole-segmentation pipeline that follows
+# Stem-point classification for individually segmented trees.
+# This is the first step in the stem-segmentation pipeline that follows
 # individual tree segmentation (segment_graph()).
 #
 # Public function:  classify_stem_points()
@@ -11,13 +11,17 @@
 
 
 # ----------------------------------------------------------------------------
-#' Classify stem (bole) points within a segmented TLS point cloud
+#' Classify stem points within a segmented TLS point cloud
+#'
+#' @description
+#' **Deprecated in spanner v2.0 — use [stem_eigen()] or [stem_hough()] inside
+#' [stem_points()] instead.**
 #'
 #' `classify_stem_points` labels every point in a segmented LAS object as
-#' stem (wood bole) or non-stem and attaches two new columns—`Stem` (logical)
+#' stem (wood stem) or non-stem and attaches two new columns—`Stem` (logical)
 #' and `WoodProb` (numeric, 0–1)—to the returned LAS. It is designed to
 #' operate on the output of [segment_graph()] and feeds directly into
-#' [segment_bole()].
+#' [segment_stem()].
 #'
 #' @details
 #' Four classification methods are available:
@@ -50,11 +54,11 @@
 #'   [get_raster_eigen_treelocs()]).
 #' @param method character. One of `"combined"` (default), `"eigen"`,
 #'   `"lewos"`, or `"hough"`.
-#' @param z_min numeric. Lower Z bound (m above ground) of the bole search
+#' @param z_min numeric. Lower Z bound (m above ground) of the stem search
 #'   window. Default `0.1`.
 #' @param z_max numeric. Upper Z bound (m). Default `8.0`.
 #' @param search_radius numeric. Maximum XY distance (m) from tree seed XY to
-#'   include a point as a bole candidate. Defaults to `max(tree_locs$Radius) *
+#'   include a point as a stem candidate. Defaults to `max(tree_locs$Radius) *
 #'   3` when `NULL`.
 #' @param neigh_k integer. Number of nearest neighbours (excluding the query
 #'   point itself) for the local PCA neighbourhood used in `"eigen"` /
@@ -82,11 +86,11 @@
 #'
 #' @return A LAS object identical to `las` with two extra columns:
 #'   \describe{
-#'     \item{`Stem`}{logical — `TRUE` for bole-classified points.}
+#'     \item{`Stem`}{logical — `TRUE` for stem-classified points.}
 #'     \item{`WoodProb`}{numeric \[0, 1\] — classification confidence.}
 #'   }
 #'
-#' @seealso [segment_graph()], [segment_bole()], [get_raster_eigen_treelocs()]
+#' @seealso [segment_graph()], [segment_stem()], [get_raster_eigen_treelocs()]
 #'
 #' @references
 #' Wang, D., Momo Takoudjou, S., & Casella, E. (2020). LeWoS: A universal
@@ -122,9 +126,9 @@
 #'                          ptcloud_slice_min = 0.5, ptcloud_slice_max = 2.5,
 #'                          subsample.graph = 0.1, return.dense = TRUE)
 #'
-#' # Classify bole points (eigen method — no houghPrimitives needed)
-#' las_bole <- classify_stem_points(las_seg, tree_locs, method = "eigen")
-#' plot(las_bole, color = "Stem")
+#' # Classify stem points (eigen method — no houghPrimitives needed)
+#' las_stem <- classify_stem_points(las_seg, tree_locs, method = "eigen")
+#' plot(las_stem, color = "Stem")
 #' }
 #'
 #' @export
@@ -295,27 +299,27 @@ classify_stem_points <- function(las,
 
   # ---- Optional kNN label propagation (LeWoS-inspired) --------------------
   if (propagate && any(stem_flag)) {
-    bole_idx <- which(
+    stem_idx <- which(
       Z >= z_min & Z <= z_max &
         !is.na(lin) & !is.na(vert) &
         tid_v > 0
     )
-    n_bole <- length(bole_idx)
+    n_stem <- length(stem_idx)
 
-    if (n_bole > k_prop + 1L) {
-      coords     <- cbind(X[bole_idx], Y[bole_idx], Z[bole_idx])
-      labels_sub <- stem_flag[bole_idx]
+    if (n_stem > k_prop + 1L) {
+      coords     <- cbind(X[stem_idx], Y[stem_idx], Z[stem_idx])
+      labels_sub <- stem_flag[stem_idx]
 
       # FNN::knn.index excludes self when test=NULL, so k = k_prop gives
       # exactly k true neighbours (same semantics as lidR::knn)
       nn_idx <- FNN::knn.index(coords, k = k_prop)
 
       for (iter in seq_len(n_prop)) {
-        vote_mat   <- matrix(labels_sub[nn_idx], nrow = n_bole, ncol = k_prop)
+        vote_mat   <- matrix(labels_sub[nn_idx], nrow = n_stem, ncol = k_prop)
         vote_count <- rowSums(vote_mat)
         labels_sub <- vote_count > (k_prop / 2L)
       }
-      stem_flag[bole_idx] <- labels_sub
+      stem_flag[stem_idx] <- labels_sub
     }
   }
 

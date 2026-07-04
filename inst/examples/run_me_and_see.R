@@ -153,6 +153,11 @@ my_catalog_segmentation_allometric_random_walker <- function(chunk)
     lidR::lmf(ws = function(z) pmin(12, pmax(3, 0.1 * z + 3)), hmin = 2)
   )
 
+  seeds_rw <- lidR::locate_trees(
+    las,
+    lidR::lmf(ws = function(z) pmin(12, pmax(2.7, 0.1 * z + 2.7)), hmin = 2)
+  )
+
   trees <- segment_trees(
     las,
     allometric_random_walker(
@@ -233,7 +238,8 @@ seeds_rw <- lidR::locate_trees(
 las_rw <- segment_trees(
   las,
   allometric_random_walker(
-    seeds = seeds_rw,
+    # seeds = seeds_rw,
+    seeds = NULL,
     hmin = 2,
     k = 15,
     alpha = 1.2,
@@ -380,6 +386,11 @@ lidRviewer::view(las_sv)
 
 message("Done. All algorithms ran successfully.")
 
+pts_all <- pts_all_rw
+crowns_all <- crowns_all_rw
+chm <- chm_rw
+
+
 library(ggplot2)
 library(viridis)
 library(sf)
@@ -404,14 +415,14 @@ ggplot() +
     color = "white",
     linewidth = 0.4
   ) +
-  # geom_sf(
-  #   data = pts_all,
-  #   aes(size = npoints),
-  #   shape = 3,
-  #   fill = NA,
-  #   color = "white",
-  #   stroke = 0.8
-  # ) +
+  geom_sf(
+    data = pts_all,
+    aes(size = npoints),
+    shape = 16,
+    fill = NA,
+    color = "white",
+    stroke = 0.8
+  ) +
   scale_size_continuous(
     range = c(1, 6),
     name = "npoints"

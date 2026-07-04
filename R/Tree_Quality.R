@@ -1,29 +1,32 @@
 # ============================================================================
 # spanner – Tree_Quality.R
 #
-# Assess the quality of per-tree bole models and assign quality classes.
+# Assess the quality of per-tree stem models and assign quality classes.
 #
 # Public function: assess_tree_quality()
 # ============================================================================
 
 
 # ----------------------------------------------------------------------------
-#' Assess bole-model quality and flag trees for iterative refit
+#' Assess stem-model quality and flag trees for iterative refit
 #'
 #' `assess_tree_quality` joins the per-segment fit statistics from
-#' [segment_bole()] with per-tree volume statistics from
-#' [compute_bole_volume()] and allometric information from `tree_locs` to
+#' [segment_stem()] or [stem_segments()] with per-tree volume statistics from
+#' [compute_stem_volume()] and allometric information from `tree_locs` to
 #' produce a composite fitness score and quality class for each tree.
 #'
 #' @details
-#' Each tree receives a `fit_score` in \[0, 1\] assembled from five equally
-#' weighted components (each component is clamped to \[0, 1\]):
+#' Each tree receives a `fit_score` in \[0, 1\] assembled from available
+#' component scores. Components that require diagnostics not present in the
+#' segment table (for example `RANSAC_err` or `Inlier_frac` from some
+#' [stem_segments()] methods) are omitted and the remaining weights are
+#' re-normalized.
 #'
 #' \describe{
 #'   \item{*Residual quality* (30 %)}{`1 − clamp(mean_RANSAC_err / max_mean_error)`}
 #'   \item{*Inlier fraction* (20 %)}{Mean per-segment `Inlier_frac` across valid
 #'     segments.}
-#'   \item{*Bole coverage* (20 %)}{Fraction of the expected bole height that
+#'   \item{*Stem coverage* (20 %)}{Fraction of the expected stem height that
 #'     contains at least one valid segment.}
 #'   \item{*Radius consistency* (15 %)}{`1 − clamp(sd(Radius) / max_radius_cv_abs)`,
 #'     where `max_radius_cv_abs = mean(Radius) × max_radius_cv`.}
@@ -42,8 +45,8 @@
 #'
 #' @param tree_locs sf object from [get_raster_eigen_treelocs()]. Must have a
 #'   `TreeID` column. Optionally has `Height` (m) and `Radius` (m).
-#' @param seg_table `data.frame` from [segment_bole()].
-#' @param vol_table `data.frame` from [compute_bole_volume()]. Pass `NULL` to
+#' @param seg_table `data.frame` from [stem_segments()] or the legacy [segment_stem()].
+#' @param vol_table `data.frame` from [compute_stem_volume()]. Pass `NULL` to
 #'   recompute internally (uses cylinder method).
 #' @param max_mean_error numeric. Per-tree mean RANSAC residual threshold for
 #'   a "good" fit (m). Default `0.02`.
@@ -51,8 +54,12 @@
 #'   Default `0.05`.
 #' @param min_inlier_frac numeric. Minimum mean inlier fraction across valid
 #'   segments. Default `0.70`.
-#' @param min_bole_coverage numeric. Minimum fraction of expected bole height
+#' @param min_stem_coverage numeric. Minimum fraction of expected stem height
 #'   with valid segments. Default `0.50`.
+#' @param expected_stem_height numeric or `NULL`. Expected modeled lower-stem
+#'   height (m) used as the denominator for `Stem_coverage`. If tree height is
+#'   available, the denominator is `min(Height, expected_stem_height)`. `NULL`
+#'   uses full tree height when available. Default `3.0`.
 #' @param dbh_ht_ratio_range numeric vector of length 2. Plausible
 #'   \[DBH(m) / TreeHeight(m)\] range. Default `c(0.004, 0.05)`.
 #' @param max_radius_cv numeric. Maximum coefficient of variation for per-slice
@@ -70,18 +77,20 @@
 #'     \item{`Mean_RANSAC_err`}{numeric. Mean per-segment RANSAC residual.}
 #'     \item{`Max_RANSAC_err`}{numeric. Maximum per-segment RANSAC residual.}
 #'     \item{`Mean_inlier_frac`}{numeric. Mean inlier fraction.}
-#'     \item{`Bole_coverage`}{numeric. Fraction of expected bole height modeled.}
+#'     \item{`Stem_coverage`}{numeric. Fraction of expected stem height modeled.}
+#'     \item{`Expected_stem_height`}{numeric. Height denominator used for
+#'       `Stem_coverage`.}
 #'     \item{`DBH_ht_ratio`}{numeric. DBH (m) / tree height (m).}
 #'     \item{`Radius_CV`}{numeric. Coefficient of variation of fitted radii.}
 #'     \item{`fit_score`}{numeric \[0, 1\]. Composite quality score.}
 #'     \item{`quality_class`}{factor. `"good"`, `"marginal"`, or `"bad"`.}
 #'   }
 #'
-#' @seealso [segment_bole()], [compute_bole_volume()], [refit_trees()]
+#' @seealso [stem_segments()], [segment_stem()], [compute_stem_volume()], [refit_trees()]
 #'
 #' @examples
 #' \donttest{
-#' # (continuing from segment_bole / compute_bole_volume examples)
+#' # (continuing from stem_segments / compute_stem_volume examples)
 #' # qual_tbl <- assess_tree_quality(tree_locs, seg_tbl, vol_tbl)
 #' # table(qual_tbl$quality_class)
 #' }
@@ -93,7 +102,8 @@ assess_tree_quality <- function(tree_locs,
                                 max_mean_error    = 0.02,
                                 max_max_error     = 0.05,
                                 min_inlier_frac   = 0.70,
-                                min_bole_coverage = 0.50,
+                                min_stem_coverage = 0.50,
+                                expected_stem_height = 3.0,
                                 dbh_ht_ratio_range = c(0.004, 0.05),
                                 max_radius_cv     = 0.40,
                                 min_segments      = 3L) {
@@ -104,19 +114,23 @@ assess_tree_quality <- function(tree_locs,
   if (!"TreeID" %in% names(tree_locs))
     stop("'tree_locs' must have a 'TreeID' column.")
   if (!is.data.frame(seg_table))
-    stop("'seg_table' must be a data.frame from segment_bole().")
+    stop("'seg_table' must be a data.frame from stem_segments() or segment_stem().")
 
-  required_seg <- c("TreeID", "Segment", "Z_low", "Z_high",
-                    "Radius", "Valid", "Inlier_frac", "RANSAC_err")
+  required_seg <- c("TreeID", "Segment", "Z_low", "Z_high", "Radius", "Valid")
   miss <- setdiff(required_seg, names(seg_table))
   if (length(miss) > 0)
     stop("'seg_table' is missing columns: ", paste(miss, collapse = ", "))
 
+  # Fill optional diagnostic columns with NA if not present
+  # (stem_segments() output does not include RANSAC_err / Inlier_frac)
+  if (!"RANSAC_err"  %in% names(seg_table)) seg_table$RANSAC_err  <- NA_real_
+  if (!"Inlier_frac" %in% names(seg_table)) seg_table$Inlier_frac <- NA_real_
+
   # ---- Compute vol_table if not supplied ------------------------------------
   if (is.null(vol_table))
-    vol_table <- compute_bole_volume(seg_table, method = "cylinder")
+    vol_table <- compute_stem_volume(seg_table, method = "cylinder")
 
-  # ---- Determine expected bole height for each tree -------------------------
+  # ---- Determine expected stem height for each tree -------------------------
   # Prefer a Height column in tree_locs; fall back to Z_high max from seg_table
   has_ht <- "Height" %in% names(tree_locs)
   tl_ht  <- if (has_ht) {
@@ -148,9 +162,18 @@ assess_tree_quality <- function(tree_locs,
 
     n_seg <- nrow(segs_valid)
 
-    # Expected bole height
-    exp_ht <- as.numeric(tl_ht[tid_ch])
-    if (is.na(exp_ht) || exp_ht <= 0) exp_ht <- NA_real_
+    # Expected heights: full tree height for allometry, lower stem for coverage.
+    tree_ht <- as.numeric(tl_ht[tid_ch])
+    if (is.na(tree_ht) || tree_ht <= 0) tree_ht <- NA_real_
+    exp_stem_ht <- tree_ht
+    if (!is.null(expected_stem_height) && !is.na(expected_stem_height) &&
+        expected_stem_height > 0) {
+      exp_stem_ht <- if (!is.na(tree_ht)) {
+        min(tree_ht, expected_stem_height)
+      } else {
+        expected_stem_height
+      }
+    }
 
     # Basic metrics
     rads    <- segs_valid$Radius
@@ -159,9 +182,16 @@ assess_tree_quality <- function(tree_locs,
 
     mean_r   <- mean(rads, na.rm = TRUE)
     sd_r     <- if (n_seg > 1L) stats::sd(rads, na.rm = TRUE) else 0.0
-    mean_err <- mean(errs, na.rm = TRUE)
-    max_err  <- max(errs,  na.rm = TRUE)
-    mean_inf <- mean(infrac, na.rm = TRUE)
+    mean_or_na <- function(x) {
+      if (length(x) == 0L || all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
+    }
+    max_or_na <- function(x) {
+      if (length(x) == 0L || all(is.na(x))) NA_real_ else max(x, na.rm = TRUE)
+    }
+
+    mean_err <- mean_or_na(errs)
+    max_err  <- max_or_na(errs)
+    mean_inf <- mean_or_na(infrac)
 
     # DBH = 2 × radius of the lowest valid segment
     dbh_m <- if (n_seg >= 1L) {
@@ -169,16 +199,16 @@ assess_tree_quality <- function(tree_locs,
       2.0 * lowest$Radius
     } else NA_real_
 
-    # Bole coverage fraction
-    bole_cov <- if (!is.na(exp_ht) && exp_ht > 0 && n_seg >= 1L) {
+    # Stem coverage fraction
+    stem_cov <- if (!is.na(exp_stem_ht) && exp_stem_ht > 0 && n_seg >= 1L) {
       ht_span <- max(segs_valid$Z_high, na.rm = TRUE) -
         min(segs_valid$Z_low, na.rm = TRUE)
-      min(1.0, ht_span / exp_ht)
+      min(1.0, ht_span / exp_stem_ht)
     } else NA_real_
 
     # DBH/height allometric ratio
-    dbh_ht <- if (!is.na(dbh_m) && !is.na(exp_ht) && exp_ht > 0)
-      dbh_m / exp_ht else NA_real_
+    dbh_ht <- if (!is.na(dbh_m) && !is.na(tree_ht) && tree_ht > 0)
+      dbh_m / tree_ht else NA_real_
 
     # Radius coefficient of variation
     r_cv <- if (!is.na(mean_r) && mean_r > 0 && !is.na(sd_r))
@@ -187,37 +217,51 @@ assess_tree_quality <- function(tree_locs,
     # ---- Component scores [0, 1] -------------------------------------------
     clamp <- function(x) min(1.0, max(0.0, x))
 
-    sc_resid  <- if (!is.na(mean_err))
-      clamp(1.0 - mean_err / max(max_mean_error, 1e-9)) else 0.0
-    sc_inlier <- if (!is.na(mean_inf)) clamp(mean_inf)             else 0.0
-    sc_cov    <- if (!is.na(bole_cov)) clamp(bole_cov)             else 0.0
-    sc_cv     <- if (!is.na(r_cv) && !is.na(mean_r)) {
+    scores <- c()
+    weights <- c()
+
+    if (!is.na(mean_err)) {
+      scores <- c(scores, residual = clamp(1.0 - mean_err / max(max_mean_error, 1e-9)))
+      weights <- c(weights, residual = 0.30)
+    }
+    if (!is.na(mean_inf)) {
+      scores <- c(scores, inlier = clamp(mean_inf))
+      weights <- c(weights, inlier = 0.20)
+    }
+    if (!is.na(stem_cov)) {
+      scores <- c(scores, coverage = clamp(stem_cov))
+      weights <- c(weights, coverage = 0.20)
+    }
+    if (!is.na(r_cv) && !is.na(mean_r)) {
       max_abs_cv <- mean_r * max_radius_cv
-      clamp(1.0 - sd_r / max(max_abs_cv, 1e-9))
-    } else 0.0
-    sc_allo   <- if (!is.na(dbh_ht)) {
+      scores <- c(scores, radius_cv = clamp(1.0 - sd_r / max(max_abs_cv, 1e-9)))
+      weights <- c(weights, radius_cv = 0.15)
+    }
+    if (!is.na(dbh_ht)) {
       lo <- dbh_ht_ratio_range[1L]; hi <- dbh_ht_ratio_range[2L]
-      if (dbh_ht >= lo && dbh_ht <= hi) {
+      sc_allo <- if (dbh_ht >= lo && dbh_ht <= hi) {
         1.0
       } else if (dbh_ht < lo) {
         max(0.0, 1.0 - (lo - dbh_ht) / lo)
       } else {
         max(0.0, 1.0 - (dbh_ht - hi) / hi)
       }
-    } else 0.5  # neutral when no height available
+      scores <- c(scores, allometry = sc_allo)
+      weights <- c(weights, allometry = 0.15)
+    }
 
-    fit_score <- 0.30 * sc_resid +
-      0.20 * sc_inlier +
-      0.20 * sc_cov    +
-      0.15 * sc_cv     +
-      0.15 * sc_allo
+    fit_score <- if (length(scores) > 0L && sum(weights) > 0) {
+      sum(scores * weights) / sum(weights)
+    } else {
+      NA_real_
+    }
 
     # ---- Hard threshold violations ----------------------------------------
     hard_fail_count <- 0L
     if (!is.na(mean_err) && mean_err > max_mean_error)  hard_fail_count <- hard_fail_count + 1L
     if (!is.na(max_err)  && max_err  > max_max_error)   hard_fail_count <- hard_fail_count + 1L
     if (!is.na(mean_inf) && mean_inf < min_inlier_frac) hard_fail_count <- hard_fail_count + 1L
-    if (!is.na(bole_cov) && bole_cov < min_bole_coverage) hard_fail_count <- hard_fail_count + 1L
+    if (!is.na(stem_cov) && stem_cov < min_stem_coverage) hard_fail_count <- hard_fail_count + 1L
     if (!is.na(dbh_ht) &&
         (dbh_ht < dbh_ht_ratio_range[1L] || dbh_ht > dbh_ht_ratio_range[2L]))
       hard_fail_count <- hard_fail_count + 1L
@@ -241,7 +285,8 @@ assess_tree_quality <- function(tree_locs,
       Mean_RANSAC_err = mean_err,
       Max_RANSAC_err  = max_err,
       Mean_inlier_frac = mean_inf,
-      Bole_coverage   = bole_cov,
+      Stem_coverage   = stem_cov,
+      Expected_stem_height = exp_stem_ht,
       DBH_ht_ratio    = dbh_ht,
       Radius_CV       = r_cv,
       fit_score       = fit_score,

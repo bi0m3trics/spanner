@@ -21,13 +21,14 @@ process_tree_data(
 
 \item{return_sf}{logical: If TRUE, returns an \code{sf} object representing the convex hulls for each tree.}
 
-\item{seg_table}{\code{data.frame} or \code{NULL}. Optional output of \code{\link[=segment_bole]{segment_bole()}}.
-When supplied, per-tree bole volume is merged into the result via
-\code{\link[=compute_bole_volume]{compute_bole_volume()}} (unless \code{vol_table} is also provided). Required
-columns: \code{TreeID}, \code{Segment}, \code{Z_low}, \code{Z_high}, \code{Radius}, \code{Valid}.}
+\item{seg_table}{\code{data.frame} or \code{NULL}. Optional output of \code{\link[=stem_segments]{stem_segments()}}
+or the legacy \code{\link[=segment_stem]{segment_stem()}}. When supplied and \code{vol_table} is \code{NULL},
+per-tree stem volume is computed automatically via \code{\link[=compute_stem_volume]{compute_stem_volume()}}
+and merged into the result. Required columns: \code{TreeID}, \code{Segment},
+\code{Z_low}, \code{Z_high}, \code{Radius}, \code{Valid}.}
 
 \item{vol_table}{\code{data.frame} or \code{NULL}. Optional output of
-\code{\link[=compute_bole_volume]{compute_bole_volume()}}. When supplied alongside \code{seg_table}, volume
+\code{\link[=compute_stem_volume]{compute_stem_volume()}}. When supplied alongside \code{seg_table}, volume
 columns are merged directly without recomputing. Required columns:
 \code{TreeID}, \code{Volume_m3}.}
 
@@ -61,8 +62,8 @@ by rasterizing individual point cloud values of relative neighborhood density (a
 and create unique polygons from the resulting classified raster. These point-density and
 verticality polygons were selected by their intersection with one another, resulting in a
 final set of polygons which were used to clip out regions of the point cloud that were most
-likely to represent tree boles. A RANSAC cylinder fitting algorithm was then used to estimate
-the fit of a cylinder to individual bole points. Cylinder centers and radius were used as inputs
+likely to represent tree stems. A RANSAC cylinder fitting algorithm was then used to estimate
+the fit of a cylinder to individual stem points. Cylinder centers and radius were used as inputs
 to an individual tree segmentation.
 }
 \examples{

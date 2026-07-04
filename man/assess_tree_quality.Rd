@@ -2,7 +2,7 @@
 % Please edit documentation in R/Tree_Quality.R
 \name{assess_tree_quality}
 \alias{assess_tree_quality}
-\title{Assess bole-model quality and flag trees for iterative refit}
+\title{Assess stem-model quality and flag trees for iterative refit}
 \usage{
 assess_tree_quality(
   tree_locs,
@@ -11,7 +11,8 @@ assess_tree_quality(
   max_mean_error = 0.02,
   max_max_error = 0.05,
   min_inlier_frac = 0.7,
-  min_bole_coverage = 0.5,
+  min_stem_coverage = 0.5,
+  expected_stem_height = 3,
   dbh_ht_ratio_range = c(0.004, 0.05),
   max_radius_cv = 0.4,
   min_segments = 3L
@@ -21,9 +22,9 @@ assess_tree_quality(
 \item{tree_locs}{sf object from \code{\link[=get_raster_eigen_treelocs]{get_raster_eigen_treelocs()}}. Must have a
 \code{TreeID} column. Optionally has \code{Height} (m) and \code{Radius} (m).}
 
-\item{seg_table}{\code{data.frame} from \code{\link[=segment_bole]{segment_bole()}}.}
+\item{seg_table}{\code{data.frame} from \code{\link[=stem_segments]{stem_segments()}} or the legacy \code{\link[=segment_stem]{segment_stem()}}.}
 
-\item{vol_table}{\code{data.frame} from \code{\link[=compute_bole_volume]{compute_bole_volume()}}. Pass \code{NULL} to
+\item{vol_table}{\code{data.frame} from \code{\link[=compute_stem_volume]{compute_stem_volume()}}. Pass \code{NULL} to
 recompute internally (uses cylinder method).}
 
 \item{max_mean_error}{numeric. Per-tree mean RANSAC residual threshold for
@@ -35,8 +36,13 @@ Default \code{0.05}.}
 \item{min_inlier_frac}{numeric. Minimum mean inlier fraction across valid
 segments. Default \code{0.70}.}
 
-\item{min_bole_coverage}{numeric. Minimum fraction of expected bole height
+\item{min_stem_coverage}{numeric. Minimum fraction of expected stem height
 with valid segments. Default \code{0.50}.}
+
+\item{expected_stem_height}{numeric or \code{NULL}. Expected modeled lower-stem
+height (m) used as the denominator for \code{Stem_coverage}. If tree height is
+available, the denominator is \code{min(Height, expected_stem_height)}. \code{NULL}
+uses full tree height when available. Default \code{3.0}.}
 
 \item{dbh_ht_ratio_range}{numeric vector of length 2. Plausible
 [DBH(m) / TreeHeight(m)] range. Default \code{c(0.004, 0.05)}.}
@@ -58,7 +64,9 @@ columns:
 \item{\code{Mean_RANSAC_err}}{numeric. Mean per-segment RANSAC residual.}
 \item{\code{Max_RANSAC_err}}{numeric. Maximum per-segment RANSAC residual.}
 \item{\code{Mean_inlier_frac}}{numeric. Mean inlier fraction.}
-\item{\code{Bole_coverage}}{numeric. Fraction of expected bole height modeled.}
+\item{\code{Stem_coverage}}{numeric. Fraction of expected stem height modeled.}
+\item{\code{Expected_stem_height}}{numeric. Height denominator used for
+\code{Stem_coverage}.}
 \item{\code{DBH_ht_ratio}}{numeric. DBH (m) / tree height (m).}
 \item{\code{Radius_CV}}{numeric. Coefficient of variation of fitted radii.}
 \item{\code{fit_score}}{numeric [0, 1]. Composite quality score.}
@@ -67,19 +75,22 @@ columns:
 }
 \description{
 \code{assess_tree_quality} joins the per-segment fit statistics from
-\code{\link[=segment_bole]{segment_bole()}} with per-tree volume statistics from
-\code{\link[=compute_bole_volume]{compute_bole_volume()}} and allometric information from \code{tree_locs} to
+\code{\link[=segment_stem]{segment_stem()}} or \code{\link[=stem_segments]{stem_segments()}} with per-tree volume statistics from
+\code{\link[=compute_stem_volume]{compute_stem_volume()}} and allometric information from \code{tree_locs} to
 produce a composite fitness score and quality class for each tree.
 }
 \details{
-Each tree receives a \code{fit_score} in [0, 1] assembled from five equally
-weighted components (each component is clamped to [0, 1]):
+Each tree receives a \code{fit_score} in [0, 1] assembled from available
+component scores. Components that require diagnostics not present in the
+segment table (for example \code{RANSAC_err} or \code{Inlier_frac} from some
+\code{\link[=stem_segments]{stem_segments()}} methods) are omitted and the remaining weights are
+re-normalized.
 
 \describe{
 \item{\emph{Residual quality} (30 \%)}{\verb{1 − clamp(mean_RANSAC_err / max_mean_error)}}
 \item{\emph{Inlier fraction} (20 \%)}{Mean per-segment \code{Inlier_frac} across valid
 segments.}
-\item{\emph{Bole coverage} (20 \%)}{Fraction of the expected bole height that
+\item{\emph{Stem coverage} (20 \%)}{Fraction of the expected stem height that
 contains at least one valid segment.}
 \item{\emph{Radius consistency} (15 \%)}{\verb{1 − clamp(sd(Radius) / max_radius_cv_abs)},
 where \verb{max_radius_cv_abs = mean(Radius) × max_radius_cv}.}
@@ -98,12 +109,12 @@ fewer than \code{min_segments} valid slices.}
 }
 \examples{
 \donttest{
-# (continuing from segment_bole / compute_bole_volume examples)
+# (continuing from stem_segments / compute_stem_volume examples)
 # qual_tbl <- assess_tree_quality(tree_locs, seg_tbl, vol_tbl)
 # table(qual_tbl$quality_class)
 }
 
 }
 \seealso{
-\code{\link[=segment_bole]{segment_bole()}}, \code{\link[=compute_bole_volume]{compute_bole_volume()}}, \code{\link[=refit_trees]{refit_trees()}}
+\code{\link[=stem_segments]{stem_segments()}}, \code{\link[=segment_stem]{segment_stem()}}, \code{\link[=compute_stem_volume]{compute_stem_volume()}}, \code{\link[=refit_trees]{refit_trees()}}
 }

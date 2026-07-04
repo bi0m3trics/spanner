@@ -32,23 +32,23 @@ get_raster_eigen_treelocs(
 
 \item{pt_spacing}{numeric Subsample spacing for graph connections.}
 
-\item{dens_threshold}{numeric Minimum point density in raster cell to be considered as potential tree bole.}
+\item{dens_threshold}{numeric Minimum point density in raster cell to be considered as potential tree stem.}
 
 \item{neigh_sizes}{numeric Vector for verticality and relative density (small and large neighborhoods) calculations}
 
-\item{eigen_threshold}{numeric Minimum average verticality in raster cell to be considered as potential tree bole.}
+\item{eigen_threshold}{numeric Minimum average verticality in raster cell to be considered as potential tree stem.}
 
 \item{grid_slice_min}{numeric Lower bound of point cloud slice in normalized point cloud.}
 
 \item{grid_slice_max}{numeric Upper bound of point cloud slice in normalized point cloud.}
 
-\item{minimum_polygon_area}{numeric Smallest allowable polygon area of potential tree boles.}
+\item{minimum_polygon_area}{numeric Smallest allowable polygon area of potential tree stems.}
 
 \item{cylinder_fit_type}{character Choose "ransac" or "irls" cylinder fitting.}
 
 \item{max_dia}{numeric The max diameter (in m) of a resulting tree (use to eliminate commission errors).}
 
-\item{SDvert}{numeric The standard deviation threshold below which polygons will be considered as tree boles.}
+\item{SDvert}{numeric The standard deviation threshold below which polygons will be considered as tree stems.}
 
 \item{n_best}{integer number of "best" ransac fits to keep when evaluating the best fit.}
 
@@ -76,8 +76,8 @@ by rasterizing individual point cloud values of relative neighborhood density (a
 and create unique polygons from the resulting classified raster. These point-density and
 verticality polygons were selected by their intersection with one another, resulting in a
 final set of polygons which were used to clip out regions of the point cloud that were most
-likely to represent tree boles. A RANSAC cylinder fitting algorithm was then used to estimate
-the fit of a cylinder to individual bole points. Cylinder centers and radius were used as inputs
+likely to represent tree stems. A RANSAC cylinder fitting algorithm was then used to estimate
+the fit of a cylinder to individual stem points. Cylinder centers and radius were used as inputs
 to an individual tree segmentation
 }
 \examples{
