@@ -1,155 +1,95 @@
 # spanner 2.0.0
 
-## New modular pipeline
+## New staged TLS/MLS pipeline
 
-spanner 2.0 introduces a five-stage pipeline API that replaces the previous
-collection of stand-alone functions.  Each stage dispatches on a swappable
-*method object*, making it easy to mix and match detection and fitting
-strategies without rewriting pipeline code.
+spanner 2.0 adds an explicit five-stage workflow for terrestrial and mobile
+lidar tree attribute estimation:
 
-```
-find_trees()      → tree_points()  → stem_points()
-stem_segments()   → tree_inventory()
+```r
+find_trees() -> tree_points() -> stem_points() -> stem_segments() -> tree_inventory()
 ```
 
-### Stage 1 — `find_trees(las, method)`
+Each stage dispatches on a swappable method object, so users can change tree
+detection, point assignment, stem classification, or stem fitting without
+rewriting the surrounding workflow.
 
-Detects individual tree locations and returns an `sf` POINT table
-(`TreeID`, `X`, `Y`, `Radius`, …).
+* `find_trees()` detects tree locations and returns an `sf` POINT table with
+  `TreeID`, `Radius`, and `Error` fields.
+* `tree_points()` assigns lidar points to tree IDs and returns a `LAS` object
+  with a `treeID` column.
+* `stem_points()` labels stem points before geometric fitting.
+* `stem_segments()` fits per-tree, per-height-slice stem geometry.
+* `tree_inventory()` rolls map, point cloud, segment, volume, and quality
+  outputs into a tree-level inventory.
 
-* `use_raster_eigen()` – wraps the existing `get_raster_eigen_treelocs()`
-  raster-eigenvalue detector.  Used as `find_trees(las, use_raster_eigen())`.
-* `use_hough()` – new Hough-accumulator stem detector.  Stacks horizontal
-  density slices across a user-defined height range, accumulates votes in
-  a 2-D pixel grid, and clusters peaks into tree centres.  Works on both
-  TLS and MLS without pre-classified ground.
+## New method factories
 
-### Stage 2 — `tree_points(las, map, method)`
+* `use_raster_eigen()` wraps the existing `get_raster_eigen_treelocs()` tree
+  detector for use in the staged workflow.
+* `use_hough()` adds a Hough slice-stack tree detector for TLS/MLS data.
+* `assign_voronoi()` adds fast nearest-tree point assignment with an optional
+  maximum distance.
+* `assign_crop()` adds fixed-radius or fixed-square tree assignment around
+  seed locations.
+* `assign_graph()` wraps the existing `segment_graph()` workflow as a pipeline
+  point-assignment method.
+* `stem_eigen()` wraps `classify_lw_points()` for eigen/LeWoS-style stem
+  classification.
+* `stem_hough()` adds Hough-based per-tree stem point labelling for noisy or
+  mixed-density mobile lidar data.
+* `seg_ransac_cylinder()` fits 3-D RANSAC cylinders by height slice.
+* `seg_irls_cylinder()` fits 3-D IRLS cylinders by height slice.
+* `seg_bf_cylinder()` adds a brute-force RANSAC cylinder option for leaning or
+  heavily occluded stems.
 
-Attributes every point to a tree ID.
+## Reverse compatibility
 
-* `assign_graph()` – wraps the existing `segment_graph()` minimum-spanning-
-  tree segmentation.
-* `assign_voronoi()` – fast Voronoi-based assignment; each point is claimed
-  by its nearest tree seed within an optional maximum radius.
-* `assign_crop()` – cylindrical crop around each tree seed.
+* `get_raster_eigen_treelocs()`, `segment_graph()`, and `process_tree_data()`
+  remain available and can be mixed with the v2 staged workflow.
 
-### Stage 3 — `stem_points(las, map, method)`
+## Inventory, quality, and refitting changes
 
-Labels stem/bole points within the segmented cloud.
+* `process_tree_data()` now accepts v2 segment tables and automatically uses
+  `compute_stem_volume()` when a segment table is supplied but no volume table
+  is provided.
+* `assess_tree_quality()` now accepts both `stem_segments()` and legacy
+  `segment_stem()` outputs. Optional diagnostic columns such as `RANSAC_err`
+  and `Inlier_frac` are filled or omitted from scoring when unavailable.
+* `refit_trees()` works with the stem terminology and segment-table schemas
+  used by the v2 pipeline.
 
-* `stem_eigen()` – two-scale eigenvalue leaf-wood classifier (previously
-  `classify_lw_points()`); adds `Stem` and `StemProb` columns.
-* `stem_hough()` – new per-tree Hough-based stem detector; labels points that
-  lie on circular cross-sections fitted by the Hough accumulator.
+## Canopy and ALS tools
 
-### Stage 4 — `stem_segments(las, map, method)`
-
-Fits 3-D cylinders across overlapping height slices for every tree and
-returns a tidy segment table (`TreeID`, `Segment`, `Z_low`, `Z_high`,
-`Z_mid`, `Radius`, `Diameter`, `Fit_method`, `N_pts`, `Valid`).
-
-* `seg_ransac_cylinder()` – RANSAC 3-D cylinder fit.  All trees × all slices
-  are processed in a single vectorised C++ call, making this 50–100× faster
-  than the previous per-slice R loop.
-* `seg_irls_cylinder()` – IRLS (iteratively reweighted least squares) 3-D
-  cylinder fit with the same performance characteristics.
-
-### Stage 5 — `tree_inventory(map, segmented_las, seg_table, …)`
-
-Rolls up all pipeline outputs into a per-tree `sf` inventory table.
-Computes crown geometry, merges segment and quality tables, and optionally
-returns convex-hull crown polygons.
-
-## New functions
-
-* `find_trees()` – stage 1 dispatcher; see pipeline section above.
-* `tree_points()` – stage 2 dispatcher.
-* `stem_points()` – stage 3 dispatcher.
-* `stem_segments()` – stage 4 dispatcher.
-* `tree_inventory()` – stage 5 dispatcher.
-* `use_raster_eigen()`, `use_hough()` – method factories for `find_trees()`.
-* `assign_voronoi()`, `assign_crop()`, `assign_graph()` – method factories for `tree_points()`.
-* `stem_eigen()`, `stem_hough()` – method factories for `stem_points()`.
-* `seg_ransac_cylinder()`, `seg_irls_cylinder()` – method factories for `stem_segments()`.
-
-* `compute_stem_volume()` – (renamed from `compute_bole_volume()`) aggregates
-  a segment table from `stem_segments()` into per-tree outside-bark stem
-  volume.  Accepts any table with `TreeID`, `Segment`, `Z_low`, `Z_high`,
-  `Radius`, `Valid`; RANSAC diagnostic columns are optional.
-
-* `allometric_li_geodesic()` – builds a `lidR::segment_trees()`-compatible
-  algorithm using allometric crown envelopes and geodesic growing on a local
-  kNN graph.
-
-* `allometric_random_walker()` – seeded diffusion-style crown segmentation
-  algorithm for `lidR::segment_trees()` with allometric penalties.
-
-* `allometric_supervoxel_segment()` – supervoxel-graph segmentation for
-  `lidR::segment_trees()` with backfilling and small-island cleanup.
-
-* `compute_lai()` – estimates leaf area index (LAI) and leaf area density
-  (LAD) per grid cell from any height-normalized lidar point cloud using the
-  MacArthur-Horn gap-fraction Beer-Lambert inversion.  Accepts a single `LAS`
-  or a `LAScatalog` (parallelised over chunks).  Returns a three-layer
-  `SpatRaster`: `LAI`, `LAD_mean`, `LAD_max`.
-
-* `compute_pad_voxels()` – estimates 3-D plant area density (PAD, m²/m³)
-  by tracing lidar pulses downward through a regular voxel grid and applying
-  the Beer-Lambert inversion.  Per-voxel output includes `directed`,
-  `transmitted`, `intercepted`, `occluded`, `PAD`, and `VoxelClass`.
-
-* `compute_transmittance_raster()` – converts the per-voxel PAD table from
-  `compute_pad_voxels()` into a 2-D `SpatRaster` of Beer-Lambert canopy
-  transmittance (τ ∈ [0, 1]) for each (X, Y) column.
-
-* `branch_metrics()` – scores and flags branch-candidate points from
-  `eigen_metrics()` output.  Adds `AxisAngle`, `BranchScore`, and
-  `IsBranchCandidate` to the input `data.table` in-place.
-
-* `classify_lw_points()` – two-scale eigenvalue leaf-wood classifier; adds
-  `Bole`, `BoleProb`, `Branch`, `BranchProb`, and `Other` columns.  Used
-  internally by `stem_eigen()` and available as a standalone function.
-
-* `refit_trees()` – re-runs stem fitting with relaxed or tightened parameters
-  for trees flagged as `"bad"` or `"marginal"` by `assess_tree_quality()`.
-  Supports multiple sequential refitting strategies and handles `NA` tree IDs
-  without crashing.
-
-## Changes to existing functions
-
-* `process_tree_data()` – when `seg_table` is supplied and `vol_table` is
-  `NULL`, stem volume is now computed automatically via `compute_stem_volume()`
-  and merged into the result.
-
-* `assess_tree_quality()` – now accepts segment tables from `stem_segments()`
-  in addition to `segment_bole()`.  `RANSAC_err` and `Inlier_frac` columns
-  are optional; quality-score components that depend on them default to zero
-  when absent.
-
-* `eigen_metrics()` – now returns three additional columns: `E1x`, `E1y`,
-  `E1z` (components of the dominant eigenvector λ₁), required by
-  `branch_metrics()`.
-
-## Deprecated functions
-
-The following functions remain exported for backwards compatibility but are
-superseded by the v2 pipeline and may be removed in a future release.
-
-* `segment_bole()` – use `stem_segments()` instead.
-* `classify_stem_points()` – use `stem_points(method = stem_eigen())` or
-  `stem_points(method = stem_hough())` instead.
+* `allometric_li_geodesic()`, `allometric_random_walker()`, and
+  `allometric_supervoxel_segment()` provide `lidR::segment_trees()`-compatible
+  allometric individual-tree segmentation for normalized ALS data.
+* `compute_lai()` estimates rasterized LAI/LAD from normalized point clouds.
+* `compute_pad_voxels()` estimates voxelized plant area density and pulse
+  accounting fields.
+* `compute_transmittance_raster()` converts PAD voxels into Beer-Lambert canopy
+  transmittance rasters.
+* `branch_metrics()` scores branch-candidate points from `eigen_metrics()`.
+* `classify_lw_points()` provides unified stem, branch, and other point
+  classification.
 
 ## Internal C++ improvements
 
-* New Hough accumulator for stem detection (`C_stack_map`,
-  `C_hough_stem_plot`): processes all height slices in a single pass over the
-  point cloud with OpenMP parallelism.
-* New batch cylinder fitters (`C_ransac_plot_cylinders`,
-  `C_irls_plot_cylinders`): accept all trees and all slices in one call,
-  eliminating the per-slice R dispatch overhead that dominated runtime in v1.
-* New Voronoi and crop tree-ID assigners (`C_tree_ids_voronoi`,
-  `C_tree_ids_crop`) implemented directly in C++.
+* Added Hough stack-map and per-tree stem-labelling back ends:
+  `C_stack_map()`, `C_hough_stem_points()`, and `C_hough_stem_plot()`.
+* Added fast tree-ID assignment back ends: `C_tree_ids_voronoi()` and
+  `C_tree_ids_crop()`.
+* Added batch cylinder fitting back ends: `C_ransac_plot_cylinders()` and
+  `C_irls_plot_cylinders()`.
+* Added `C_ransac_stem_slices()` for the legacy `segment_stem()` path.
+
+## Documentation and examples
+
+* Added documentation for the five pipeline stages and their method factories.
+* Added an MLS example using `inst/extdata/MLS_Clip.laz` that demonstrates
+  `find_trees() -> tree_points() -> stem_points() -> stem_segments() ->
+  tree_inventory()`.
+* Updated README language from a collection of standalone tools to a staged
+  workflow centered on interchangeable methods.
 
 # spanner 1.0.4
 
@@ -235,3 +175,4 @@ superseded by the v2 pipeline and may be removed in a future release.
 # spanner 0.0.0.9000
 
 * Added a `NEWS.md` file to track changes to the package.
+

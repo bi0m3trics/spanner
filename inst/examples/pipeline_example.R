@@ -1,141 +1,83 @@
+# spanner v2 TLS/MLS staged workflow example
+#
+# This example uses the MLS_Clip.laz file shipped in inst/extdata and runs:
+# find_trees() -> tree_points() -> stem_points() -> stem_segments() ->
+# tree_inventory()
+
 library(spanner)
 library(lidR)
-library(lidRviewer)
+library(sf)
 
-las <- readLAS("C:/Users/ajsm/Desktop/Temp/Setup49.las")
+mls_file <- system.file("extdata", "MLS_Clip.laz", package = "spanner")
+las <- lidR::readLAS(mls_file, select = "xyzcr")
+if (lidR::is.empty(las)) stop("MLS_Clip.laz could not be read.")
 
-myTreeLocs = get_raster_eigen_treelocs(las = las, res = 0.025, pt_spacing = 0.0254,
-                                       dens_threshold = 0.25,
-                                       neigh_sizes = c(0.25, 0.15, 0.66),
-                                       eigen_threshold = 0.75,
-                                       grid_slice_min = 1,
-                                       grid_slice_max = 2,
-                                       minimum_polygon_area = 0.005,
-                                       cylinder_fit_type = "ransac",
-                                       max_dia = 1,
-                                       SDvert = 0.33,
-                                       n_pts = 20,
-                                       n_best = 25,
-                                       inliers = 0.9,
-                                       conf = 0.99,
-                                       max_angle = 20)
+# Set the CRS used by the package example data when it is not already present.
+sf::st_crs(las) <- 26912
 
-
-myTreeGraph = segment_graph(las = las, tree.locations = myTreeLocs, k = 50,
-                            distance.threshold = 0.5,
-                            use.metabolic.scale = TRUE,
-                            metabolic.scale.function = '1/((2*x)^(1/8))',
-                            ptcloud_slice_min = 1,
-                            ptcloud_slice_max = 2,
-                            subsample.graph = 0.1,
-                            return.dense = TRUE)
-
-bole_las <- classify_stem_points(myTreeGraph,
-                                myTreeLocs,
-                                method = "lewos",
-                                z_min = 0.05,
-                                z_max = 30,
-                                search_radius = 1,
-                                neigh_k = 30L,
-                                linearity_threshold = 0, # ignores Linearity
-                                verticality_threshold = 0.8,
-                                n_propagation = 10L,
-                                k_propagation = 30L,
-                                hough_min_radius = 0.01,
-                                hough_max_radius = 1,
-                                hough_min_votes = 30L,
-                                ncpu = 16L,
-                                voxel_thin = NULL
+# Stage 1: detect tree seed locations.
+tree_map <- find_trees(
+  las,
+  method = use_hough(
+    min_h = 1.0,
+    max_h = 3.0,
+    h_step = 0.5,
+    max_d = 0.8,
+    min_density = 0.05,
+    min_votes = 3L
+  )
 )
 
-# plot(bole_las, color = "WoodProb")
+# Stage 2: assign points to detected trees.
+las_tree <- tree_points(
+  las,
+  tree_map,
+  method = assign_voronoi(max_dist = 6)
+)
 
-seg_tbl  <- segment_bole(bole_las,                         # Takes a minute!
-                         myTreeLocs,
-                         algorithm = "hough",
-                         z_min = 0.1,
-                         z_max = 30,
-                         dz = 1.0,
-                         overlap = 0.1,
-                         use_stem_column = TRUE,
-                         search_radius = NULL,
-                         inlier_tol = 0.03,
-                         n_ransac = 30L,
-                         conf = 0.99,
-                         inlier_frac = 0.85,
-                         n_best = 10L,
-                         max_radius = 1,
-                         min_pts = 10L,
-                         hough_min_radius = 0.02,
-                         hough_max_radius = 1,
-                         hough_min_votes = 15L,
-                         voxel_thin = NULL,
-                         ncpu = 16L  )
-print(seg_tbl)
+# Stage 3: classify likely stem points.
+las_stem <- stem_points(
+  las_tree,
+  tree_map,
+  method = stem_hough(
+    h_base_lo = 1.0,
+    h_base_hi = 2.5,
+    h_step = 0.5,
+    max_d = 0.8,
+    min_density = 0.05,
+    min_votes = 3L
+  )
+)
 
-vol_tbl  <- compute_bole_volume(seg_table = seg_tbl,
-                                method = "smalian")
-print(vol_tbl)
+# Stage 4: fit per-tree stem segments.
+stem_seg <- stem_segments(
+  las_stem,
+  tree_map,
+  method = seg_ransac_cylinder(
+    dz = 0.5,
+    overlap = 0.1,
+    max_radius = 0.8,
+    min_pts = 10L
+  )
+)
 
-qual_tbl <- assess_tree_quality(myTreeLocs,
-                                seg_tbl,
-                                vol_table = vol_tbl,
-                                max_mean_error = 0.02,
-                                max_max_error = 0.05,
-                                min_inlier_frac = 0.7,
-                                min_bole_coverage = 0.5,
-                                dbh_ht_ratio_range = c(0.004, 0.05),
-                                max_radius_cv = 0.4,
-                                min_segments = 3L)
-table(qual_tbl$quality_class)
+# Optional summaries for quality assessment and inventory output.
+stem_vol <- compute_stem_volume(stem_seg, method = "cylinder")
+stem_quality <- assess_tree_quality(
+  tree_map,
+  stem_seg,
+  vol_table = stem_vol,
+  expected_stem_height = 3.0
+)
 
-refit_result <- refit_trees(myTreeGraph,
-                            myTreeLocs,
-                            seg_tbl,
-                            qual_tbl,
-                            strategies = "meanshift_bole",
-                            refit_marginal = FALSE,
-                            max_iterations = 3L,
-                            z_min = 0.1,
-                            z_max = NULL,
-                            dz = 0.5,
-                            overlap = 0.1,
-                            search_radius = NULL,
-                            inlier_tol = 0.03,
-                            n_ransac = 20L,
-                            conf = 0.99,
-                            inlier_frac = 0.85,
-                            n_best = 25L,
-                            max_radius = 1,
-                            min_pts = 10L,
-                            relax_delta = 0.15,
-                            dbscan_eps_factor = 2,
-                            dbscan_min_pts = 5L,
-                            ms_bandwidth = NULL,
-                            ms_max_iter = 30L,
-                            ms_tol = 0.001,
-                            ncpu = 16L)
+# Stage 5: create a tree-level inventory.
+inventory <- tree_inventory(
+  tree_map,
+  las_tree,
+  seg_table = stem_seg,
+  vol_table = stem_vol,
+  qual_table = stem_quality
+)
 
-print(refit_result$refit_log)
-
-myTreeGraph = segment_graph(las = las, tree.locations = refit_result$seg_table,
-                            k = 50,
-                            distance.threshold = 0.5,
-                            use.metabolic.scale = TRUE,
-                            metabolic.scale.function = '1/((2*x)^(1/8))',
-                            ptcloud_slice_min = 1,
-                            ptcloud_slice_max = 2,
-                            subsample.graph = 0.1,
-                            return.dense = TRUE)
-
-processed_data <- process_tree_data(treeData = refit_result$seg_table,
-                                    segmentedLAS = myTreeGraph,
-                                    return_sf = TRUE,
-                                    seg_table = seg_tbl,
-                                    vol_table = vol_tbl,
-                                    qual_table = qual_tbl)
-
-myTreeGraph <- spanner::colorize_las(myTreeGraph, method = "attr",
-                                     attribute_name = "treeID",
-                                     palette = random.colors(500))
-lidRviewer::view(myTreeGraph)
+print(inventory)
+print(table(stem_quality$quality_class))
