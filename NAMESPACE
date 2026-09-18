@@ -15,23 +15,31 @@ export(segment_graph)
 export(spanner_pal)
 export(sum_rasters_by_suitability)
 importFrom(Rcpp,sourceCpp)
-importFrom(lidR,LAS)
-importFrom(lidR,filter_poi)
-importFrom(lidR,pixel_metrics)
-importFrom(lidR,random_per_voxel)
+importFrom(lidR,
+  LAS,
+  filter_poi,
+  pixel_metrics,
+  random_per_voxel
+)
 importFrom(mathjaxr,preview_rd)
-importFrom(sf,st_as_sf)
-importFrom(sf,st_coordinates)
-importFrom(stats,complete.cases)
-importFrom(stats,density)
-importFrom(stats,dist)
-importFrom(stats,na.omit)
-importFrom(stats,princomp)
-importFrom(stats,quantile)
-importFrom(terra,"values<-")
-importFrom(terra,classify)
-importFrom(terra,focal)
-importFrom(terra,ifel)
-importFrom(terra,rast)
-importFrom(terra,res)
+importFrom(sf,
+  st_as_sf,
+  st_coordinates
+)
+importFrom(stats,
+  complete.cases,
+  density,
+  dist,
+  na.omit,
+  princomp,
+  quantile
+)
+importFrom(terra,
+  "values<-",
+  classify,
+  focal,
+  ifel,
+  rast,
+  res
+)
 useDynLib(spanner, .registration = TRUE)

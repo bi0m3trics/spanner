@@ -1,3 +1,9 @@
+# spanner 1.0.5
+
+* Resubmission following the restoration of the required package 'lidR'
+  dependency to CRAN.
+* Confirmed compatibility with 'lidR' 4.3.3.
+
 # spanner 1.0.4
 
 * Fixed non-API call to R (`R_UnboundValue`) in compiled code (flagged by CRAN r-devel checks on Linux and Windows).
